@@ -1,0 +1,5 @@
+discord.py==2.2.0
+python-dotenv==1.0.1
+qdrant_client==1.8.0
+~penai==0.26.5
+~penai==0.27.2

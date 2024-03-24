@@ -1,0 +1,6 @@
+.lh/
+.history/
+__pycache__/
+knowledge/*
+app.log
+pyrightconfig.json
