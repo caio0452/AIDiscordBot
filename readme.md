@@ -19,7 +19,7 @@ That means that the AI will include whole pieces of knowledge it deems relevant 
 # Caution
 The whole knowledge database is re-indexed every time the bot restarts (`knowledge.py`). This is a known issue, and will cost you some money, even though creating text embeddings is very cheap
 
-Also, this code is in general very unfinished
+Also, this code is in general very unfinished. Expect bugs.
 
 # Costs
 Experimental data suggests the cost is around ~$2/1000 messages exchanged with the bot (pessimistic estimate).
