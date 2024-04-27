@@ -47,6 +47,7 @@ class ChatHandler(commands.Cog):
         await self.vector_db_conn.add_messages([message])
         reply = await message.reply("<:paperUwU:1018366709658308688> Paper-Chan is typing...")
         str_response = await self.paper_chan.respond_to_query(message)
-        reply_msg = await reply.edit(content=str_response)
+        disclaimer = "<:unofficial:1233866785862848583><:unofficial_1:1233866787314073781><:unofficial_2:1233866788777754644>  | [Learn more.](https://discord.com/channels/532557135167619093/1192649325709381673/1196285641978302544)"
+        reply_msg = await reply.edit(content=str_response + "\n" + disclaimer)
         await self.paper_chan.memorize_short_term(reply_msg)
         await self.vector_db_conn.add_messages([reply_msg])
