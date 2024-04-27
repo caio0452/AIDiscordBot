@@ -152,7 +152,7 @@ class ImageGenCommand(commands.Cog):
         user_id = interaction.user.id
         await interaction.response.defer()
 
-        if self._is_blocked_prompt(query):
+        if await self._is_blocked_prompt(query):
             await interaction.followup.send(":x: Prompt flagged")
             return
         

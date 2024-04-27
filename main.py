@@ -32,7 +32,6 @@ async def setup_commands():
         print("No Fal.AI key specified, image generation will be disabled")
     else:
         await bot.add_cog(ImageGenCommand(bot=bot))
-    await bot.tree.sync()
 
 @bot.event
 async def on_ready():
