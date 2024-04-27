@@ -19,6 +19,9 @@ class Knowledge:
         KNOWLEDGE_ROOT_DIR = "knowledge"
         paragraphs_to_index: list[str] = []
 
+        if not os.path.exists(KNOWLEDGE_ROOT_DIR):
+            os.makedirs(KNOWLEDGE_ROOT_DIR)
+
         for filename in os.listdir(KNOWLEDGE_ROOT_DIR):
             file_path = os.path.join(KNOWLEDGE_ROOT_DIR, filename)
             if os.path.isfile(file_path):
