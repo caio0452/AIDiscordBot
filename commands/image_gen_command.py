@@ -7,7 +7,6 @@ import parameters
 import providers
 from discord import app_commands
 from discord.ext import commands
-from openai import AsyncOpenAI
 from rate_limits import RateLimiter, RateLimit
 
 class ImageGenCommand(commands.Cog):
