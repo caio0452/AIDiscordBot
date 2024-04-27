@@ -44,7 +44,7 @@ class KamiChan(AIBot):
         full_prompt = await self.build_full_prompt(self.memory, message)
         response = await self.clients[MAIN_CLIENT_NAME].generate_response(
             prompt=full_prompt,
-            model="huggingfaceh4/zephyr-orpo-141b-a35b",
+            model="meta-llama/llama-3-70b-instruct:nitro",
             max_tokens=300,
             temperature=0.5
         )
