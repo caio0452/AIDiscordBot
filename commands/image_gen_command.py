@@ -149,7 +149,7 @@ class ImageGenCommand(commands.Cog):
         name="generate_image", 
         description="Generate an image"
     )
-    async def gen_image(self, interaction: discord.Interaction, query: str) -> None:
+    async def generate_image(self, interaction: discord.Interaction, query: str) -> None:
         user_id = interaction.user.id
         await interaction.response.defer()
 
