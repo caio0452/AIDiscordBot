@@ -55,18 +55,18 @@ class KamiChan(AIBot):
     async def personality_rewrite(self, message: str) -> str:
         response = await self.clients[PERSONALITY_REWRITER_NAME].generate_response(
             prompt=prompts.REWRITER_PROMPT.replace("<message>", message).to_openai_format(),
-            model="gpt-3.5-turbo",
-            max_tokens=300,
-            temperature=0.4,
-            logit_bias={
-                "9712": -8,  # super
-                "35734": 3,  # why
-                "8823": -10, # help
-                "8823": -10, # assist
-                "2000": 3,   # for
-                "1568": 3,   # try
-                "15873": 7   # [[
-            }
+            model="meta-llama/llama-3-8b-instruct",
+            max_tokens=500,
+            temperature=0.3,
+            #logit_bias={
+            #    "9712": -8,  # super
+            #    "35734": 3,  # why
+            #    "8823": -10, # help
+            #    "8823": -10, # assist
+            #    "2000": 3,   # for
+            #    "1568": 3,   # try
+            #    "15873": 7   # [[
+            #}
         )
         content = response.message.content
         content = content \
@@ -103,7 +103,7 @@ class KamiChan(AIBot):
             prompt=prompts.QUERY_SUMMARIZER_PROMPT \
                 .replace("((user_query))", user_prompt_str) \
                 .replace("((last_user))", last_user).to_openai_format(),
-            model='gpt-3.5-turbo'
+            model='cohere/command-r'
         )
         return response_choice.message.content
 
