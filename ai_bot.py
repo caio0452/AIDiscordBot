@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import List
 from memorized_message import MemorizedMessage
+import discord
 
 class AIBot(ABC):
     def __init__(self, name: str, memory: List[MemorizedMessage] | None = None):
@@ -8,6 +9,6 @@ class AIBot(ABC):
         self.memory = memory
 
     @abstractmethod
-    def respond_to_query(self, query: str) -> str:
+    async def respond_to_query(self, message: discord.Message) -> str:
         raise NotImplementedError()
 

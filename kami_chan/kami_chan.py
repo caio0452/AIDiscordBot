@@ -1,5 +1,5 @@
 from memorized_message import MemorizedMessage
-from ai import OAICompatibleProvider, OpenAIModerator, GPT4Vision
+from ai import OAICompatibleProvider
 from ai_bot import AIBot
 from typing import Any
 from datetime import datetime
@@ -36,15 +36,9 @@ class KamiChan(AIBot):
         ]
         for name in required_provider_names:
             provider = providers.get_provider_by_name(name)
-            if provider is None:
-                raise RuntimeError(
-                    f"Missing provider named {name}, please add it to the {providers.ENVIRONMENT_VAR_NAME}"
-                    f"environment variable. Required providers: {', '.join(required_provider_names)}")
-            else:
-                client = OAICompatibleProvider(openai.AsyncOpenAI(
-                    api_key=provider.api_key, base_url=provider.api_base))
-                self.clients[name] = client
-
+            client = OAICompatibleProvider(openai.AsyncOpenAI(
+                api_key=provider.api_key, base_url=provider.api_base))
+            self.clients[name] = client
 
     async def respond_to_query(self, message: discord.Message) -> str:
         full_prompt = await self.build_full_prompt(self.memory, message)
@@ -141,7 +135,7 @@ class KamiChan(AIBot):
     async def build_full_prompt(self, memory_snapshot: list[MemorizedMessage], original_msg: discord.Message) -> list[Any]:
         now_str = datetime.now().strftime("%B %d, %H:%M:%S")
         model = self.clients[MAIN_CLIENT_NAME]
-        
+
         # TODO: the "Prompt" class is weirdly used here, but not worth looking too much into as of this will be replaced by a JSON file eventually
         system_prompt_str = prompts.KAMI_CHAN_PROMPT \
             .replace("((nick))", memory_snapshot[-1].nick) \

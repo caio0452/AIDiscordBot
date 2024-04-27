@@ -3,12 +3,12 @@ import openai
 from discord.ext import commands
 from vector_db import QdrantVectorDbConnection
 from rate_limits import RateLimit, RateLimiter
-from paper_chan.paper_chan import PaperChan
+from kami_chan.kami_chan import KamiChan
 
 class ChatHandler(commands.Cog):
     MAX_CHAT_CHARACTERS = 500
 
-    def __init__(self, openai_client: openai.AsyncOpenAI, bot: commands.Bot, db_connection: QdrantVectorDbConnection):
+    def __init__(self, bot: commands.Bot, db_connection: QdrantVectorDbConnection):
         self.bot: commands.Bot = bot
         self.vector_db_conn: QdrantVectorDbConnection = db_connection
         self.RECENT_MEMORY_LENGTH = 5
@@ -19,7 +19,7 @@ class ChatHandler(commands.Cog):
             RateLimit(n_messages=100, seconds=2 * 3600),
             RateLimit(n_messages=250, seconds=8 * 3600)
         )
-        self.paper_chan = PaperChan("Paper-Chan", openai_client, db_connection, self.bot.user.id)
+        self.paper_chan = KamiChan("Kami-Chan", db_connection, self.bot.user.id)
 
     async def should_process_message(self, message: discord.Message) -> bool:
         if message.author.bot or not(self.bot.user in message.mentions):
