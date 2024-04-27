@@ -1,20 +1,20 @@
 import openai
 from commands.search_command import SearchCommand
-import environment_vars
+import parameters
 
 from chat_handler import ChatHandler
 from knowledge import Knowledge
 from vector_db import QdrantVectorDb
 import discord_bot
-import environment_vars
+import parameters
 
 OPENAI_EMBEDDINGS_VECTOR_SIZE = 3072 # TODO: varies with model
-openai_client = openai.AsyncOpenAI(api_key=environment_vars.api_key)
+openai_client = openai.AsyncOpenAI(api_key=parameters.api_key)
 
 db_client = QdrantVectorDb(
-    environment_vars.qdrant_url,
+    parameters.qdrant_url,
     openai_client,
-    int(environment_vars.qdrant_port),
+    int(parameters.qdrant_port),
     OPENAI_EMBEDDINGS_VECTOR_SIZE
 )
 conn = db_client.connect()
@@ -30,7 +30,7 @@ async def on_ready():
     await setup_commands()
     print(f'Logged in as {bot.user}')
 
-bot.run(environment_vars.bot_token)
+bot.run(parameters.bot_token)
 
 
 

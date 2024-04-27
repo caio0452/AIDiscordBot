@@ -5,34 +5,52 @@ from typing import Any
 from datetime import datetime
 from vector_db import QdrantVectorDbConnection
 from . import prompts
+import providers
 import random, discord, openai
 
 #
 # TODO: This is a mess that has to be replaced with something data-driven
 #
-class PaperChan(AIBot):
+MAIN_CLIENT_NAME = "KAMI_CHAN_MAIN"
+KNOWLEDGE_EXTRACTOR_NAME = "KAMI_CHAN_KNOWLEDGE_EXTRACTOR"
+PERSONALITY_REWRITER_NAME = "KAMI_CHAN_PERSONALITY_REWRITER"
+IMAGE_VIEWER_NAME = "KAMI_CHAN_IMAGE_VIEWER"
+
+class KamiChan(AIBot):
     def __init__(self,
                  name: str,
-                 openai_client: openai.AsyncOpenAI,
                  vector_db_conn: QdrantVectorDbConnection,
                  discord_bot_id: int):
         super().__init__(name, [])
+        self._create_clients()
         self.discord_bot_id = discord_bot_id
         self.vector_db_conn = vector_db_conn
         self.memory = []
         self.RECENT_MEMORY_LENGTH = 5
-        self.moderator = OpenAIModerator(openai_client)
-        self.image_viewer = GPT4Vision(openai_client)
-        self.client = OAICompatibleProvider(openai_client)
+        
+       
+    def _create_clients(self):
+        self.clients: dict[str, OAICompatibleProvider] = {}
+        required_provider_names = [
+           MAIN_CLIENT_NAME, KNOWLEDGE_EXTRACTOR_NAME, PERSONALITY_REWRITER_NAME, IMAGE_VIEWER_NAME
+        ]
+        for name in required_provider_names:
+            provider = providers.get_provider_by_name(name)
+            if provider is None:
+                raise RuntimeError(
+                    f"Missing provider named {name}, please add it to the {providers.ENVIRONMENT_VAR_NAME}"
+                    f"environment variable. Required providers: {', '.join(required_provider_names)}")
+            else:
+                client = OAICompatibleProvider(openai.AsyncOpenAI(
+                    api_key=provider.api_key, base_url=provider.api_base))
+                self.clients[name] = client
+
 
     async def respond_to_query(self, message: discord.Message) -> str:
-        flagged = await self.moderator.is_flagged(message.content)
-        if flagged:
-            return "<:paperdisgusts:1165462194046111774> `Message not processed: flagged by moderation API`"
-        full_prompt = await self.build_full_prompt(self.memory, self.client, message)
-        response = await self.client.generate_response(
+        full_prompt = await self.build_full_prompt(self.memory, message)
+        response = await self.clients[MAIN_CLIENT_NAME].generate_response(
             prompt=full_prompt,
-            model="gpt-3.5-turbo-0125",
+            model="gpt-3.5-turbo",
             max_tokens=300,
             temperature=0.5
         )
@@ -41,7 +59,7 @@ class PaperChan(AIBot):
         return personality_rewrite
 
     async def personality_rewrite(self, message: str) -> str:
-        response = await self.client.generate_response(
+        response = await self.clients[PERSONALITY_REWRITER_NAME].generate_response(
             prompt=prompts.REWRITER_PROMPT.replace("<message>", message).to_openai_format(),
             model="gpt-3.5-turbo-0125",
             max_tokens=300,
@@ -117,14 +135,15 @@ class PaperChan(AIBot):
             if attachment.content_type.startswith("image/"):
                 await message.add_reaction("👀")
                 # Todo: only last message is possibly not enough context
-                response = await self.image_viewer.describe_image(attachment.url, message.content)
+                response = await self.clients[IMAGE_VIEWER_NAME].describe_image(attachment.url, message.content)
                 return response.message.content
 
-    async def build_full_prompt(self, memory_snapshot: list[MemorizedMessage], model: OAICompatibleProvider, original_msg: discord.Message) -> list[Any]:
+    async def build_full_prompt(self, memory_snapshot: list[MemorizedMessage], original_msg: discord.Message) -> list[Any]:
         now_str = datetime.now().strftime("%B %d, %H:%M:%S")
-
+        model = self.clients[MAIN_CLIENT_NAME]
+        
         # TODO: the "Prompt" class is weirdly used here, but not worth looking too much into as of this will be replaced by a JSON file eventually
-        system_prompt_str = prompts.PAPER_CHAN_PROMPT \
+        system_prompt_str = prompts.KAMI_CHAN_PROMPT \
             .replace("((nick))", memory_snapshot[-1].nick) \
             .replace("((now))", now_str)._dict[0]["content"]
 
