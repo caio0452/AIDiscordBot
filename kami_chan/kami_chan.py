@@ -55,7 +55,7 @@ class KamiChan(AIBot):
     async def personality_rewrite(self, message: str) -> str:
         response = await self.clients[PERSONALITY_REWRITER_NAME].generate_response(
             prompt=prompts.REWRITER_PROMPT.replace("<message>", message).to_openai_format(),
-            model="gpt-3.5-turbo-0125",
+            model="gpt-3.5-turbo",
             max_tokens=300,
             temperature=0.4,
             logit_bias={
@@ -103,7 +103,7 @@ class KamiChan(AIBot):
             prompt=prompts.QUERY_SUMMARIZER_PROMPT \
                 .replace("((user_query))", user_prompt_str) \
                 .replace("((last_user))", last_user).to_openai_format(),
-            model='gpt-3.5-turbo-0125'
+            model='gpt-3.5-turbo'
         )
         return response_choice.message.content
 
@@ -116,7 +116,7 @@ class KamiChan(AIBot):
         response_choice = await model.generate_response(
             prompt=prompts.INFO_SELECTOR_PROMPT \
                 .replace("((user_query))", user_prompt_str).to_openai_format(),
-            model='gpt-3.5-turbo-0125'
+            model='gpt-3.5-turbo'
         )
         return response_choice.message.content
 
