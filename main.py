@@ -29,9 +29,9 @@ async def setup_commands():
     await bot.add_cog(SearchCommand(bot=bot,conn=conn))
 
     if parameters.FAL_AI_KEY == "":
-        await bot.add_cog(ImageGenCommand(bot=bot))
-    else:
         print("No Fal.AI key specified, image generation will be disabled")
+    else:
+        await bot.add_cog(ImageGenCommand(bot=bot))
     await bot.tree.sync()
 
 @bot.event
