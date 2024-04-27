@@ -10,6 +10,10 @@ class Provider:
     api_base: str
     api_key: str
 
+    def __post_init__(self):
+        if self.api_base is None or self.api_base == '':
+            self.api_base = 'https://api.openai.com/v1'
+
 def _parse_providers(providers_json: str) -> list[Provider]:
     providers_data = json.loads(providers_json)
     providers = []
