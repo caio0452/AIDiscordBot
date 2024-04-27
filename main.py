@@ -1,4 +1,5 @@
 import openai
+from commands.image_gen_command import ImageGenCommand
 from commands.search_command import SearchCommand
 import parameters
 
@@ -26,6 +27,11 @@ bot = discord_bot.INSTANCE
 async def setup_commands():
     await bot.add_cog(ChatHandler(bot=bot, db_connection=conn))
     await bot.add_cog(SearchCommand(bot=bot,conn=conn))
+
+    if parameters.FAL_AI_KEY == "":
+        await bot.add_cog(ImageGenCommand(bot=bot))
+    else:
+        print("No Fal.AI key specified, image generation will be disabled")
 
 @bot.event
 async def on_ready():
