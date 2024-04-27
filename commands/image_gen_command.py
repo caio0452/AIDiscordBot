@@ -1,6 +1,7 @@
 import discord
 import json
 import io
+import openai
 import requests
 import httpx
 import parameters
@@ -13,7 +14,8 @@ class ImageGenCommand(commands.Cog):
     def __init__(self, bot: commands.Bot) -> None:
         self.bot = bot
         self.image_gen_rate_limiter = RateLimiter(RateLimit(n_messages=3, seconds=60))
-        self.openai_client = providers.get_provider_by_name("IMAGE_GEN_MODERATOR_CLIENT")
+        provider = providers.get_provider_by_name("IMAGE_GEN_MODERATOR_CLIENT")
+        self.openai_client = openai.AsyncOpenAI(api_key=provider.api_key, base_url=provider.api_base)
         self.fal_ai_key = parameters.FAL_AI_KEY
 
     async def _is_blocked_prompt(self, prompt: str) -> bool:
@@ -22,7 +24,7 @@ class ImageGenCommand(commands.Cog):
         for word in blocked_words:
             if word in prompt:
                 return True
-        
+    
         response = await self.openai_client.chat.completions.create(
             messages = [
             {
