@@ -41,9 +41,9 @@ class OAICompatibleProvider:
             logit_bias=logit_bias
         )
         if raw_response.choices is None or len(raw_response.choices) == 0:
-            raise RuntimeError("Provider returned no response choices")
+            raise RuntimeError(f"Provider returned no response choices. Response was {str(raw_response)}")
         if raw_response.choices[0] is None:
-            raise RuntimeError("Provider returned an empty response")
+            raise RuntimeError(f"Provider returned an empty response. Response was {str(raw_response)}")
 
         return raw_response.choices[0]
 
