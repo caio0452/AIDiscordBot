@@ -44,7 +44,7 @@ class KamiChan(AIBot):
         full_prompt = await self.build_full_prompt(self.memory, message)
         response = await self.clients[MAIN_CLIENT_NAME].generate_response(
             prompt=full_prompt,
-            model="meta-llama/llama-3-70b-instruct:nitro",
+            model="meta-llama/llama-3-70b-instruct",
             max_tokens=300,
             temperature=0.5
         )
@@ -55,7 +55,7 @@ class KamiChan(AIBot):
     async def personality_rewrite(self, message: str) -> str:
         response = await self.clients[PERSONALITY_REWRITER_NAME].generate_response(
             prompt=prompts.REWRITER_PROMPT.replace("<message>", message).to_openai_format(),
-            model="cohere/command-r",
+            model="anthropic/claude-3-haiku",
             max_tokens=500,
             temperature=0.3,
             #logit_bias={
