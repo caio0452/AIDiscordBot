@@ -46,7 +46,7 @@ class KamiChan(AIBot):
             prompt=full_prompt,
             model="meta-llama/llama-3-70b-instruct",
             max_tokens=300,
-            temperature=0.5
+            temperature=0.2
         )
         response_txt = response.message.content
         personality_rewrite = await self.personality_rewrite(response_txt)
