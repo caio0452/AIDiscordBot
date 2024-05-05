@@ -44,7 +44,7 @@ class KamiChan(AIBot):
         full_prompt = await self.build_full_prompt(self.memory, message)
         response = await self.clients[MAIN_CLIENT_NAME].generate_response(
             prompt=full_prompt,
-            model="meta-llama/llama-3-70b-instruct",
+            model="openai/gpt-3.5-turbo-0125",
             max_tokens=300,
             temperature=0.2
         )
