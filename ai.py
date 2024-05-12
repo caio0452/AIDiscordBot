@@ -40,10 +40,13 @@ class OAICompatibleProvider:
             temperature=temperature,
             logit_bias=logit_bias
         )
+
         if raw_response.choices is None or len(raw_response.choices) == 0:
-            raise RuntimeError(f"Provider returned no response choices. Response was {str(raw_response)}")
-        if raw_response.choices[0] is None:
-            raise RuntimeError(f"Provider returned an empty response. Response was {str(raw_response)}")
+            if "error" in raw_response:
+                raise RuntimeError(raw_response["error"])
+            else:
+                raise RuntimeError(f"Provider returned no response choices. Response was {str(raw_response)}")
+      
 
         return raw_response.choices[0]
 

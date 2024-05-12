@@ -56,4 +56,6 @@ class ChatHandler(commands.Cog):
         except Exception as e:
             error_traceback = ''.join(traceback.format_exception(e))
             error_file = io.StringIO(error_traceback)
-            await reply.edit(content="Sorry, there was error!!", attachments=[discord.File(error_file, filename="error_traceback.txt")])
+            self.paper_chan.forget_short_term(message)
+            self.paper_chan.forget_short_term(reply)
+            await reply.edit(content="Sorry, there was error!! <a:notlikepaper:1165467302578360401>", attachments=[discord.File(error_file, filename="error_traceback.txt")])
