@@ -80,7 +80,7 @@ class DiscordBotResponse:
         self.log_verbose(f"--- IN-CHARACTER REWRITE ---\n{personality_rewrite}\n")
         return personality_rewrite
 
-    async def log_verbose(self, text: str):
+    def log_verbose(self, text: str):
         self.verbose_log += text + "\n"
 
     async def personality_rewrite(self, message: str) -> str:
