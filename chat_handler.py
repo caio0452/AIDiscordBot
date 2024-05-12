@@ -49,7 +49,7 @@ class ChatHandler(commands.Cog):
         reply = await message.reply("<:paperUwU:1018366709658308688> Paper-Chan is typing...")
         try:
             disclaimer = "<:unofficial:1233866785862848583><:unofficial_1:1233866787314073781><:unofficial_2:1233866788777754644>  | [Learn more.](https://discord.com/channels/532557135167619093/1192649325709381673/1196285641978302544)"
-            resp = DiscordBotResponse(self.paper_chan).create()
+            resp = DiscordBotResponse(self.paper_chan).create(message)
             reply_msg = await reply.edit(content=resp)
             await self.paper_chan.memorize_short_term(reply_msg)
             await self.vector_db_conn.add_messages([reply_msg])
