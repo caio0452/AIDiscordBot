@@ -123,7 +123,8 @@ class DiscordBotResponse:
 
     async def summarize_relevant_facts(self,  model: OAICompatibleProvider, user_query: str):
         user_prompt_str = ""
-        knowledge_list = await self.bot_data.vector_db_conn.query_relevant_knowledge(await self.sanitize_str(user_query))
+        knowledge_list = await self.bot_data.vector_db_conn.query_relevant_knowledge(
+            await self.bot_data.sanitize_str(user_query))
         for knowledge in knowledge_list:
             user_prompt_str += "INFO: \n" + knowledge.payload
         user_prompt_str += "QUERY: " + user_query

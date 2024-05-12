@@ -1,5 +1,4 @@
 import discord
-import traceback
 import io
 from discord.ext import commands
 from vector_db import QdrantVectorDbConnection
