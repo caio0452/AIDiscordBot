@@ -82,7 +82,7 @@ class KamiChan(AIBot):
             self.memory.pop(0)
 
     async def forget_short_term(self, message: discord.Message):
-        self.memory = [mem_msg for mem_msg in self.memory if mem_msg.id != message.id ]  
+        self.memory = [mem_msg for mem_msg in self.memory if mem_msg.message_id != message.id ]  
 
     async def sanitize_msg(self, message: discord.Message) -> str:
         new_content = message.content
