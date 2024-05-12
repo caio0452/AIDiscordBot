@@ -1,5 +1,6 @@
 import discord
 import traceback
+import io
 from discord.ext import commands
 from vector_db import QdrantVectorDbConnection
 from rate_limits import RateLimit, RateLimiter
@@ -53,6 +54,6 @@ class ChatHandler(commands.Cog):
             await self.paper_chan.memorize_short_term(reply_msg)
             await self.vector_db_conn.add_messages([reply_msg])
         except Exception as e:
-            error_traceback = ''.join(traceback.format_exception(etype=type(e), value=e, tb=e.__traceback__))
+            error_traceback = ''.join(traceback.format_exception())
             error_file = io.StringIO(error_traceback)
             await reply.edit(content="Sorry, there was error!!", attachments=[discord.File(error_file, filename="error_traceback.txt")])
