@@ -131,7 +131,7 @@ class DiscordBotResponse:
         response_choice = await model.generate_response(
             prompt=prompts.INFO_SELECTOR_PROMPT \
                 .replace("((user_query))", user_prompt_str).to_openai_format(),
-            model='gpt-3.5-turbo'
+            model='cohere/command-r'
         )
         return response_choice.message.content
 
