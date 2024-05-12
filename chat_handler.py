@@ -1,5 +1,5 @@
 import discord
-import openai
+import traceback
 from discord.ext import commands
 from vector_db import QdrantVectorDbConnection
 from rate_limits import RateLimit, RateLimiter
