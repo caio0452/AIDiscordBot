@@ -1,4 +1,5 @@
 import openai
+import json
 from typing import Any
 from abc import ABC, abstractmethod
 from openai.types.chat.chat_completion import Choice
@@ -42,7 +43,8 @@ class OAICompatibleProvider:
         )
 
         if raw_response.choices is None or len(raw_response.choices) == 0:
-            if "error" in raw_response:
+            resp_json = json.loads(raw_response.to_json)
+            if "error" in resp_json and resp_json["error"]: # For OpenRouter compat
                 raise RuntimeError(raw_response["error"])
             else:
                 raise RuntimeError(f"Provider returned no response choices. Response was {str(raw_response)}")
