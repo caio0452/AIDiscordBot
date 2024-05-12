@@ -53,7 +53,7 @@ class KamiChan(AIBotData):
     
     async def memorize_short_term(self, message: discord.Message):
         self.memory.append(await MemorizedMessage.of_discord_message(message, self.sanitize_msg))
-        if len(self.memory) > self.bot_data.RECENT_MEMORY_LENGTH:
+        if len(self.memory) > self.RECENT_MEMORY_LENGTH:
             self.memory.pop(0)
 
     async def forget_short_term(self, message: discord.Message):
