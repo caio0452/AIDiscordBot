@@ -55,9 +55,9 @@ class ChatHandler(commands.Cog):
             await self.vector_db_conn.add_messages([reply_msg])
             if resp.verbose:
                 log_file = io.StringIO(resp.verbose_log)
-                await reply.edit(content=resp + "\n" + disclaimer, attachments=[discord.File(log_file, filename="verbose_log.txt")])
+                await reply.edit(content=resp_str + "\n" + disclaimer, attachments=[discord.File(log_file, filename="verbose_log.txt")])
             else:
-                await reply.edit(content=resp + "\n" + disclaimer)
+                await reply.edit(content=resp_str + "\n" + disclaimer)
         except Exception as e:
             await self.paper_chan.forget_short_term(message)
             await self.paper_chan.forget_short_term(reply)
