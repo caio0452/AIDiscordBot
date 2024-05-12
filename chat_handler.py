@@ -54,6 +54,6 @@ class ChatHandler(commands.Cog):
             await self.paper_chan.memorize_short_term(reply_msg)
             await self.vector_db_conn.add_messages([reply_msg])
         except Exception as e:
-            error_traceback = ''.join(traceback.format_exception())
+            error_traceback = ''.join(traceback.format_exception(e))
             error_file = io.StringIO(error_traceback)
             await reply.edit(content="Sorry, there was error!!", attachments=[discord.File(error_file, filename="error_traceback.txt")])

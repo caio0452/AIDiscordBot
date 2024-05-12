@@ -129,10 +129,12 @@ class QdrantVectorDbConnection:
             with_payload=True,
             search_params=models.SearchParams(hnsw_ef=128, exact=True),
         )
+        IRRELEVANT_MSG_ID = -1
         msgs = [
             MemorizedMessage(text=hit.payload['text'], nick=hit.payload['nick'],
                              sent=datetime.strptime(hit.payload['sent'], "%Y-%m-%d %H:%M:%S"),
-                             is_bot=hit.payload['is_bot'])
+                             is_bot=hit.payload['is_bot'],
+                             message_id=IRRELEVANT_MSG_ID)
             for hit in search_results
         ]
         return msgs
