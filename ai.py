@@ -43,7 +43,7 @@ class OAICompatibleProvider:
         )
 
         if raw_response.choices is None or len(raw_response.choices) == 0:
-            resp_json = json.loads(raw_response.to_json)
+            resp_json = json.loads(raw_response.to_json())
             if "error" in resp_json and resp_json["error"]: # For OpenRouter compat
                 raise RuntimeError(raw_response["error"])
             else:
