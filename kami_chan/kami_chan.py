@@ -1,6 +1,6 @@
 from memorized_message import MemorizedMessage
 from ai import OAICompatibleProvider
-from ai_bot import AIBot
+from ai_bot import AIBotData
 from typing import Any
 from datetime import datetime
 from vector_db import QdrantVectorDbConnection
@@ -16,21 +16,20 @@ KNOWLEDGE_EXTRACTOR_NAME = "KAMI_CHAN_KNOWLEDGE_EXTRACTOR"
 PERSONALITY_REWRITER_NAME = "KAMI_CHAN_PERSONALITY_REWRITER"
 IMAGE_VIEWER_NAME = "KAMI_CHAN_IMAGE_VIEWER"
 
-class KamiChan(AIBot):
+class KamiChan(AIBotData):
     def __init__(self,
                  name: str,
                  vector_db_conn: QdrantVectorDbConnection,
                  discord_bot_id: int):
         super().__init__(name, [])
+        self.clients: dict[str, OAICompatibleProvider] = {}
         self._create_clients()
         self.discord_bot_id = discord_bot_id
         self.vector_db_conn = vector_db_conn
         self.memory = []
         self.RECENT_MEMORY_LENGTH = 5
         
-       
     def _create_clients(self):
-        self.clients: dict[str, OAICompatibleProvider] = {}
         required_provider_names = [
            MAIN_CLIENT_NAME, KNOWLEDGE_EXTRACTOR_NAME, PERSONALITY_REWRITER_NAME, IMAGE_VIEWER_NAME
         ]
@@ -40,9 +39,37 @@ class KamiChan(AIBot):
                 api_key=provider.api_key, base_url=provider.api_base))
             self.clients[name] = client
 
-    async def respond_to_query(self, message: discord.Message) -> str:
-        full_prompt = await self.build_full_prompt(self.memory, message)
-        response = await self.clients[MAIN_CLIENT_NAME].generate_response(
+    async def sanitize_msg(self, message: discord.Message) -> str:
+        new_content = message.content
+        for mention in message.mentions:
+            new_content = new_content.replace(f'<@{mention.id}>', f'@{mention.name}')
+        return await self.sanitize_str(new_content)
+
+    async def sanitize_str(self, message: str) -> str:
+        sanitized = message
+        if sanitized.startswith(f"<@{self.discord_bot_id}>"):
+            sanitized = sanitized.replace(f"<@{self.discord_bot_id}>", "", 1)
+        return sanitized
+    
+    async def memorize_short_term(self, message: discord.Message):
+        self.memory.append(await MemorizedMessage.of_discord_message(message, self.sanitize_msg))
+        if len(self.memory) > self.bot_data.RECENT_MEMORY_LENGTH:
+            self.memory.pop(0)
+
+    async def forget_short_term(self, message: discord.Message):
+        self.memory = [mem_msg for mem_msg in self.memory if mem_msg.message_id != message.id ]  
+
+
+class DiscordBotResponse:
+    def __init__(self, bot_data: KamiChan):
+        self.verbose = False
+        self.bot_data = bot_data
+        self.verbose_log = ""
+
+    async def create(self, message: discord.Message) -> str:
+        self.verbose = message.content.endswith("--v")
+        full_prompt = await self.build_full_prompt(self.bot_data.memory, message)
+        response = await self.bot_data.clients[MAIN_CLIENT_NAME].generate_response(
             prompt=full_prompt,
             model="openai/gpt-3.5-turbo-0125",
             max_tokens=300,
@@ -50,10 +77,14 @@ class KamiChan(AIBot):
         )
         response_txt = response.message.content
         personality_rewrite = await self.personality_rewrite(response_txt)
+        self.log_verbose(f"--- IN-CHARACTER REWRITE ---\n{personality_rewrite}\n")
         return personality_rewrite
 
+    async def log_verbose(self, text: str):
+        self.verbose_log += text + "\n"
+
     async def personality_rewrite(self, message: str) -> str:
-        response = await self.clients[PERSONALITY_REWRITER_NAME].generate_response(
+        response = await self.bot_data.clients[PERSONALITY_REWRITER_NAME].generate_response(
             prompt=prompts.REWRITER_PROMPT.replace("<message>", message).to_openai_format(),
             model="anthropic/claude-3-haiku",
             max_tokens=500,
@@ -76,31 +107,11 @@ class KamiChan(AIBot):
 
         return content
 
-    async def memorize_short_term(self, message: discord.Message):
-        self.memory.append(await MemorizedMessage.of_discord_message(message, self.sanitize_msg))
-        if len(self.memory) > self.RECENT_MEMORY_LENGTH:
-            self.memory.pop(0)
-
-    async def forget_short_term(self, message: discord.Message):
-        self.memory = [mem_msg for mem_msg in self.memory if mem_msg.message_id != message.id ]  
-
-    async def sanitize_msg(self, message: discord.Message) -> str:
-        new_content = message.content
-        for mention in message.mentions:
-            new_content = new_content.replace(f'<@{mention.id}>', f'@{mention.name}')
-        return await self.sanitize_str(new_content)
-
-    async def sanitize_str(self, message: str) -> str:
-        sanitized = message
-        if sanitized.startswith(f"<@{self.discord_bot_id}>"):
-            sanitized = sanitized.replace(f"<@{self.discord_bot_id}>", "", 1)
-        return sanitized
-
     async def fetch_last_user_query(self, model: OAICompatibleProvider) -> str:
         user_prompt_str: str = ""
-        for memorized_message in self.memory:
+        for memorized_message in self.bot_data.memory:
             user_prompt_str += f"\n{memorized_message.text}"
-        last_user = self.memory[-1].nick
+        last_user = self.bot_data.memory[-1].nick
 
         response_choice = await model.generate_response(
             prompt=prompts.QUERY_SUMMARIZER_PROMPT \
@@ -112,7 +123,7 @@ class KamiChan(AIBot):
 
     async def summarize_relevant_facts(self,  model: OAICompatibleProvider, user_query: str):
         user_prompt_str = ""
-        knowledge_list = await self.vector_db_conn.query_relevant_knowledge(await self.sanitize_str(user_query))
+        knowledge_list = await self.bot_data.vector_db_conn.query_relevant_knowledge(await self.sanitize_str(user_query))
         for knowledge in knowledge_list:
             user_prompt_str += "INFO: \n" + knowledge.payload
         user_prompt_str += "QUERY: " + user_query
@@ -124,7 +135,7 @@ class KamiChan(AIBot):
         return response_choice.message.content
 
     async def describe_image_if_present(self, message) -> str | None:
-         if len(message.attachments) == 1:
+        if len(message.attachments) == 1:
             if message.channel.nsfw:
                 await message.reply(":X: I can't see attachments in NSFW channels!")
                 return None
@@ -132,12 +143,12 @@ class KamiChan(AIBot):
             if attachment.content_type.startswith("image/"):
                 await message.add_reaction("👀")
                 # Todo: only last message is possibly not enough context
-                response = await self.clients[IMAGE_VIEWER_NAME].describe_image(attachment.url, message.content)
+                response = await self.bot_data.clients[IMAGE_VIEWER_NAME].describe_image(attachment.url, message.content)
                 return response.message.content
 
     async def build_full_prompt(self, memory_snapshot: list[MemorizedMessage], original_msg: discord.Message) -> list[Any]:
         now_str = datetime.now().strftime("%B %d, %H:%M:%S")
-        model = self.clients[MAIN_CLIENT_NAME]
+        model = self.bot_data.clients[MAIN_CLIENT_NAME]
 
         # TODO: the "Prompt" class is weirdly used here, but not worth looking too much into as of this will be replaced by a JSON file eventually
         system_prompt_str = prompts.KAMI_CHAN_PROMPT \
@@ -145,13 +156,15 @@ class KamiChan(AIBot):
             .replace("((now))", now_str)._dict[0]["content"]
 
         user_query = await self.fetch_last_user_query(model)
+        self.log_verbose(f"--- USER QUERY ---\n{user_query}\n")
         knowledge = await self.summarize_relevant_facts(model, user_query)
         system_prompt_str += f"\n[INFO FROM KNOWLEDGE DB]:\n{knowledge}\n"
         prompt: list[Any] = [
             OAICompatibleProvider.system_msg(system_prompt_str)
         ]
+        self.log_verbose(f"--- INFO FROM KNOWLEDGE DB ---\n{knowledge}\n")
         old_messages_str = ""
-        for old_message in await self.vector_db_conn.query_relevant_messages(original_msg.content):
+        for old_message in await self.bot_data.vector_db_conn.query_relevant_messages(original_msg.content):
             old_messages_str += f"[{old_message.sent.isoformat()} by {old_message.nick}] {old_message.text}"
 
         system_prompt_str += \
@@ -170,4 +183,5 @@ class KamiChan(AIBot):
         if img_desc:
             prompt.append(OAICompatibleProvider.user_msg(img_desc))
 
+        self.log_verbose(f"--- FULL PROMPT ---\n{str(prompt)}\n")
         return prompt

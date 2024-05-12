@@ -4,7 +4,7 @@ import io
 from discord.ext import commands
 from vector_db import QdrantVectorDbConnection
 from rate_limits import RateLimit, RateLimiter
-from kami_chan.kami_chan import KamiChan
+from kami_chan.kami_chan import KamiChan, DiscordBotResponse
 
 class ChatHandler(commands.Cog):
     MAX_CHAT_CHARACTERS = 500
@@ -48,14 +48,17 @@ class ChatHandler(commands.Cog):
         await self.vector_db_conn.add_messages([message])
         reply = await message.reply("<:paperUwU:1018366709658308688> Paper-Chan is typing...")
         try:
-            str_response = await self.paper_chan.respond_to_query(message)
             disclaimer = "<:unofficial:1233866785862848583><:unofficial_1:1233866787314073781><:unofficial_2:1233866788777754644>  | [Learn more.](https://discord.com/channels/532557135167619093/1192649325709381673/1196285641978302544)"
-            reply_msg = await reply.edit(content=str_response + "\n" + disclaimer)
+            resp = DiscordBotResponse(self.paper_chan).create()
+            reply_msg = await reply.edit(content=resp)
             await self.paper_chan.memorize_short_term(reply_msg)
             await self.vector_db_conn.add_messages([reply_msg])
+            if resp.verbose:
+                log_file = io.StringIO(resp.verbose_log)
+                await reply.edit(content=resp + "\n" + disclaimer, attachments=[discord.File(log_file, filename="verbose_log.txt")])
+            else:
+                await reply.edit(content=resp + "\n" + disclaimer)
         except Exception as e:
-            error_traceback = ''.join(traceback.format_exception(e))
-            error_file = io.StringIO(error_traceback)
             await self.paper_chan.forget_short_term(message)
             await self.paper_chan.forget_short_term(reply)
-            await reply.edit(content="Sorry, there was error!! <a:notlikepaper:1165467302578360401>", attachments=[discord.File(error_file, filename="error_traceback.txt")])
+            await reply.edit(content=f"Sorry, there was error!! <a:notlikepaper:1165467302578360401> ```{str(e)}```")
