@@ -71,7 +71,7 @@ class DiscordBotResponse:
         full_prompt = await self.build_full_prompt(self.bot_data.memory, message)
         response = await self.bot_data.clients[MAIN_CLIENT_NAME].generate_response(
             prompt=full_prompt,
-            model="openai/gpt-3.5-turbo-0125",
+            model="google/gemini-flash-1.5",
             max_tokens=300,
             temperature=0.2
         )
@@ -131,7 +131,7 @@ class DiscordBotResponse:
         response_choice = await model.generate_response(
             prompt=prompts.INFO_SELECTOR_PROMPT \
                 .replace("((user_query))", user_prompt_str).to_openai_format(),
-            model='cohere/command-r'
+            model='google/gemini-flash-1.5'
         )
         return response_choice.message.content
 
