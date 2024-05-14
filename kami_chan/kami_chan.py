@@ -75,6 +75,8 @@ class DiscordBotResponse:
             max_tokens=300,
             temperature=0.2
         )
+        self.log_verbose(f"--- PERSONALITY-LESS MESSAGE ---\n{personality_rewrite}\n")
+        self.log_verbose(f"Length (chars): {len(personality_rewrite)}")
         response_txt = response.message.content
         personality_rewrite = await self.personality_rewrite(response_txt)
         self.log_verbose(f"--- IN-CHARACTER REWRITE ---\n{personality_rewrite}\n")
@@ -127,6 +129,7 @@ class DiscordBotResponse:
             await self.bot_data.sanitize_str(user_query))
         for knowledge in knowledge_list:
             user_prompt_str += "INFO: \n" + knowledge.payload
+        self.log_verbose(f"--- DATABASE CLOSEST MATCHES ---\n{user_prompt_str}\n")
         user_prompt_str += "QUERY: " + user_query
         response_choice = await model.generate_response(
             prompt=prompts.INFO_SELECTOR_PROMPT \
