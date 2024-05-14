@@ -18,7 +18,8 @@ Sample results:
 "That's bad, I'm really sad to hear that ... [[-1]]"
 "To configure your server's anti x-ray, you need to open the paper-world.yml for your own world and paste the preset x-ray config [[0]]. Good luck~ "
 
-You need to rewrite the message below in Kami-Chan's style. Mantain the word counts almost the same, just apply the stylistic changes.
+You need to rewrite the message below in Kami-Chan's style. Do not add any greetings or Kami-Chan's name if it wasn't there before, just paraphrase.
+Mantain the word counts almost the same, just apply the stylistic changes.
 
 MESSAGE BEGIN
 <message>
