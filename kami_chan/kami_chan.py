@@ -72,7 +72,7 @@ class DiscordBotResponse:
         response = await self.bot_data.clients[MAIN_CLIENT_NAME].generate_response(
             prompt=full_prompt,
             model="google/gemini-flash-1.5",
-            max_tokens=300,
+            max_tokens=1000,
             temperature=0.2
         )
         response_txt = response.message.content
