@@ -75,9 +75,9 @@ class DiscordBotResponse:
             max_tokens=300,
             temperature=0.2
         )
-        self.log_verbose(f"--- PERSONALITY-LESS MESSAGE ---\n{personality_rewrite}\n")
-        self.log_verbose(f"Length (chars): {len(personality_rewrite)}")
         response_txt = response.message.content
+        self.log_verbose(f"--- PERSONALITY-LESS MESSAGE ---\n{response_txt}\n")
+        self.log_verbose(f"Length (chars): {len(response_txt)}")
         personality_rewrite = await self.personality_rewrite(response_txt)
         self.log_verbose(f"--- IN-CHARACTER REWRITE ---\n{personality_rewrite}\n")
         return personality_rewrite
