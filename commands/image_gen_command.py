@@ -129,7 +129,7 @@ class ImageGenCommand(commands.Cog):
         return False
 
     async def _fal_ai_request_image(self, request: str):
-        url = "https://fal.run/fal-ai/playground-v25"
+        url = "https://fal.run/fal-ai/pixart-sigma"
 
         headers = {
             "Authorization": f"Key {self.fal_ai_key}",
