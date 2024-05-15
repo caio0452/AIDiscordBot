@@ -99,7 +99,11 @@ Given the log below, respond for user ((last_user))
 INFO_SELECTOR_PROMPT = Prompt([
     {
         "role": "system",
-        "content": "You are a relevant Q&A knowledge picker and summarizer. The user will send you a set of INFO and a query. Reply with text explaining all pieces of info you find that are related to the query. If nothing is relevant, reply with 'No relevant content'. Be as specific and detailed as possible, but only based on the available info. Maximum one paragraph."
+        "content": 
+f"""An user will send you a set of INFO and a query. 
+If there's no INFO that is relevant to the query, reply exactly with 'No relevant content'.
+If there is, reply with a message with all the INFO pieces that are relevant to the query.
+"""
     },
     {
         "role": "user",
