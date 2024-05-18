@@ -1,0 +1,42 @@
+from typing import List, Tuple
+from ai import OAICompatibleProvider
+from abc import abstractmethod
+import numpy as np
+
+class PresetQuery:
+    def __init__(self, *, preset_question: str, embedding: list[float], similarity_threshold: float):
+        self.embedding = embedding
+        self.preset_question = preset_question
+        self.similarity_threshold = similarity_threshold
+        self.query_matcher: PresetQueryMatcher
+
+class PresetQueryMatcher:
+    @abstractmethod
+    def user_utterance_matches(self, utterance: str, query: PresetQuery) -> bool:
+        raise NotImplementedError("user_utterance_matches")
+    
+    @staticmethod
+    def check_has_any_keyword(target: str, keywords: list[str], *, ignore_case=True):
+        if ignore_case:
+            return any(keyword.lower() in target.lower() for keyword in keywords)
+        else:
+            return any(keyword in target for keyword in keywords)
+        
+    @staticmethod
+    def check_embedding_similarity_match(emb1: list[float], emb2: list[float], *, min_thresh) -> bool:
+        return np.dot(emb1, emb2) >= min_thresh
+
+class PresetQueryManager:
+    def __init__(self, embeddings_client: OAICompatibleProvider):
+        self.embeddings_client = embeddings_client
+        self._all_queries: list[PresetQuery] = []
+
+    async def add_query(self, query: PresetQuery):
+        self._all_queries.append(query)
+
+    async def get_all_matching_user_utterance(self, utterance: str) -> list[PresetQuery]:   
+        raise NotImplementedError() # TODO
+
+    @property
+    def all_preset_queries(self):
+        return self._all_queries

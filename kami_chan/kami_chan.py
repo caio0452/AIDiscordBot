@@ -66,24 +66,27 @@ class DiscordBotResponse:
         self.bot_data = bot_data
         self.verbose_log = ""
 
+    def log_verbose(self, text: str, *, category=str | None):
+        if category:
+            self.log_verbose(f"--- {category} ---\n{text}\n")
+        else:
+            self.verbose_log += f"{text}\n"
+
     async def create(self, message: discord.Message) -> str:
         self.verbose = message.content.endswith("--v")
         full_prompt = await self.build_full_prompt(self.bot_data.memory, message)
         response = await self.bot_data.clients[MAIN_CLIENT_NAME].generate_response(
             prompt=full_prompt,
-            model="gpt-3.5-turbo",
-            max_tokens=500,
+            model="google/gemini-flash-1.5",
+            max_tokens=1000,
             temperature=0.2
         )
         response_txt = response.message.content
-        self.log_verbose(f"--- PERSONALITY-LESS MESSAGE ---\n{response_txt}\n")
+        self.log_verbose(response_txt, category="PERSONALITY-LESS MESSAGE")
         self.log_verbose(f"Length (chars): {len(response_txt)}")
         personality_rewrite = await self.personality_rewrite(response_txt)
-        self.log_verbose(f"--- IN-CHARACTER REWRITE ---\n{personality_rewrite}\n")
+        self.log_verbose(personality_rewrite, category="IN-CHARACTER REWRITE")
         return personality_rewrite
-
-    def log_verbose(self, text: str):
-        self.verbose_log += text + "\n"
 
     async def personality_rewrite(self, message: str) -> str:
         response = await self.bot_data.clients[PERSONALITY_REWRITER_NAME].generate_response(
@@ -91,15 +94,6 @@ class DiscordBotResponse:
             model="meta-llama/llama-3-8b-instruct",
             max_tokens=500,
             temperature=0.3,
-            #logit_bias={
-            #    "9712": -8,  # super
-            #    "35734": 3,  # why
-            #    "8823": -10, # help
-            #    "8823": -10, # assist
-            #    "2000": 3,   # for
-            #    "1568": 3,   # try
-            #    "15873": 7   # [[
-            #}
         )
         content = response.message.content
         content = content \
@@ -111,8 +105,9 @@ class DiscordBotResponse:
 
     async def fetch_last_user_query(self, model: OAICompatibleProvider) -> str:
         user_prompt_str: str = ""
-        for memorized_message in self.bot_data.memory:
-            user_prompt_str += f"\n{memorized_message.text}"
+        user_prompt_str = "\n".join(
+            [memorized_message.text for memorized_message in self.bot_data.memory]
+        )
         last_user = self.bot_data.memory[-1].nick
 
         response_choice = await model.generate_response(
@@ -160,13 +155,13 @@ class DiscordBotResponse:
             .replace("((now))", now_str)._dict[0]["content"]
 
         user_query = await self.fetch_last_user_query(model)
-        self.log_verbose(f"--- USER QUERY ---\n{user_query}\n")
+        self.log_verbose(user_query, category="USER QUERY")
         knowledge = await self.summarize_relevant_facts(model, user_query)
         system_prompt_str += f"\n[INFO FROM KNOWLEDGE DB]:\n{knowledge}\n"
         prompt: list[Any] = [
             OAICompatibleProvider.system_msg(system_prompt_str)
         ]
-        self.log_verbose(f"--- INFO FROM KNOWLEDGE DB ---\n{knowledge}\n")
+        self.log_verbose(knowledge, category="INFO FROM KNOWLEDGE DB")
         old_messages_str = ""
         for old_message in await self.bot_data.vector_db_conn.query_relevant_messages(original_msg.content):
             old_messages_str += f"[{old_message.sent.isoformat()} by {old_message.nick}] {old_message.text}"

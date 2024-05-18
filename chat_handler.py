@@ -19,8 +19,9 @@ class ChatHandler(commands.Cog):
             RateLimit(n_messages=100, seconds=2 * 3600),
             RateLimit(n_messages=250, seconds=8 * 3600)
         )
-        self.paper_chan = KamiChan("Kami-Chan", db_connection, self.bot.user.id)
+        self.kami_chan = KamiChan("Kami-Chan", db_connection, self.bot.user.id)
 
+    # TODO: everything below this should probably should be mostly the bot's responsability
     async def should_process_message(self, message: discord.Message) -> bool:
         if message.author.bot or not(self.bot.user in message.mentions):
             return False
@@ -43,7 +44,7 @@ class ChatHandler(commands.Cog):
             return
 
         self.rate_limiter.register_request(message.author.id)
-        await self.paper_chan.memorize_short_term(message)
+        await self.kami_chan.memorize_short_term(message)
         await self.vector_db_conn.add_messages([message])
         reply = await message.reply("<:paperUwU:1018366709658308688> Paper-Chan is typing...")
         try:
@@ -51,7 +52,7 @@ class ChatHandler(commands.Cog):
             resp = DiscordBotResponse(self.paper_chan)
             resp_str = await resp.create(message)
             reply_msg = await reply.edit(content=resp_str)
-            await self.paper_chan.memorize_short_term(reply_msg)
+            await self.kami_chan.memorize_short_term(reply_msg)
             await self.vector_db_conn.add_messages([reply_msg])
             if resp.verbose:
                 log_file = io.StringIO(resp.verbose_log)
@@ -59,6 +60,6 @@ class ChatHandler(commands.Cog):
             else:
                 await reply.edit(content=resp_str + "\n" + disclaimer)
         except Exception as e:
-            await self.paper_chan.forget_short_term(message)
-            await self.paper_chan.forget_short_term(reply)
+            await self.kami_chan.forget_short_term(message)
+            await self.kami_chan.forget_short_term(reply)
             await reply.edit(content=f"Sorry, there was error!! <a:notlikepaper:1165467302578360401> ```{str(e)}```")

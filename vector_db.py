@@ -111,14 +111,6 @@ class QdrantVectorDbConnection:
 
         self.upserted_count += len(payloads)
 
-    async def _text_to_vector(self, openai_client: openai.AsyncOpenAI, texts: List[str]) -> List[List[float]]:
-        response = await openai_client.embeddings.create(
-            input=texts,
-            model="text-embedding-3-large"
-        )
-        vectors = [e.embedding for e in response.data]
-        return vectors
-
     async def query_relevant_messages(self, query: str) -> List[MemorizedMessage]:
         vector = (await self._text_to_vector(self.openai_client, [query]))[0]
         search_results = self.qdrant_client.search(

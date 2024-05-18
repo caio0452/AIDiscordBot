@@ -1,12 +1,8 @@
 import openai
 import json
-from typing import Any
+from typing import Any, List
 from abc import ABC, abstractmethod
-from openai.types.chat.chat_completion import Choice
-from openai.types.chat.chat_completion_message_param import ChatCompletionMessageParam
-from openai.types.chat.chat_completion_user_message_param import ChatCompletionUserMessageParam
-from openai.types.chat.chat_completion_system_message_param import ChatCompletionSystemMessageParam
-from openai.types.chat.chat_completion_assistant_message_param import ChatCompletionAssistantMessageParam
+from openai.types import CompletionChoice
 
 class ContentModerator(ABC):
     @abstractmethod
@@ -23,17 +19,41 @@ class OpenAIModerator(ContentModerator):
         )
         return response.results[0].flagged
 
+async def _text_to_vector(self, openai_client: openai.AsyncOpenAI, texts: List[str]) -> List[List[float]]:
+    response = await openai_client.embeddings.create(
+        input=texts,
+        model="text-embedding-3-large"
+    )
+    vectors = [e.embedding for e in response.data]
+    return vectors
+    
 class OAICompatibleProvider:
     def __init__(self, client: openai.AsyncClient):
         self.client = client
 
+    async def vectorize(self, text: str, model="text-embedding-3-large") -> List[float]:
+        model_in = [text]
+        response = await self.client.embeddings.create(
+            input=model_in,
+            model=model
+        )
+        return response.data[0].embedding
+
+    async def vectorize_many(self, texts: List[str], model="text-embedding-3-large") -> List[List[float]]:
+        model_in = texts
+        response = await self.client.embeddings.create(
+            input=model_in,
+            model=model
+        )
+        return [e.embedding for e in response.data]
+
     async def generate_response(self,
-                                prompt: list[ChatCompletionMessageParam],
+                                prompt: list[dict[str, str]],
                                 model: str,
                                 max_tokens: int=300,
                                 temperature: float=0.5,
                                 logit_bias: dict[str, int] = {}
-                                ) -> Choice:
+                                ) -> openai.types.CompletionChoice:
         raw_response = await self.client.chat.completions.create(
             messages=prompt,
             model=model,
@@ -49,15 +69,25 @@ class OAICompatibleProvider:
             else:
                 raise RuntimeError(f"Provider returned no response choices. Response was {str(raw_response)}")
       
-
+        async def describe_image(self, image_url: str, user_context: str) -> CompletionChoice:
+            initial_msg = OAICompatibleProvider.user_msg("You're an image describer for an AI system interpreting user queries. An user below will make a query. Reply with a description of the image that is enough to answer the user's query. If there's an error message, try to transcribe")
+            image_msg = OAICompatibleProvider.user_msg(user_context, image_url=image_url)
+            reinforcement_msg = OAICompatibleProvider.system_msg("Reply with just the sufficient, user query related description of the image and nothing else, between brackets like this: [insert decription here]")
+            raw_response = await self.client.chat.completions.create(
+                messages=[initial_msg, image_msg, reinforcement_msg],
+                model="gpt-4-vision-preview",
+                max_tokens=300
+            )
+            return raw_response.choices[0]
+        
         return raw_response.choices[0]
 
     @staticmethod
-    def system_msg(content: str) -> ChatCompletionSystemMessageParam:
+    def system_msg(content: str) -> dict[str, str]:
         return {"role": "system", "content": content}
 
     @staticmethod
-    def user_msg(content: str, image_url: str | None = None) -> ChatCompletionUserMessageParam:
+    def user_msg(content: str, image_url: str | None = None) -> dict[str, str]:
         if image_url:
             return {
                 "role": "user",
@@ -73,7 +103,7 @@ class OAICompatibleProvider:
             return {"role": "user", "content": content}
 
     @staticmethod
-    def assistant_msg(content: str) -> ChatCompletionAssistantMessageParam:
+    def assistant_msg(content: str) -> dict[str, str]:
         return {"role": "assistant", "content": content}
 
 class Prompt:
@@ -97,24 +127,5 @@ class Prompt:
 
         return Prompt(new_prompts)
 
-    # To make Pyright happy (list comprehensions do not make Pyright happy)
-    def to_openai_format(self) -> list[ChatCompletionMessageParam]:
-        ret = []
-        for msg in self._dict:
-            ret.append(msg)
-        return ret
-
-class GPT4Vision():
-    def __init__(self, client: openai.AsyncClient):
-        self.client = client
-
-    async def describe_image(self, image_url: str, user_context: str) -> Choice:
-        initial_msg = OAICompatibleProvider.user_msg("You're an image describer for an AI system interpreting user queries. An user below will make a query. Reply with a description of the image that is enough to answer the user's query. If there's an error message, try to transcribe")
-        image_msg = OAICompatibleProvider.user_msg(user_context, image_url=image_url)
-        reinforcement_msg = OAICompatibleProvider.system_msg("Reply with just the sufficient, user query related description of the image and nothing else, between brackets like this: [insert decription here]")
-        raw_response = await self.client.chat.completions.create(
-            messages=[initial_msg, image_msg, reinforcement_msg],
-            model="gpt-4-vision-preview",
-            max_tokens=300
-        )
-        return raw_response.choices[0]
+    def to_openai_format(self) -> dict[str, str]:
+        return self._dict
