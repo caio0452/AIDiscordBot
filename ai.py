@@ -79,6 +79,7 @@ class OAICompatibleProvider:
             model="gpt-4-vision",
             max_tokens=4096
         )
+        print(raw_response.choices[0])
         return raw_response.choices[0]
         
     @staticmethod
