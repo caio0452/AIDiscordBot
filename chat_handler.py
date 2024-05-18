@@ -1,5 +1,6 @@
 import discord
 import io
+import traceback
 from discord.ext import commands
 from vector_db import QdrantVectorDbConnection
 from rate_limits import RateLimit, RateLimiter
@@ -62,4 +63,5 @@ class ChatHandler(commands.Cog):
         except Exception as e:
             await self.kami_chan.forget_short_term(message)
             await self.kami_chan.forget_short_term(reply)
-            await reply.edit(content=f"Sorry, there was error!! <a:notlikepaper:1165467302578360401> ```{str(e)}```")
+            traceback.print_exc()
+            await reply.edit(content=f"Sorry, there was an error!! <a:notlikepaper:1165467302578360401> ```{str(e)}```")
