@@ -68,7 +68,7 @@ class DiscordBotResponse:
 
     def log_verbose(self, text: str, *, category=str | None):
         if category:
-            self.log_verbose(f"--- {category} ---\n{text}\n")
+            self.verbose_log += f"--- {category} ---\n{text}\n"
         else:
             self.verbose_log += f"{text}\n"
 
