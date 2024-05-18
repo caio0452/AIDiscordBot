@@ -72,12 +72,10 @@ class OAICompatibleProvider:
             return raw_response.choices[0]
       
     async def describe_image(self, image_url: str, user_context: str) -> CompletionChoice:
-        initial_msg = OAICompatibleProvider.user_msg("You're an image describer for an AI system interpreting user queries. An user below will make a query. Reply with a description of the image that is enough to answer the user's query. If there's an error message, try to transcribe")
-        image_msg = OAICompatibleProvider.user_msg(user_context, image_url=image_url)
-        reinforcement_msg = OAICompatibleProvider.system_msg("Reply with just the sufficient, user query related description of the image and nothing else, between brackets like this: [insert decription here]")
+        initial_msg = OAICompatibleProvider.user_msg(f"Describe the image. {user_context}", image_url=image_url)
         raw_response = await self.client.chat.completions.create(
-            messages=[initial_msg, image_msg, reinforcement_msg],
-            model="google/gemini-flash-1.5",
+            messages=initial_msg,
+            model="anthropic/claude-3-haiku",
             max_tokens=1000
         )
         return raw_response.choices[0]

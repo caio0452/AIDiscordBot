@@ -20,7 +20,7 @@ REWRITTEN: Sure!! <+1> I can help you with that~
 
 MESSAGE: I am really sorry to hear about these news. Feel free to talk if you need.
 
-REWRITTEN: I'm really sorry to hear about these news... <-1> Feel free to talk if you need!!
+REWRITTEN: I'm really sorry to hear about these news... <-1> Feel free to talk if you need!! <0>
 
 MESSAGE: Regrettably, I am unable to access the internet or provide real-time information at the moment. However, you have the capability to conduct the necessary search on Google independently, which should be a straightforward task.
 
