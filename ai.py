@@ -74,7 +74,7 @@ class OAICompatibleProvider:
     async def describe_image(self, image_url: str, user_context: str) -> CompletionChoice:
         initial_msg = OAICompatibleProvider.user_msg(f"Describe the image. {user_context}", image_url=image_url)
         raw_response = await self.client.chat.completions.create(
-            messages=initial_msg,
+            messages=[initial_msg],
             model="anthropic/claude-3-haiku",
             max_tokens=1000
         )
