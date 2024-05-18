@@ -68,6 +68,8 @@ class OAICompatibleProvider:
                 raise RuntimeError(resp_json["error"])
             else:
                 raise RuntimeError(f"Provider returned no response choices. Response was {str(raw_response)}")
+        else:
+            return raw_response.choices[0]
       
     async def describe_image(self, image_url: str, user_context: str) -> CompletionChoice:
         initial_msg = OAICompatibleProvider.user_msg("You're an image describer for an AI system interpreting user queries. An user below will make a query. Reply with a description of the image that is enough to answer the user's query. If there's an error message, try to transcribe")
