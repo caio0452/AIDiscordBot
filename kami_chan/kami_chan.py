@@ -120,7 +120,7 @@ class DiscordBotResponse:
             prompt=prompts.QUERY_SUMMARIZER_PROMPT \
                 .replace("((user_query))", user_prompt_str) \
                 .replace("((last_user))", last_user).to_openai_format(),
-            model='cohere/command-r'
+            model='google/gemini-flash-1.5'
         )
         return response_choice.message.content
 
