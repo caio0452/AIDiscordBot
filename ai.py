@@ -76,7 +76,7 @@ class OAICompatibleProvider:
         print(initial_msg)
         raw_response = await self.client.chat.completions.create(
             messages=[initial_msg],
-            model="gpt-4-vision",
+            model="gpt-4o",
             max_tokens=4096
         )
         print(raw_response.choices[0])
