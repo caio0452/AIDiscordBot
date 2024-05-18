@@ -97,6 +97,7 @@ class DiscordBotResponse:
         )
         content = response.message.content
         content = content \
+            .removeprefix("REWRITTEN: ") \
             .replace("<+1>", random.choice(["<:paperUwU:1018366709658308688>", "<:Paperyis:1022991557978238976>", "<:Paperyis:1022991557978238976>"])) \
             .replace("<-1>", random.choice(["<a:notlikepaper:1165467302578360401>"])) \
             .replace("<0>",  random.choice(["<:paperOhhh:1018366673423695872>"]))
