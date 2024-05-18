@@ -6,6 +6,7 @@ from memorized_message import MemorizedMessage
 from qdrant_client import QdrantClient
 from qdrant_client.http import models
 from dataclasses import dataclass
+from ai import OAICompatibleProvider
 
 @dataclass
 class VectorSearchResult:
@@ -16,7 +17,7 @@ class VectorSearchResult:
 class QdrantVectorDbConnection:
     def __init__(self, qdrant_client: QdrantClient, openai_client: openai.AsyncOpenAI, vector_dimension: int):
         self.qdrant_client = qdrant_client
-        self.openai_client = openai_client
+        self.openai_client = OAICompatibleProvider(openai_client)
         self.vector_dimension = vector_dimension
         self.upserted_count = 0
 
@@ -53,7 +54,7 @@ class QdrantVectorDbConnection:
     async def add_messages(self, messages: List[discord.Message]):
         payloads = []
         message_contents = [message.content for message in messages]
-        vectors = await self._text_to_vector(self.openai_client, message_contents)
+        vectors = await self.openai_client.vectorize_many(message_contents)
 
         for i, message in enumerate(messages):
             payload = {
@@ -75,7 +76,7 @@ class QdrantVectorDbConnection:
 
     async def add_qa_knowledge(self, qa_pairs: List[dict[str, str]]):
         questions = [qa_pair["question"] for qa_pair in qa_pairs]
-        vectors = await self._text_to_vector(self.openai_client, questions)
+        vectors = await self.openai_client.vectorize_many(questions)
 
         payloads = []
         for i, qa_pair in enumerate(qa_pairs):
@@ -93,7 +94,7 @@ class QdrantVectorDbConnection:
         self.upserted_count += len(payloads)
 
     async def add_text_knowledge(self, knowledge_list: List[str]):
-        vectors = await self._text_to_vector(self.openai_client, knowledge_list)
+        vectors = await self.openai_client.vectorize_many(knowledge_list)
         payloads = []
 
         for i, paragraph in enumerate(knowledge_list):
@@ -112,7 +113,7 @@ class QdrantVectorDbConnection:
         self.upserted_count += len(payloads)
 
     async def query_relevant_messages(self, query: str) -> List[MemorizedMessage]:
-        vector = (await self._text_to_vector(self.openai_client, [query]))[0]
+        vector = await self.openai_client.vectorize(query)
         search_results = self.qdrant_client.search(
             collection_name="messages",
             query_vector=vector,
@@ -132,7 +133,7 @@ class QdrantVectorDbConnection:
         return msgs
 
     async def query_relevant_knowledge(self, query: str) -> List[VectorSearchResult]:
-        vector = (await self._text_to_vector(self.openai_client, [query]))[0]
+        vector = await self.openai_client.vectorize(query)
         search_results = self.qdrant_client.search(
             collection_name="knowledge",
             query_vector=vector,
@@ -149,7 +150,7 @@ class QdrantVectorDbConnection:
         return ret
 
     async def query_qa_knowledge(self, question: str) -> List[VectorSearchResult]:
-        vector = (await self._text_to_vector(self.openai_client, [question]))[0]
+        vector = await self.openai_client.vectorize(query)
 
         search_results = self.qdrant_client.search(
             collection_name="qa_knowledge",
