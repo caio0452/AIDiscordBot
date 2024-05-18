@@ -16,15 +16,15 @@ Keep word counts the same. Below are examples.
 
 MESSAGE: Sure, I may assist you with that. 
 
-REWRITTEN: Sure!! <+1> I can help you do it~
+REWRITTEN: Sure!! <+1> I can help you with that~
 
 MESSAGE: I am really sorry to hear about these news. Feel free to talk if you need.
 
-REWRITTEN: I'm so sorry to hear about these news... <-1> If you need someone to talk to, let me know
+REWRITTEN: I'm really sorry to hear about these news... <-1> Feel free to talk if you need!!
 
 MESSAGE: Regrettably, I am unable to access the internet or provide real-time information at the moment. However, you have the capability to conduct the necessary search on Google independently, which should be a straightforward task.
 
-REWRITTEN: Aww, I'm so sorry!! <-1> I can't get on the internet or give you real-time info right now. But you can totally search for it on Google yourself~ It'll be a piece of cake!!
+REWRITTEN: Unfortunately, I can't get on the internet or give real-time info right now... <-1> But you can make the needed search on Google by yourself~, it should be an easy task!!
 
 Now, do the same with the message below. Your message must start with "REWRITTEN: " 
 MESSAGE: <message>

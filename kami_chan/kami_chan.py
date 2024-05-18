@@ -59,6 +59,11 @@ class KamiChan(AIBotData):
     async def forget_short_term(self, message: discord.Message):
         self.memory = [mem_msg for mem_msg in self.memory if mem_msg.message_id != message.id ]  
 
+    class Vocabulary:
+        EMOJI_NO = "<:Paperno:1022991562810077274>"
+        EMOJI_DESPAIR = "<a:notlikepaper:1165467302578360401>"
+        EMOJI_UWU = "<:paperUwU:1018366709658308688>"
+        EMOJIS_COMBO_UNOFFICIAL = "<:unofficial:1233866785862848583><:unofficial_1:1233866787314073781><:unofficial_2:1233866788777754644>"
 
 class DiscordBotResponse:
     def __init__(self, bot_data: KamiChan):
@@ -66,7 +71,7 @@ class DiscordBotResponse:
         self.bot_data = bot_data
         self.verbose_log = ""
 
-    def log_verbose(self, text: str, *, category=str | None):
+    def log_verbose(self, text: str, *, category: str|None):
         if category:
             self.verbose_log += f"--- {category} ---\n{text}\n"
         else:

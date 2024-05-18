@@ -6,6 +6,8 @@ from vector_db import QdrantVectorDbConnection
 from rate_limits import RateLimit, RateLimiter
 from kami_chan.kami_chan import KamiChan, DiscordBotResponse
 
+BOT_NAME = "Kami-Chan"
+
 class ChatHandler(commands.Cog):
     MAX_CHAT_CHARACTERS = 500
 
@@ -20,7 +22,7 @@ class ChatHandler(commands.Cog):
             RateLimit(n_messages=100, seconds=2 * 3600),
             RateLimit(n_messages=250, seconds=8 * 3600)
         )
-        self.kami_chan = KamiChan("Kami-Chan", db_connection, self.bot.user.id)
+        self.ai_bot = KamiChan(BOT_NAME, db_connection, self.bot.user.id)
 
     # TODO: everything below this should probably should be mostly the bot's responsability
     async def should_process_message(self, message: discord.Message) -> bool:
@@ -34,7 +36,7 @@ class ChatHandler(commands.Cog):
             return False
 
         if self.rate_limiter.is_rate_limited(message.author.id):
-            await message.reply("<:Paperno:1022991562810077274> :x: `You are being rate limited`")
+            await message.reply(f"{KamiChan.Vocabulary.EMOJI_NO} :x: `You are being rate limited`")
             return False
 
         return True
@@ -45,15 +47,15 @@ class ChatHandler(commands.Cog):
             return
 
         self.rate_limiter.register_request(message.author.id)
-        await self.kami_chan.memorize_short_term(message)
+        await self.ai_bot.memorize_short_term(message)
         await self.vector_db_conn.add_messages([message])
-        reply = await message.reply("<:paperUwU:1018366709658308688> Paper-Chan is typing...")
+        reply = await message.reply(f"{KamiChan.Vocabulary.EMOJI_UWU} {BOT_NAME} is typing...")
         try:
-            disclaimer = "<:unofficial:1233866785862848583><:unofficial_1:1233866787314073781><:unofficial_2:1233866788777754644>  | [Learn more.](https://discord.com/channels/532557135167619093/1192649325709381673/1196285641978302544)"
-            resp = DiscordBotResponse(self.kami_chan)
+            disclaimer = f"{KamiChan.Vocabulary.EMOJIS_COMBO_UNOFFICIAL} | [Learn more.](https://discord.com/channels/532557135167619093/1192649325709381673/1196285641978302544)"
+            resp = DiscordBotResponse(self.ai_bot)
             resp_str = await resp.create(message)
             reply_msg = await reply.edit(content=resp_str)
-            await self.kami_chan.memorize_short_term(reply_msg)
+            await self.ai_bot.memorize_short_term(reply_msg)
             await self.vector_db_conn.add_messages([reply_msg])
             if resp.verbose:
                 log_file = io.StringIO(resp.verbose_log)
@@ -61,7 +63,7 @@ class ChatHandler(commands.Cog):
             else:
                 await reply.edit(content=resp_str + "\n" + disclaimer)
         except Exception as e:
-            await self.kami_chan.forget_short_term(message)
-            await self.kami_chan.forget_short_term(reply)
+            await self.ai_bot.forget_short_term(message)
+            await self.ai_bot.forget_short_term(reply)
             traceback.print_exc()
-            await reply.edit(content=f"Sorry, there was an error!! <a:notlikepaper:1165467302578360401> ```{str(e)}```")
+            await reply.edit(content=f"Sorry, there was an error!! {KamiChan.Vocabulary.EMOJI_DESPAIR} ```{str(e)}```")
