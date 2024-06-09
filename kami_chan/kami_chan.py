@@ -82,7 +82,7 @@ class DiscordBotResponse:
         full_prompt = await self.build_full_prompt(self.bot_data.memory, message)
         response = await self.bot_data.clients[MAIN_CLIENT_NAME].generate_response(
             prompt=full_prompt,
-            model="google/gemini-flash-1.5",
+            model="qwen/qwen-2-72b-instruct",
             max_tokens=1000,
             temperature=0.2
         )
@@ -96,7 +96,7 @@ class DiscordBotResponse:
     async def personality_rewrite(self, message: str) -> str:
         response = await self.bot_data.clients[PERSONALITY_REWRITER_NAME].generate_response(
             prompt=prompts.REWRITER_PROMPT.replace("<message>", message).to_openai_format(),
-            model="meta-llama/llama-3-8b-instruct",
+            model="openchat/openchat-8b",
             max_tokens=500,
             temperature=0.3,
         )
@@ -120,7 +120,7 @@ class DiscordBotResponse:
             prompt=prompts.QUERY_SUMMARIZER_PROMPT \
                 .replace("((user_query))", user_prompt_str) \
                 .replace("((last_user))", last_user).to_openai_format(),
-            model='google/gemini-flash-1.5',
+            model='openchat/openchat-8b',
             temperature=0.2
         )
         return response_choice.message.content
@@ -136,7 +136,7 @@ class DiscordBotResponse:
         response_choice = await model.generate_response(
             prompt=prompts.INFO_SELECTOR_PROMPT \
                 .replace("((user_query))", user_prompt_str).to_openai_format(),
-            model='anthropic/claude-3-haiku:beta'
+            model='openchat/openchat-8b'
         )
         return response_choice.message.content
 
