@@ -96,7 +96,7 @@ class DiscordBotResponse:
     async def personality_rewrite(self, message: str) -> str:
         response = await self.bot_data.clients[PERSONALITY_REWRITER_NAME].generate_response(
             prompt=prompts.REWRITER_PROMPT.replace("<message>", message).to_openai_format(),
-            model="openchat/openchat-8b",
+            model="anthropic/claude-3-haiku",
             max_tokens=500,
             temperature=0.3,
         )
