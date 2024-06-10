@@ -35,22 +35,26 @@ async def build_preset_queries_db() -> PresetQueryManager:
     embeddings_oai_wrapper = OAICompatibleProvider(embeddings_client)
     presets_manager = PresetQueryManager(embeddings_oai_wrapper)
 
-    presets_manager.add_query(
+    await presets_manager.add_query(
         PresetQuery(
             preset_question="How to fix slow chunk loading in Minecraft?", 
             embedding=await embeddings_oai_wrapper.vectorize("How to fix slow chunk loading in Minecraft?"),
             required_matchers=[KeywordMatcher(["chunk"]), EmbeddingSimilarityMatcher(await embeddings_oai_wrapper.vectorize("How to fix slow chunk loading in Minecraft?"), 0.5)]
-        ),
+        )
+    )
+    await presets_manager.add_query(
         PresetQuery(
             preset_question="Who is EterNity?", 
             embedding=await embeddings_oai_wrapper.vectorize("Who is EterNity?"),
             required_matchers=[KeywordMatcher(["who", "eter"]), EmbeddingSimilarityMatcher(await embeddings_oai_wrapper.vectorize("Who is EterNity?"), 0.5)]
-        ),
+        )
+    )
+    await presets_manager.add_query(
         PresetQuery(
             preset_question="How to disable chat reporting?", 
             embedding=await embeddings_oai_wrapper.vectorize("How to disable chat reporting?"),
             required_matchers=[KeywordMatcher(["chat", "rep", "moj"]), EmbeddingSimilarityMatcher(await embeddings_oai_wrapper.vectorize("How to disable chat reporting?"), 0.5)]
-        ),
+        )
     )
     print("Done")
 
