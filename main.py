@@ -4,6 +4,8 @@ import parameters
 from commands.image_gen_command import ImageGenCommand
 from commands.search_command import SearchCommand
 from commands.find_close_preset import FindClosePreset
+from commands.sync_command_tree import SyncCommand
+
 from preset_queries import PresetQueryManager, PresetQuery, KeywordMatcher, EmbeddingSimilarityMatcher
 from ai import OAICompatibleProvider
 
@@ -55,7 +57,7 @@ async def setup_commands():
     await bot.add_cog(ChatHandler(bot=bot, db_connection=conn))
     await bot.add_cog(SearchCommand(bot=bot,conn=conn))
     await bot.add_cog(FindClosePreset(presets_manager=await build_preset_queries_db(), bot=bot))
-    
+    await bot.add_cog(SyncCommand(bot=bot, allowed_user_id=688858519486857252))
     if parameters.FAL_AI_KEY == "":
         print("No Fal.AI key specified, image generation will be disabled")
     else:
