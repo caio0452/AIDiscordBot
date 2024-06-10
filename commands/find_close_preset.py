@@ -1,3 +1,4 @@
+import re
 import discord
 from discord import app_commands
 from discord.ext import commands
@@ -17,4 +18,6 @@ class FindClosePreset(commands.Cog):
     resp = "" 
     for preset in await self.presets_manager.get_all_matching_user_utterance(query):
       resp += preset.preset_question + "\n"
+    if resp == "": 
+      resp = "NONE"
     await interaction.followup.send(content=f"Here's the preset answers that I will learn about (soon:tm:) and are similar to your query: ```{resp}```")

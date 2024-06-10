@@ -35,27 +35,29 @@ async def build_preset_queries_db() -> PresetQueryManager:
     embeddings_oai_wrapper = OAICompatibleProvider(embeddings_client)
     presets_manager = PresetQueryManager(embeddings_oai_wrapper)
 
-    await presets_manager.add_query(
-        PresetQuery(
-            preset_question="How to fix slow chunk loading in Minecraft?", 
-            embedding=await embeddings_oai_wrapper.vectorize("How to fix slow chunk loading in Minecraft?"),
-            required_matchers=[KeywordMatcher(["chunk"]), EmbeddingSimilarityMatcher(await embeddings_oai_wrapper.vectorize("How to fix slow chunk loading in Minecraft?"), 0.5)]
+    queries_required_kws_tuples = [
+        ("How to fix slow chunk loading in Minecraft?", ["chunk"]),
+        ("Who is EterNity?", ["who", "eter"]),
+        ("How to disable chat reporting?", ["chat", "rep", "moj"]),
+        ("Why is my server lagging?", ["lag"]),
+        ("When will Paper 1.x come out?", ["when", ".", "release", "out", "eta", "paper"]),
+        ("Which hosting company do I pick?", ["host", "serv", "company"]),
+        ("Who is Owen?", ["who", "owen"]),
+        ("Why do I get circular loading error?", ["circ"]),
+    ]
+
+    for question, keywords in queries_required_kws_tuples:
+        embedding = await embeddings_oai_wrapper.vectorize(question)
+        await presets_manager.add_query(
+            PresetQuery(
+                preset_question=question,
+                embedding=embedding,
+                required_matchers=[
+                    KeywordMatcher(keywords),
+                    EmbeddingSimilarityMatcher(embedding, 0.5)
+                ]
+            )
         )
-    )
-    await presets_manager.add_query(
-        PresetQuery(
-            preset_question="Who is EterNity?", 
-            embedding=await embeddings_oai_wrapper.vectorize("Who is EterNity?"),
-            required_matchers=[KeywordMatcher(["who", "eter"]), EmbeddingSimilarityMatcher(await embeddings_oai_wrapper.vectorize("Who is EterNity?"), 0.5)]
-        )
-    )
-    await presets_manager.add_query(
-        PresetQuery(
-            preset_question="How to disable chat reporting?", 
-            embedding=await embeddings_oai_wrapper.vectorize("How to disable chat reporting?"),
-            required_matchers=[KeywordMatcher(["chat", "rep", "moj"]), EmbeddingSimilarityMatcher(await embeddings_oai_wrapper.vectorize("How to disable chat reporting?"), 0.5)]
-        )
-    )
     print("Done")
     return presets_manager
 
