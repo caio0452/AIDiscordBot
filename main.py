@@ -57,6 +57,7 @@ async def build_preset_queries_db() -> PresetQueryManager:
         )
     )
     print("Done")
+    return presets_manager
 
 async def setup_commands():
     await bot.add_cog(ChatHandler(bot=bot, db_connection=conn))

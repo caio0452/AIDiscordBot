@@ -4,7 +4,7 @@ from discord.ext import commands
 from preset_queries import PresetQueryManager
 
 class FindClosePreset(commands.Cog):
-  def __init__(self, presets_manager:  PresetQueryManager,bot: commands.Bot) -> None:
+  def __init__(self, presets_manager: PresetQueryManager, bot: commands.Bot) -> None:
     self.bot = bot
     self.presets_manager = presets_manager
 
@@ -15,6 +15,6 @@ class FindClosePreset(commands.Cog):
   async def on_find_close_preset_command(self, interaction: discord.Interaction, query: str) -> None:
     await interaction.response.defer()
     resp = "" 
-    for preset in self.presets_manager.all_preset_queries:
+    for preset in await self.presets_manager.get_all_matching_user_utterance(query):
       resp += preset.preset_question + "\n"
     await interaction.response.send_message(content=f"Here's the preset answers that I know and are similar to your query: ```{resp}```")
