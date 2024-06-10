@@ -13,4 +13,8 @@ class FindClosePreset(commands.Cog):
         description="Search Paper-Chan's known canned responses"
     )
   async def on_find_close_preset_command(self, interaction: discord.Interaction, query: str) -> None:
-    
+    await interaction.response.defer()
+    resp = "" 
+    for preset in self.presets_manager.all_preset_queries:
+      resp += preset.preset_question + "\n"
+    await interaction.response.send_message(content=f"Here's the preset answers that I know and are similar to your query: ```{resp}```")
