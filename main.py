@@ -72,6 +72,7 @@ async def setup_commands():
 async def on_ready():
     await Knowledge(conn).start_indexing()
     await setup_commands()
+    await bot.tree.sync()
     print(f'Logged in as {bot.user}')
 
 bot.run(parameters.BOT_TOKEN)
