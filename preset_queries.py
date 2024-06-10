@@ -62,3 +62,4 @@ class PresetQueryManager:
     @property
     def all_preset_queries(self):
         return self._all_queries
+    
