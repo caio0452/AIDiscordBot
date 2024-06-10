@@ -17,4 +17,4 @@ class FindClosePreset(commands.Cog):
     resp = "" 
     for preset in await self.presets_manager.get_all_matching_user_utterance(query):
       resp += preset.preset_question + "\n"
-    await interaction.response.send_message(content=f"Here's the preset answers that I know and are similar to your query: ```{resp}```")
+    await interaction.response.edit_message(content=f"Here's the preset answers that I know and are similar to your query: ```{resp}```")
