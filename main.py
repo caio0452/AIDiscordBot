@@ -33,7 +33,7 @@ bot = discord_bot.INSTANCE
 async def build_preset_queries_db() -> PresetQueryManager: 
     print("Building query db...")
     embeddings_oai_wrapper = OAICompatibleProvider(embeddings_client)
-    presets_manager = PresetQueryManager()
+    presets_manager = PresetQueryManager(embeddings_oai_wrapper)
     presets_manager.add_query(
         PresetQuery(
             preset_question="How to fix slow chunk loading in Minecraft?", 
