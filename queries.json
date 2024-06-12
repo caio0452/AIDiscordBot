@@ -4,7 +4,7 @@
             "question": "How to fix slow chunk loading in Minecraft?",
             "keywords": ["chunk"],
             "min_similarity": 0.5,
-            "answer": ""
+            "answer": "If someone asks about slow chunk loading, give them a breakdown like: 1. Make sure your server is not overloaded. Download the [https://www.spigotmc.org/resources/spark.57242/](Spark) plugin to diagnose and check if there are any performance issues first. 2. Make sure you have a CPU with good single-threaded performance (for example, modern Ryzen CPUs) AND at least 4 cores. 3. Pregenerate your map, with a plugin like Chunky. That avoids needing to generate chunks, which is a slow process. 4. Check network connection. Slow chunk loading may be due to lag. A setting that can cause this is Paper anti-xray's if it's set to engine mode 2. Engine mode 2 sends random blocks, which makes chunks less compressible, increasing network load that can slow down chunk loading. Use engine mode 3 or 1 for better chunk compression."
         },
         {
             "question": "Who is EterNity?",
