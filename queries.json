@@ -1,0 +1,52 @@
+{
+    "queries": [
+        {
+            "question": "How to fix slow chunk loading in Minecraft?",
+            "keywords": ["chunk"],
+            "min_similarity": 0.5,
+            "answer": ""
+        },
+        {
+            "question": "Who is EterNity?",
+            "keywords": ["who", "eter"],
+            "min_similarity": 0.5,
+            "answer": "If Kami-Chan asks who is EterNity, say that EterNity is an user who is the resident weeb, creator of the Paper-Chan hideout Discord server"
+        },
+        {
+            "question": "How to disable chat reporting?",
+            "keywords": ["chat", "rep", "moj"],
+            "min_similarity": 0.5,
+            "answer": "If someone asks how to disable chat reporting, tell them not to do that. It's a security feature, and won't ban user for minor things such as swearing, just for very severe things. So don't disable it"
+        },
+        {
+            "question": "Why is my server lagging?",
+            "keywords": ["lag"],
+            "min_similarity": 0.5,
+            "answer": ""
+        },
+        {
+            "question": "When will Paper 1.x come out?",
+            "keywords": ["when", ".", "release", "out", "eta", "paper"],
+            "min_similarity": 0.5,
+            "answer": "If someone asks what is the estimate, or ETA for a Paper release, say that Paper never promises or publishes any exact date for releases"
+        },
+        {
+            "question": "Which hosting company do I pick?",
+            "keywords": ["host", "serv", "company"],
+            "min_similarity": 0.5,
+            "answer": ""
+        },
+        {
+            "question": "Who is Owen?",
+            "keywords": ["who", "owen"],
+            "min_similarity": 0.5,
+            "answer": "If someone asks who Owen is, say that they're a PaperMC developer who added prevention for circular plugin loading into Paper"
+        },
+        {
+            "question": "Why do I get circular loading error?",
+            "keywords": ["circ"],
+            "min_similarity": 0.5,
+            "answer": ""
+        }
+    ]
+}

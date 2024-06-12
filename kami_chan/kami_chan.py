@@ -7,6 +7,7 @@ from vector_db import QdrantVectorDbConnection
 from . import prompts
 import providers
 import random, discord, openai
+import preset_queries
 
 #
 # TODO: This is a mess that has to be replaced with something data-driven
@@ -125,7 +126,7 @@ class DiscordBotResponse:
         )
         return response_choice.message.content
 
-    async def summarize_relevant_facts(self,  model: OAICompatibleProvider, user_query: str):
+    async def summarize_relevant_facts(self, model: OAICompatibleProvider, user_query: str):
         user_prompt_str = ""
         knowledge_list = await self.bot_data.vector_db_conn.query_relevant_knowledge(
             await self.bot_data.sanitize_str(user_query))
@@ -138,7 +139,11 @@ class DiscordBotResponse:
                 .replace("((user_query))", user_prompt_str).to_openai_format(),
             model='openchat/openchat-8b'
         )
-        return response_choice.message.content
+        queries_manager = await preset_queries.manager(model)
+        known_query_info = ""
+        for preset in await queries_manager.get_all_matching_user_utterance(user_query):
+            known_query_info += preset.answer + "\n"
+        return f"{response_choice.message.content}\n{known_query_info}"
 
     async def describe_image_if_present(self, message) -> str | None:
         if len(message.attachments) == 1:
