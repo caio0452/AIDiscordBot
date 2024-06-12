@@ -1,5 +1,5 @@
 import openai
-from AIDiscordBot.ai import OAICompatibleProvider
+from ai import OAICompatibleProvider
 import parameters
 import preset_queries
 
