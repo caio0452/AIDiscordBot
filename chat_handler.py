@@ -56,6 +56,7 @@ class ChatHandler(commands.Cog):
 f"""```
 --eta (DEBUG MODE):
             
+The query was: {query}
 Classification result: {classification_result.finish_reason}
 Similarity: {classification_result.similarity}
 LLM response: {classification_result.llm_classification_json}
