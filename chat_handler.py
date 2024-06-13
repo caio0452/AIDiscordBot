@@ -51,6 +51,16 @@ class ChatHandler(commands.Cog):
 
         classification_result = await preset_queries.classify_eta_question(query)
 
+        if debug_mode:
+            await message.reply(
+f"""```
+--eta (DEBUG MODE):
+            
+Classification result: {classification_result.finish_reason}
+Similarity: {classification_result.similarity}
+LLM response: {classification_result.llm_classification_json}
+```"""
+) 
         if classification_result.finish_reason == "is_eta_question":
             await message.reply(
                 embed=discord.Embed(
@@ -58,15 +68,7 @@ class ChatHandler(commands.Cog):
                     description=f"Paper does not publish ETAs for releases, or estimates based on previous versions. Every version is different! Please stay tuned for new announcements."
                 )
             )
-        elif debug_mode:
-            await message.reply(
-            f"""```
-            --eta (DEBUG MODE):
-            
-            Classification result: {classification_result.finish_reason}
-            Similarity: {classification_result.similarity}
-            LLM response: {classification_result.llm_classification_json}
-            ```""") 
+        
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message) -> None:
