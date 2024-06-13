@@ -45,7 +45,7 @@ class ChatHandler(commands.Cog):
 
         return True
 
-    async def answer_eta_question_if_needed(self, message: discord.Message) -> bool:
+    async def answer_eta_question_if_needed(self, message: discord.Message):
         debug_mode = message.content.endswith("--eta")
         query = message.content.removeprefix("--eta")
 
@@ -59,15 +59,14 @@ class ChatHandler(commands.Cog):
                 )
             )
         elif debug_mode:
-            await message.reply(f"""```
+            await message.reply(
+            f"""```
             --eta (DEBUG MODE):
             
             Classification result: {classification_result.finish_reason}
             Similarity: {classification_result.similarity}
             LLM response: {classification_result.llm_classification_json}
-            ```""")
-        
-        return is_eta_question 
+            ```""") 
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message) -> None:
