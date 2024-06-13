@@ -48,10 +48,11 @@ class ChatHandler(commands.Cog):
 
     async def answer_eta_question_if_needed(self, message: discord.Message) -> bool:
         MIN_SIMILARITY = 0.5
+        debug_mode = message.content.endswith("--eta")
         # 'updat' to catch update, updating, etc
         needed_keywords = ["eta", "when", "out", "will", "paper", ".", "release", "updat", "progress", "come"] 
         oai_client = AsyncOpenAI(api_key=providers.get_provider_by_name("EMBEDDINGS_PROVIDER").api_key)
-        query = message.content
+        query = message.content.removeprefix("--eta")
 
         if not any([kw in message.content.lower() for kw in needed_keywords]):
             return False
@@ -107,6 +108,9 @@ class ChatHandler(commands.Cog):
         is_third_party_project = not any(proj in proj_name.lower() for proj in ["none", "paper", "velocity"])
         version = response_json["version"]
 
+        if debug_mode:
+            await message.reply(f"CLASSIFICATION: ```{response_content}```")
+
         if not response_json["wants_release_info"]:
             return False
 
@@ -119,7 +123,7 @@ class ChatHandler(commands.Cog):
             await message.reply(
                 embed=discord.Embed(
                     title="No ETA!", 
-                    description=f"Paper does not publish ETAs for releases, or estimates based on previous versions. Every version is different! Please stay tuned for new announcements. ```DEBUG: {response_c}```"
+                    description=f"Paper does not publish ETAs for releases, or estimates based on previous versions. Every version is different! Please stay tuned for new announcements. ```DEBUG: {response_content}```"
                 )
             )
 
