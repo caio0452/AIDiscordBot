@@ -119,7 +119,7 @@ CLASSIFICATION_PROMPT = Prompt([{
     """
     You classify queries that may possibly be asking for estimates (ETA - estimated time of arrival) or release dates for Paper 1.21.
     Given a query, return only a JSON containing :
-    * wants_release_info: If the query aims to get info about the update, true or false
+    * wants_release_info: If the query is directly asking to get info about the update, true or false
     * project_name: The name of the project if any, may be "none"
     * version: The version mentioned if any, may be "none" 
 
@@ -128,6 +128,12 @@ CLASSIFICATION_PROMPT = Prompt([{
     JSON: {"wants_release_info": true, "": project_name: "none", "version": "1.21"}
     Query: I would like to know when Paper will update
     JSON: {"wants_release_info": true, "": project_name: "Paper", "version": "none"}
+    Query: I'm not sure when the Paper 1.21 release will drop
+    JSON: {"wants_release_info": false, "": project_name: "Paper", "version": "1.21"}
+    Query: guys can you believe 1.21 is released?????
+    JSON: {"wants_release_info": false, "": project_name: "none", "version": "1.21"}   
+    Query: guys give info on when 1.21 release
+    JSON: {"wants_release_info": true, "": project_name: "none", "version": "1.21"}      
     Query: vanilla 1.20 out when????
     JSON: {"wants_release_info": true, "": project_name: "vanilla", "version": "1.20"}
     Query: I hate it when people keep asking if 1.21 will come out
@@ -136,6 +142,7 @@ CLASSIFICATION_PROMPT = Prompt([{
     JSON: {"wants_release_info": false, "": project_name: "Paper", "version": "1.21"}
     Query: where is velocity 1.21??
     JSON: {"wants_release_info": false, "": project_name: "Velocity", "version": "1.21"}
+    
 
     The query is now ((query)). Reply with just the corresponding JSON.
     JSON: 

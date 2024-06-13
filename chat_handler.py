@@ -47,7 +47,7 @@ class ChatHandler(commands.Cog):
         return True
 
     async def answer_eta_question_if_needed(self, message: discord.Message) -> bool:
-        MIN_SIMILARITY = 0.5
+        MIN_SIMILARITY = 0.4
         debug_mode = message.content.endswith("--eta")
         # 'updat' to catch update, updating, etc
         needed_keywords = ["eta", "when", "out", "will", "paper", ".", "release", "updat", "progress", "come"] 
@@ -133,7 +133,7 @@ class ChatHandler(commands.Cog):
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message) -> None:
         print(message.content)
-        
+
         if await self.answer_eta_question_if_needed(message) or message.content.endswith("--eta"):
             return
 
