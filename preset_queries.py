@@ -109,6 +109,7 @@ async def manager(embeddings_client: OAICompatibleProvider) -> PresetQueryManage
 
 
 # This is a draft, that should be integrated to the system above
+# TODO: should have a cooldown to avoid people repeatedly triggering on purpose
 import providers
 import openai
 from ai import Prompt
@@ -132,7 +133,7 @@ CLASSIFICATION_PROMPT = Prompt([{
     JSON: {"intent": "The is asking when 1.21 will be out", "asking_release_info": true, "": project_name: "Paper", "version": "none"}
 
     User query: I'm not sure when the Paper 1.21 release will drop
-    JSON: {"intent": "The user says they are not sure when 1.21 will release", "asking_release_info": false, "": project_name: "Paper", "version": "1.21"}
+    JSON: {"intent": "The user says they are not sure when Paper 1.21 will release", "asking_release_info": false, "": project_name: "Paper", "version": "1.21"}
 
     User query: guys can you believe 1.21 is released?????
     JSON: {"intent": "The user is asking others if they can believe 1.21 is already released", "asking_release_info": false, "": project_name: "none", "version": "1.21"} 
@@ -208,11 +209,17 @@ async def classify_eta_question(query: str) -> ETAClassificationResult:
     is_third_party_project = not str_has_any_keyword(proj_name.lower(), ["none", "paper", "velocity"])
     is_non_121_version = not str_has_any_keyword(version.lower(), ["1.21", "none"])
 
-    is_eta_question = not any([
+    is_eta_question = True
+    
+    if any([
         not wants_release_info,
         is_non_121_version,
         is_third_party_project
-    ])
+    ]):
+        is_eta_question = False
+
+    if proj_name == "none" and version == "none":
+        is_eta_question = False
 
     if is_eta_question:
         return ETAClassificationResult(similarity, llm_resp, "is_eta_question")
