@@ -65,8 +65,9 @@ class ChatHandler(commands.Cog):
             model="text-embedding-3-large", 
             input="Is there any ETA / estimate / progress on when 1.21 will release / come out?"
         )
+
         similarity = np.dot(query_emb.data[0].embedding, reference_emb.data[0].embedding)
-        if similarity < MIN_SIMILARITY:
+        if similarity < MIN_SIMILARITY and not debug_mode:
             return False
 
         llm_classification_resp = await oai_client.chat.completions.create(
@@ -109,7 +110,7 @@ class ChatHandler(commands.Cog):
         version = response_json["version"]
 
         if debug_mode:
-            await message.reply(f"CLASSIFICATION: ```{response_content}```")
+            await message.reply(f"CLASSIFICATION: ```SIMILARITY={similarity}, CLASSIFICATION_DATA={response_content}```")
 
         if not response_json["wants_release_info"]:
             return False
