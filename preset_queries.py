@@ -201,7 +201,7 @@ async def classify_eta_question(query: str) -> ETAClassificationResult:
     llm_resp = llm_classification_resp.choices[0].message.content
     llm_resp_json = json.loads(llm_resp)
 
-    wants_release_info: bool = llm_resp_json["wants_release_info"]
+    wants_release_info: bool = llm_resp_json["asking_release_info"]
     proj_name: str = llm_resp_json["project_name"]
     version: str = llm_resp_json["version"]
 
