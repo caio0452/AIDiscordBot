@@ -47,7 +47,7 @@ class ChatHandler(commands.Cog):
 
     async def answer_eta_question_if_needed(self, message: discord.Message):
         debug_mode = message.content.endswith("--eta")
-        query = message.content.removeprefix("--eta")
+        query = message.content.removesuffix("--eta")
 
         classification_result = await preset_queries.classify_eta_question(query)
 
@@ -73,9 +73,7 @@ LLM response: {classification_result.llm_classification_json}
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message) -> None:
-        print(message.content)
-
-        if await self.answer_eta_question_if_needed(message) or message.content.endswith("--eta"):
+        if (not message.author.bot) and (await self.answer_eta_question_if_needed(message) or message.content.endswith("--eta")):
             return
 
         if not await self.should_process_message(message):
