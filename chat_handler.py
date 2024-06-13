@@ -132,6 +132,8 @@ class ChatHandler(commands.Cog):
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message) -> None:
+        print(message.content)
+        
         if await self.answer_eta_question_if_needed(message) or message.content.endswith("--eta"):
             return
 
