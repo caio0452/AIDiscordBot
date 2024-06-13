@@ -119,37 +119,38 @@ CLASSIFICATION_PROMPT = Prompt([{
     """
     You classify queries that may possibly be asking for estimates (ETA - estimated time of arrival) or release dates for Paper 1.21.
     Given a query, return only a JSON containing :
-    * wants_release_info: will be true if the user is asking when the release will happen, or for estimates. Will be false if the user is simply mentioning a realease
+    * intent: state the user's intent
+    * asking_release_info: will be true if the user is asking when the release will happen, or for estimates. Will be false if the user is simply mentioning a realease
     * project_name: The name of the project if any, may be "none"
     * version: The version mentioned if any, may be "none" 
 
     Examples:
-    Query: hi, do you know when 1.21 will be out?
-    JSON: {"wants_release_info": true, "": project_name: "none", "version": "1.21"}
+    User query: hi, do you know when 1.21 will be out?
+    JSON: {"intent": "The is asking when 1.21 will be out", "asking_release_info": true, "": project_name: "none", "version": "1.21"}
 
-    Query: I would like to know when Paper will update
-    JSON: {"wants_release_info": true, "": project_name: "Paper", "version": "none"}
+    User query: I would like to know when Paper will update
+    JSON: {"intent": "The is asking when 1.21 will be out", "asking_release_info": true, "": project_name: "Paper", "version": "none"}
 
-    Query: I'm not sure when the Paper 1.21 release will drop
-    JSON: {"wants_release_info": false, "": project_name: "Paper", "version": "1.21"}
+    User query: I'm not sure when the Paper 1.21 release will drop
+    JSON: {"intent": "The user says they are not sure when 1.21 will release", "asking_release_info": false, "": project_name: "Paper", "version": "1.21"}
 
-    Query: guys can you believe 1.21 is released?????
-    JSON: {"wants_release_info": false, "": project_name: "none", "version": "1.21"} 
+    User query: guys can you believe 1.21 is released?????
+    JSON: {"intent": "The user is asking others if they can believe 1.21 is already released", "asking_release_info": false, "": project_name: "none", "version": "1.21"} 
 
-    Query: guys give info on when 1.21 release
-    JSON: {"wants_release_info": true, "": project_name: "none", "version": "1.21"}  
+    User query: guys give info on when 1.21 release
+    JSON: {"intent": "The user is asking for info on the 1.21 release date", "asking_release_info": true, "": project_name: "none", "version": "1.21"}  
 
-    Query: vanilla 1.20 out when????
-    JSON: {"wants_release_info": true, "": project_name: "vanilla", "version": "1.20"}
+    User query: vanilla 1.20 out when????
+    JSON: {"intent": "The user is asking when vanilla 1.20 will be out", "asking_release_info": true, "": project_name: "vanilla", "version": "1.20"}
 
-    Query: I hate it when people keep asking if 1.21 will come out
-    JSON: {"wants_release_info": false, "": project_name: "none", "version": "1.21"}
+    User query: I hate it when people keep asking if 1.21 will come out
+    JSON: {"intent": "The user is expressing hate for people asking when 1.21 will come out", "asking_release_info": false, "": project_name: "none", "version": "1.21"}
 
-    Query: man, i wish Paper would just hard fork so they can update to 1.21
-    JSON: {"wants_release_info": false, "": project_name: "Paper", "version": "1.21"}
+    User query: man, i wish Paper would just hard fork so they can update to 1.21
+    JSON: {"intent": "The user is expressing their wishes for a Paper hard fork", "asking_release_info": false, "": project_name: "Paper", "version": "1.21"}
 
-    Query: where is velocity 1.21??
-    JSON: {"wants_release_info": false, "": project_name: "Velocity", "version": "1.21"}
+    User query: where is velocity 1.21??
+    JSON: {"intent": "The user is asking for the location of velocity 1.21", "asking_release_info": false, "": project_name: "Velocity", "version": "1.21"}
     
     The query is now Query: ((query)). Reply with just the corresponding JSON.
     JSON: 
