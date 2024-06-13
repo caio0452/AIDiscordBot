@@ -103,21 +103,23 @@ class ChatHandler(commands.Cog):
         )
         response_content = llm_classification_resp.choices[0].message.content
         response_json = json.loads(response_content)
-
-        if not response_json["wants_release_info"]:
-            return False
-
         proj_name: str = response_json["project_name"]
         is_third_party_project = not any(proj in proj_name.lower() for proj in ["none", "paper", "velocity"])
         version = response_json["version"]
 
-        is_eta_question = any([version == "1.21", not is_third_party_project])
+        if not response_json["wants_release_info"]:
+            return False
+
+        if version != "1.21" and version != "none":
+            return False
+        
+        is_eta_question = not is_third_party_project
 
         if is_eta_question:
             await message.reply(
                 embed=discord.Embed(
                     title="No ETA!", 
-                    description="Paper does not publish ETAs for releases, or estimates based on previous versions. Every version is different! Please stay tuned for new announcements."
+                    description=f"Paper does not publish ETAs for releases, or estimates based on previous versions. Every version is different! Please stay tuned for new announcements. ```DEBUG: {response_c}```"
                 )
             )
 
