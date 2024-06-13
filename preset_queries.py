@@ -119,32 +119,39 @@ CLASSIFICATION_PROMPT = Prompt([{
     """
     You classify queries that may possibly be asking for estimates (ETA - estimated time of arrival) or release dates for Paper 1.21.
     Given a query, return only a JSON containing :
-    * wants_release_info: If the query is directly asking to get info about the update, true or false
+    * wants_release_info: will be true if the user is asking when the release will happen, or for estimates. Will be false if the user is simply mentioning a realease
     * project_name: The name of the project if any, may be "none"
     * version: The version mentioned if any, may be "none" 
 
     Examples:
     Query: hi, do you know when 1.21 will be out?
     JSON: {"wants_release_info": true, "": project_name: "none", "version": "1.21"}
+
     Query: I would like to know when Paper will update
     JSON: {"wants_release_info": true, "": project_name: "Paper", "version": "none"}
+
     Query: I'm not sure when the Paper 1.21 release will drop
     JSON: {"wants_release_info": false, "": project_name: "Paper", "version": "1.21"}
+
     Query: guys can you believe 1.21 is released?????
-    JSON: {"wants_release_info": false, "": project_name: "none", "version": "1.21"}   
+    JSON: {"wants_release_info": false, "": project_name: "none", "version": "1.21"} 
+
     Query: guys give info on when 1.21 release
-    JSON: {"wants_release_info": true, "": project_name: "none", "version": "1.21"}      
+    JSON: {"wants_release_info": true, "": project_name: "none", "version": "1.21"}  
+
     Query: vanilla 1.20 out when????
     JSON: {"wants_release_info": true, "": project_name: "vanilla", "version": "1.20"}
+
     Query: I hate it when people keep asking if 1.21 will come out
     JSON: {"wants_release_info": false, "": project_name: "none", "version": "1.21"}
+
     Query: man, i wish Paper would just hard fork so they can update to 1.21
     JSON: {"wants_release_info": false, "": project_name: "Paper", "version": "1.21"}
+
     Query: where is velocity 1.21??
     JSON: {"wants_release_info": false, "": project_name: "Velocity", "version": "1.21"}
     
-
-    The query is now ((query)). Reply with just the corresponding JSON.
+    The query is now Query: ((query)). Reply with just the corresponding JSON.
     JSON: 
     """
 }])
@@ -152,20 +159,20 @@ CLASSIFICATION_PROMPT = Prompt([{
 @dataclass
 class ETAClassificationResult:
     similarity: float | None
-    llm_result: str
+    llm_classification_json: str | None
     finish_reason: Literal["failed_keyword_check", "failed_similarity_check", "failed_llm_check", "is_eta_question"]
 
 def str_has_any_keyword(string: str, keywords: list[str]) -> bool:
     return any([kw in string for kw in keywords])
 
-async def check_is_eta_question(query: str) -> bool:
+async def classify_eta_question(query: str) -> ETAClassificationResult:
     MIN_SIMILARITY = 0.4 # Magic
     needed_keywords = ["eta", "when", "out", "will", "paper", ".", "release", "updat", "progress", "come"] 
     oai_client = openai.AsyncOpenAI(api_key=providers.get_provider_by_name("EMBEDDINGS_PROVIDER").api_key)
 
     # Filter step 1
     if not str_has_any_keyword(query.lower(), needed_keywords):
-        return False
+        return ETAClassificationResult(None, None, "failed_keyword_check")
 
     # Filter step 2
     query_emb = await oai_client.embeddings.create(
@@ -179,11 +186,11 @@ async def check_is_eta_question(query: str) -> bool:
 
     similarity = np.dot(query_emb.data[0].embedding, reference_emb.data[0].embedding)
     if similarity < MIN_SIMILARITY:
-        return False
+        return ETAClassificationResult(similarity, None, "failed_similarity_check")
 
     # Filter step 3
     llm_classification_resp = await oai_client.chat.completions.create(
-        model="gpt-3.5-turbo",
+        model="gpt-4o",
         temperature=0,
         response_format={"type": "json_object"},
         messages=CLASSIFICATION_PROMPT
@@ -200,8 +207,13 @@ async def check_is_eta_question(query: str) -> bool:
     is_third_party_project = not str_has_any_keyword(proj_name.lower(), ["none", "paper", "velocity"])
     is_non_121_version = not str_has_any_keyword(version.lower(), ["1.21", "none"])
 
-    return not any([
+    is_eta_question = not any([
         not wants_release_info,
         is_non_121_version,
         is_third_party_project
     ])
+
+    if is_eta_question:
+        return ETAClassificationResult(similarity, llm_resp, "is_eta_question")
+    else:
+        return ETAClassificationResult(similarity, llm_resp, "failed_llm_check")
