@@ -110,7 +110,7 @@ class ChatHandler(commands.Cog):
         version = response_json["version"]
 
         if debug_mode:
-            await message.reply(f"CLASSIFICATION: ```SIMILARITY={similarity}, CLASSIFICATION_DATA={response_content}```")
+            await message.reply(f"```SIMILARITY={similarity}\n\nCLASSIFICATION_DATA={response_content}```")
 
         if not response_json["wants_release_info"]:
             return False
@@ -124,7 +124,7 @@ class ChatHandler(commands.Cog):
             await message.reply(
                 embed=discord.Embed(
                     title="No ETA!", 
-                    description=f"Paper does not publish ETAs for releases, or estimates based on previous versions. Every version is different! Please stay tuned for new announcements. ```DEBUG: {response_content}```"
+                    description=f"Paper does not publish ETAs for releases, or estimates based on previous versions. Every version is different! Please stay tuned for new announcements."
                 )
             )
 
@@ -132,7 +132,7 @@ class ChatHandler(commands.Cog):
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message) -> None:
-        if await self.answer_eta_question_if_needed(message):
+        if await self.answer_eta_question_if_needed(message) or message.content.endswith("--eta"):
             return
 
         if not await self.should_process_message(message):
