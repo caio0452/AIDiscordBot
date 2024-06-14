@@ -118,7 +118,7 @@ CLASSIFICATION_PROMPT = Prompt([{
     "role": "system", 
     "content": 
     """
-    You classify queries that may possibly be asking for estimates (ETA - estimated time of arrival) or release dates for Paper 1.21.
+    You classify queries that may possibly be asking for estimates (ETA - estimated time of arrival) or release dates for Paper 1.21, which is currently not.
     Given a query, return only a JSON containing :
     * intent: state the user's intent
     * asking_release_info: will be true if the user is asking when the release will happen, or for estimates. Will be false if the user is simply mentioning a realease
@@ -150,8 +150,8 @@ CLASSIFICATION_PROMPT = Prompt([{
     User query: man, i wish Paper would just hard fork so they can update to 1.21
     JSON: {"intent": "The user is expressing their wishes for a Paper hard fork", "asking_release_info": false, "": project_name: "Paper", "version": "1.21"}
 
-    User query: where is velocity 1.21??
-    JSON: {"intent": "The user is asking for the location of velocity 1.21", "asking_release_info": false, "": project_name: "Velocity", "version": "1.21"}
+    User query: is velocity 1.21 already ready for download??
+    JSON: {"intent": "The user is asking if velocity 1.21 is ready for download", "asking_release_info": true, "": project_name: "Velocity", "version": "1.21"}
     
     The query is now Query: ((query)). Reply with just the corresponding JSON.
     JSON: 
