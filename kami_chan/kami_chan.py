@@ -83,7 +83,7 @@ class DiscordBotResponse:
         full_prompt = await self.build_full_prompt(self.bot_data.memory, message)
         response = await self.bot_data.clients[MAIN_CLIENT_NAME].generate_response(
             prompt=full_prompt,
-            model="qwen/qwen-2-72b-instruct",
+            model="anthropic/claude-3-haiku:beta",
             max_tokens=1000,
             temperature=0.2
         )
