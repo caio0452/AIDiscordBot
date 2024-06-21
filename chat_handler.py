@@ -92,11 +92,13 @@ LLM response: {classification_result.llm_classification_json}
         logs = message.content.endswith("--l")
 
         if logs:
+            sanitized_msg = ""
             try:
-                message_id = int(message.content.strip().replace("--l", ""))
-                await message.reply(f"Verbose logs for message ID {message_id} (only last 10 are stored): ``````")
+                sanitized_msg = message.content.strip().replace("--l", "")
+                message_id = int(sanitized_msg)
+                await message.reply(f"Verbose logs for message ID {message_id} (only last 10 are stored): ```{self.get_log_by_id(message_id)}```")
             except ValueError:
-                await message.reply(f":x: Expected a message ID before --l, not '{message.content.strip()}'")
+                await message.reply(f":x: Expected a message ID before --l, not '{sanitized_msg}'")
                 return
 
         if not await self.should_process_message(message):
