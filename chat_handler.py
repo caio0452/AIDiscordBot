@@ -119,7 +119,7 @@ LLM response: {classification_result.llm_classification_json}
             disclaimer = f"{KamiChan.Vocabulary.EMOJIS_COMBO_UNOFFICIAL} | [Learn more.](https://discord.com/channels/532557135167619093/1192649325709381673/1196285641978302544)"
             resp = DiscordBotResponse(self.ai_bot, verbose)
             resp_str = await resp.create(message)
-            reply_msg = await reply.edit(content=resp_str + disclaimer)
+            reply_msg = await reply.edit(content=resp_str)
             await self.ai_bot.memorize_short_term(reply_msg)
             await self.vector_db_conn.add_messages([reply_msg])
             if resp.verbose:
@@ -128,6 +128,7 @@ LLM response: {classification_result.llm_classification_json}
                     content=resp_str, 
                     attachments=[discord.File(log_file, filename="verbose_log.txt")]
                 )
+            await reply.edit(content=resp_str + disclaimer) # TODO: clean up logic so that this isn't needed
             self.cache_log(reply.id, resp.verbose_log)
         except Exception as e:
             await self.ai_bot.forget_short_term(message)
