@@ -93,7 +93,7 @@ LLM response: {classification_result.llm_classification_json}
 
         if logs:
             try:
-                message_id = int(message.content.strip())
+                message_id = int(message.content.strip().replace("--l", ""))
                 await message.reply(f"Verbose logs for message ID {message_id} (only last 10 are stored): ``````")
             except ValueError:
                 await message.reply(f":x: Expected a message ID before --l, not '{message.content.strip()}'")
