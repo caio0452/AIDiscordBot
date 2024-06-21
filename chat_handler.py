@@ -97,7 +97,11 @@ LLM response: {classification_result.llm_classification_json}
             try:
                 sanitized_msg = message.content.strip().replace("--l", "")
                 message_id = int(sanitized_msg)
-                await message.reply(f"Verbose logs for message ID {message_id} (only last 10 are stored): ```{self.get_log_by_id(message_id)}```")
+                log_file = io.StringIO(self.get_log_by_id(message_id))
+                await message.reply(
+                    content=f"Verbose logs for message ID {message_id} attached (only last 10 are stored)", 
+                    attachments=[discord.File(log_file, filename="verbose_log.txt")]
+                )
             except ValueError:
                 await message.reply(f":x: Expected a message ID before --l, not '{sanitized_msg}'")
                 return
@@ -120,7 +124,10 @@ LLM response: {classification_result.llm_classification_json}
             await self.vector_db_conn.add_messages([reply_msg])
             if resp.verbose:
                 log_file = io.StringIO(resp.verbose_log)
-                reply = await reply.edit(content=resp_str, attachments=[discord.File(log_file, filename="verbose_log.txt")])
+                reply = await reply.edit(
+                    content=resp_str, 
+                    attachments=[discord.File(log_file, filename="verbose_log.txt")]
+                )
             self.cache_log(reply.id, resp.verbose_log)
         except Exception as e:
             await self.ai_bot.forget_short_term(message)
