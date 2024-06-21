@@ -27,10 +27,19 @@ class ChatHandler(commands.Cog):
             RateLimit(n_messages=250, seconds=8 * 3600)
         )
         self.ai_bot = KamiChan(BOT_NAME, db_connection, self.bot.user.id)
+        self._last_message_id_logs: dict[int, str] = {}
 
-    # TODO: everything below this should probably should be mostly the bot's responsability
+    def cache_log(self, message_id: int, log: str):
+        self._last_message_id_logs[message_id] = log
+        if len(self._last_message_id_logs) > 10:
+            oldest_key = next(iter(self._last_message_id_logs))
+            del self._last_message_id_logs[oldest_key]
+
+    def get_log_by_id(self, message_id: int) -> str:
+        return self._last_message_id_logs.get(message_id, "(NONE FOUND)")
+
     async def should_process_message(self, message: discord.Message) -> bool:
-        if message.author.bot or not(self.bot.user in message.mentions):
+        if not(self.bot.user in message.mentions):
             return False
 
         if len(message.content) > ChatHandler.MAX_CHAT_CHARACTERS:
@@ -71,9 +80,13 @@ LLM response: {classification_result.llm_classification_json}
             )
         
 
+    # TODO: refactor this
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message) -> None:
-        if (not message.author.bot) and (await self.answer_eta_question_if_needed(message) or message.content.endswith("--eta")):
+        if message.author.bot:
+            return
+
+        if await self.answer_eta_question_if_needed(message) or message.content.endswith("--eta"):
             return
 
         if not await self.should_process_message(message):
@@ -83,16 +96,27 @@ LLM response: {classification_result.llm_classification_json}
         await self.ai_bot.memorize_short_term(message)
         await self.vector_db_conn.add_messages([message])
         reply = await message.reply(f"{KamiChan.Vocabulary.EMOJI_UWU} {BOT_NAME} is typing...")
+        verbose = message.content.endswith("--v")
+        logs = message.content.endswith("--l")
+
+        if logs:
+            try:
+                message_id = int(message.content.strip())
+                await message.reply(f"Verbose logs for message ID {message_id} (only last 10 are stored): ``````")
+            except ValueError:
+                await message.reply(f":x: Expected a message ID before --l, not '{message.content.strip()}'")
+                return
+
         try:
             disclaimer = f"{KamiChan.Vocabulary.EMOJIS_COMBO_UNOFFICIAL} | [Learn more.](https://discord.com/channels/532557135167619093/1192649325709381673/1196285641978302544)"
-            resp = DiscordBotResponse(self.ai_bot)
+            resp = DiscordBotResponse(self.ai_bot, verbose)
             resp_str = await resp.create(message)
-            reply_msg = await reply.edit(content=resp_str)
+            reply_msg = await reply.edit(content=resp_str + disclaimer)
             await self.ai_bot.memorize_short_term(reply_msg)
             await self.vector_db_conn.add_messages([reply_msg])
             if resp.verbose:
                 log_file = io.StringIO(resp.verbose_log)
-                await reply.edit(content=resp_str + "\n" + disclaimer, attachments=[discord.File(log_file, filename="verbose_log.txt")])
+                await reply.edit(content=resp_str, attachments=[discord.File(log_file, filename="verbose_log.txt")])
             else:
                 await reply.edit(content=resp_str + "\n" + disclaimer)
         except Exception as e:

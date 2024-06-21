@@ -67,8 +67,8 @@ class KamiChan(AIBotData):
         EMOJIS_COMBO_UNOFFICIAL = "<:unofficial:1233866785862848583><:unofficial_1:1233866787314073781><:unofficial_2:1233866788777754644>"
 
 class DiscordBotResponse:
-    def __init__(self, bot_data: KamiChan):
-        self.verbose = False
+    def __init__(self, bot_data: KamiChan, verbose: bool=False):
+        self.verbose = verbose
         self.bot_data = bot_data
         self.verbose_log = ""
 
@@ -79,11 +79,10 @@ class DiscordBotResponse:
             self.verbose_log += f"{text}\n"
 
     async def create(self, message: discord.Message) -> str:
-        self.verbose = message.content.endswith("--v")
         full_prompt = await self.build_full_prompt(self.bot_data.memory, message)
         response = await self.bot_data.clients[MAIN_CLIENT_NAME].generate_response(
             prompt=full_prompt,
-            model="anthropic/claude-3-haiku:beta",
+            model="google/gemini-flash-1.5",
             max_tokens=1000,
             temperature=0.2
         )
@@ -92,6 +91,7 @@ class DiscordBotResponse:
         self.log_verbose(f"Length (chars): {len(response_txt)}")
         personality_rewrite = await self.personality_rewrite(response_txt)
         self.log_verbose(personality_rewrite, category="IN-CHARACTER REWRITE")
+        self.log_verbose(str(response), category="RAW API RESPONSE")
         return personality_rewrite
 
     async def personality_rewrite(self, message: str) -> str:
@@ -121,7 +121,7 @@ class DiscordBotResponse:
             prompt=prompts.QUERY_SUMMARIZER_PROMPT \
                 .replace("((user_query))", user_prompt_str) \
                 .replace("((last_user))", last_user).to_openai_format(),
-            model='openchat/openchat-8b',
+            model='anthropic/claude-3-haiku:beta',
             temperature=0.2
         )
         return response_choice.message.content
@@ -137,7 +137,7 @@ class DiscordBotResponse:
         response_choice = await model.generate_response(
             prompt=prompts.INFO_SELECTOR_PROMPT \
                 .replace("((user_query))", user_prompt_str).to_openai_format(),
-            model='openchat/openchat-8b'
+            model=''
         )
         queries_manager = await preset_queries.manager(model)
         known_query_info = ""
