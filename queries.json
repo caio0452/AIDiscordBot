@@ -52,7 +52,7 @@
             "question": "Why do I get circular loading error?",
             "keywords": ["circ"],
             "min_similarity": 0.5,
-            "answer": "If someone says they have a circular loading error, say that this is an error caused by <@246778942323818506> and they will fix it shortly. That is an user tag, that you must type out exactly when someone asks this (including the @ and <>)"
+            "answer": "If someone says they have a circular loading error, say that this is \"a certified <@246778942323818506> issue\". You must type that out exactly, including the @, <, > symbols."
         }
     ]
 }
