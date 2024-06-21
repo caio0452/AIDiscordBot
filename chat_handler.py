@@ -89,14 +89,6 @@ LLM response: {classification_result.llm_classification_json}
         if await self.answer_eta_question_if_needed(message) or message.content.endswith("--eta"):
             return
 
-        if not await self.should_process_message(message):
-            return
-
-        self.rate_limiter.register_request(message.author.id)
-        await self.ai_bot.memorize_short_term(message)
-        await self.vector_db_conn.add_messages([message])
-        reply = await message.reply(f"{KamiChan.Vocabulary.EMOJI_UWU} {BOT_NAME} is typing...")
-        verbose = message.content.endswith("--v")
         logs = message.content.endswith("--l")
 
         if logs:
@@ -107,6 +99,15 @@ LLM response: {classification_result.llm_classification_json}
                 await message.reply(f":x: Expected a message ID before --l, not '{message.content.strip()}'")
                 return
 
+        if not await self.should_process_message(message):
+            return
+
+        self.rate_limiter.register_request(message.author.id)
+        await self.ai_bot.memorize_short_term(message)
+        await self.vector_db_conn.add_messages([message])
+        reply = await message.reply(f"{KamiChan.Vocabulary.EMOJI_UWU} {BOT_NAME} is typing...")
+        verbose = message.content.endswith("--v")
+        
         try:
             disclaimer = f"{KamiChan.Vocabulary.EMOJIS_COMBO_UNOFFICIAL} | [Learn more.](https://discord.com/channels/532557135167619093/1192649325709381673/1196285641978302544)"
             resp = DiscordBotResponse(self.ai_bot, verbose)
