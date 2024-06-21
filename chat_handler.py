@@ -121,7 +121,7 @@ LLM response: {classification_result.llm_classification_json}
             if resp.verbose:
                 log_file = io.StringIO(resp.verbose_log)
                 reply = await reply.edit(content=resp_str, attachments=[discord.File(log_file, filename="verbose_log.txt")])
-                self.cache_log(reply.id, resp.verbose_log)
+            self.cache_log(reply.id, resp.verbose_log)
         except Exception as e:
             await self.ai_bot.forget_short_term(message)
             await self.ai_bot.forget_short_term(reply)
