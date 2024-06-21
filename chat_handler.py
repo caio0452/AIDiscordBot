@@ -100,7 +100,7 @@ LLM response: {classification_result.llm_classification_json}
                 log_file = io.StringIO(self.get_log_by_id(message_id))
                 await message.reply(
                     content=f"Verbose logs for message ID {message_id} attached (only last 10 are stored)", 
-                    attachments=[discord.File(log_file, filename="verbose_log.txt")]
+                    files=[discord.File(log_file, filename="verbose_log.txt")]
                 )
             except ValueError:
                 await message.reply(f":x: Expected a message ID before --l, not '{sanitized_msg}'")
