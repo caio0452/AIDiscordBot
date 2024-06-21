@@ -30,6 +30,7 @@ class ChatHandler(commands.Cog):
         self._last_message_id_logs: dict[int, str] = {}
 
     def cache_log(self, message_id: int, log: str):
+        print(f"Saved log for message id {message_id}")
         self._last_message_id_logs[message_id] = log
         if len(self._last_message_id_logs) > 10:
             oldest_key = next(iter(self._last_message_id_logs))
