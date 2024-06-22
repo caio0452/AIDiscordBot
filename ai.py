@@ -76,7 +76,7 @@ class OAICompatibleProvider:
         print(initial_msg)
         raw_response = await self.client.chat.completions.create(
             messages=[initial_msg],
-            model="anthropic/claude-3.5-sonnet",
+            model="anthropic/claude-3.5-sonnet:beta",
             max_tokens=4096
         )
         print(raw_response.choices[0])
