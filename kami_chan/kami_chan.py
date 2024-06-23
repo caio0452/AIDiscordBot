@@ -78,26 +78,36 @@ class DiscordBotResponse:
         else:
             self.verbose_log += f"{text}\n"
 
-    async def create(self, message: discord.Message) -> str:
+    async def create_or_fallback(self, message: discord.Message, model_names: list[str]) -> str:
         full_prompt = await self.build_full_prompt(self.bot_data.memory, message)
-        response = await self.bot_data.clients[MAIN_CLIENT_NAME].generate_response(
-            prompt=full_prompt,
-            model="deepseek/deepseek-coder",
-            max_tokens=1000,
-            temperature=0.2
-        )
-        response_txt = response.message.content
-        self.log_verbose(response_txt, category="PERSONALITY-LESS MESSAGE")
-        self.log_verbose(f"Length (chars): {len(response_txt)}")
-        personality_rewrite = await self.personality_rewrite(response_txt)
-        self.log_verbose(personality_rewrite, category="IN-CHARACTER REWRITE")
-        self.log_verbose(str(response), category="RAW API RESPONSE")
-        return personality_rewrite
+        
+        for model_name in model_names:
+            try:
+                response = await self.bot_data.clients[MAIN_CLIENT_NAME].generate_response(
+                    prompt=full_prompt,
+                    model=model_name,
+                    max_tokens=1000,
+                    temperature=0.2
+                )
+                response_txt = response.message.content
+                self.log_verbose(response_txt, category="PERSONALITY-LESS MESSAGE")
+                self.log_verbose(f"Length (chars): {len(response_txt)}")
+                personality_rewrite = await self.personality_rewrite(response_txt)
+                self.log_verbose(personality_rewrite, category="IN-CHARACTER REWRITE")
+                self.log_verbose(str(response), category="RAW API RESPONSE")
+                return personality_rewrite
+            except Exception as e:
+                self.log_verbose(f"Model {model_name} failed with error: {e}", category="MODEL FAILURE")
+    
+        raise RuntimeError("Could not generate response")
+
+    async def create(self, message: discord.Message) -> str:
+        return await self.create_or_fallback(message, ["deepseek/deepseek-coder"])
 
     async def personality_rewrite(self, message: str) -> str:
         response = await self.bot_data.clients[PERSONALITY_REWRITER_NAME].generate_response(
             prompt=prompts.REWRITER_PROMPT.replace("<message>", message).to_openai_format(),
-            model="anthropic/claude-3-haiku",
+            model="qwen/qwen-2-72b-instruct",
             max_tokens=500,
             temperature=0.3,
         )
@@ -121,7 +131,7 @@ class DiscordBotResponse:
             prompt=prompts.QUERY_SUMMARIZER_PROMPT \
                 .replace("((user_query))", user_prompt_str) \
                 .replace("((last_user))", last_user).to_openai_format(),
-            model='anthropic/claude-3-haiku:beta',
+            model='qwen/qwen-2-72b-instruct',
             temperature=0.2
         )
         return response_choice.message.content
