@@ -118,7 +118,7 @@ LLM response: {classification_result.llm_classification_json}
         try:
             disclaimer = f"{KamiChan.Vocabulary.EMOJIS_COMBO_UNOFFICIAL} | [Learn more.](https://discord.com/channels/532557135167619093/1192649325709381673/1196285641978302544)"
             resp = DiscordBotResponse(self.ai_bot, verbose)
-            resp_str = await resp.create_or_fallback(message, ["01-ai/yi-large", "google/gemini-flash-1.5", "qwen/qwen-2-72b-instruct"])
+            resp_str = await resp.create_or_fallback(message, ["ai21/jamba-instruct", "google/gemini-flash-1.5", "qwen/qwen-2-72b-instruct"])
             reply_msg = await reply.edit(content=resp_str)
             await self.ai_bot.memorize_short_term(reply_msg)
             await self.vector_db_conn.add_messages([reply_msg])
