@@ -102,7 +102,7 @@ class DiscordBotResponse:
         raise RuntimeError("Could not generate response")
 
     async def create(self, message: discord.Message) -> str:
-        return await self.create_or_fallback(message, ["deepseek/deepseek-coder"])
+        return await self.create_or_fallback(message, ["01-ai/yi-large"])
 
     async def personality_rewrite(self, message: str) -> str:
         response = await self.bot_data.clients[PERSONALITY_REWRITER_NAME].generate_response(
@@ -111,14 +111,11 @@ class DiscordBotResponse:
             max_tokens=500,
             temperature=0.3,
         )
-        content = response.message.content
-        content = content \
+        return response.message.content \
             .removeprefix("REWRITTEN: ") \
             .replace("<+1>", random.choice(["<:paperUwU:1018366709658308688>", "<:Paperyis:1022991557978238976>", "<:Paperyis:1022991557978238976>"])) \
             .replace("<-1>", random.choice(["<a:notlikepaper:1165467302578360401>"])) \
             .replace("<0>",  random.choice(["<:paperOhhh:1018366673423695872>"]))
-
-        return content
 
     async def fetch_last_user_query(self, model: OAICompatibleProvider) -> str:
         user_prompt_str: str = ""
@@ -199,6 +196,8 @@ class DiscordBotResponse:
                 prompt.append(OAICompatibleProvider.assistant_msg(memorized_message.text))
             else:
                 prompt.append(OAICompatibleProvider.user_msg(memorized_message.text))
+
+
 
         img_desc = await self.describe_image_if_present(original_msg)
         if img_desc:
