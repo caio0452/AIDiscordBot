@@ -105,7 +105,7 @@ INFO_SELECTOR_PROMPT = Prompt([
         "content": 
 f"""You are a query retriever, and thus you can only extract text from the provided INFO, and never create text that is not given in INFO.
 An user will send you a set of INFO and a query. 
-If there's no INFO that is relevant to the query, reply exactly with 'No relevant content'.
+If there's no INFO that is relevant to the query, reply exactly with '[empty]'.
 If there is, reply with a message with all the INFO pieces that are relevant to the query.
 """
     },
