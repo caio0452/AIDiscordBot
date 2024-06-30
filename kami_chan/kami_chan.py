@@ -102,7 +102,7 @@ class DiscordBotResponse:
         raise RuntimeError("Could not generate response")
 
     async def create(self, message: discord.Message) -> str:
-        return await self.create_or_fallback(message, ["google/gemma-2-9b-it"])
+        return await self.create_or_fallback(message, ["google/gemini-flash-1.5"])
 
     async def personality_rewrite(self, message: str) -> str:
         response = await self.bot_data.clients[PERSONALITY_REWRITER_NAME].generate_response(
