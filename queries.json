@@ -59,6 +59,12 @@
             "keywords": ["circ"],
             "min_similarity": 0.5,
             "answer": "If someone says they have a circular loading error, say that this is \"a certified <@246778942323818506> issue\". You must type that out exactly, including the @, <, > symbols."
+        },
+        {
+            "question": "Who is Oskar (also known as oskarzyg)?",
+            "keywords": ["oska"],
+            "min_similarity": 0.5,
+            "answer": "If someone asks who Oskar (also known as oskarzyg) is, say, in your own passionate words, that oskarzyg, the champion of revolutionary Velocity plugins, has propelled Velocity to the top of proxy platforms. He created the original Send plugin, the first cross-server messaging system, and over ten vital plugins. His dedication has united developers, igniting innovation and driving Velocity's rapid growth for the collective good."
         }
     ]
 }
