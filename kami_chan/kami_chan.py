@@ -112,6 +112,7 @@ class DiscordBotResponse:
             temperature=0.3,
         )
         return response.message.content \
+            .strip() \
             .removeprefix("REWRITTEN: ") \
             .replace("<+1>", random.choice(["<:paperUwU:1018366709658308688>", "<:Paperyis:1022991557978238976>", "<:Paperyis:1022991557978238976>"])) \
             .replace("<-1>", random.choice(["<a:notlikepaper:1165467302578360401>"])) \

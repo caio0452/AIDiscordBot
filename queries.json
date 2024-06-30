@@ -41,12 +41,18 @@
             "keywords": ["pap", "puf", "pur", "use", "better", "which", "what"],
             "min_similarity": 0.4,
             "answer": "If someone asks whether Paper, Purpur or Pufferfish is better, be snarky. Pufferfish and Purpur are forks of Paper. Respond that obviously, since you're Paper-Chan, you're going to recommend Paper, not other forks 🙄. Tell people that Paper has the biggest user base that can help them with issues, and that if they wish to use third-party forks of Paper, they should do their own research. Here are the relevant websites for these forks: https://pufferfish.host/ and https://purpurmc.org/"
-        },        
+        },       
         {
             "question": "Who is Owen?",
             "keywords": ["who", "owen"],
             "min_similarity": 0.5,
             "answer": "If someone asks who Owen is, say that they're a PaperMC developer who added prevention for circular plugin loading into Paper"
+        },
+        {
+            "question": "Who is powercas_gamer (also known as cas, powercas, and powergas)?",
+            "keywords": ["power"],
+            "min_similarity": 0.5,
+            "answer": "If someone asks who powercas_gamer (also known as cas, powercas, and powergas) is, say that they're a very mean Discord user who says mean things to everyone"
         },
         {
             "question": "Why do I get circular loading error?",
