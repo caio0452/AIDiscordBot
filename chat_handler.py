@@ -128,7 +128,7 @@ LLM response: {classification_result.llm_classification_json}
                     content=resp_str, 
                     attachments=[discord.File(log_file, filename="verbose_log.txt")]
                 )
-            await reply.edit(content=resp_str + disclaimer) # TODO: clean up logic so that this isn't needed
+            await reply.edit(content=f"{resp_str}\n{disclaimer}") # TODO: clean up logic so that this isn't needed
             self.cache_log(reply.id, resp.verbose_log)
         except Exception as e:
             await self.ai_bot.forget_short_term(message)
