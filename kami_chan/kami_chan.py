@@ -8,6 +8,7 @@ from . import prompts
 import providers
 import random, discord, openai
 import preset_queries
+import datetime
 
 #
 # TODO: This is a mess that has to be replaced with something data-driven
@@ -73,10 +74,11 @@ class DiscordBotResponse:
         self.verbose_log = ""
 
     def log_verbose(self, text: str, *, category: str|None = None):
+        current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         if category:
-            self.verbose_log += f"--- {category} ---\n{text}\n"
+            self.verbose_log += f"[{current_time}] --- {category} ---\n{text}\n"
         else:
-            self.verbose_log += f"{text}\n"
+            self.verbose_log += f"[{current_time}] {text}\n"
 
     async def create_or_fallback(self, message: discord.Message, model_names: list[str]) -> str:
         full_prompt = await self.build_full_prompt(self.bot_data.memory, message)
