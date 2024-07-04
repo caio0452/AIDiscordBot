@@ -134,10 +134,12 @@ class DiscordBotResponse:
         )
         return response_choice.message.content
 
-    async def summarize_relevant_facts(self, model: OAICompatibleProvider, user_query: str):
+    async def summarize_relevant_facts(self, model: OAICompatibleProvider, user_query: str) -> str | None:
         user_prompt_str = ""
         knowledge_list = await self.bot_data.vector_db_conn.query_relevant_knowledge(
             await self.bot_data.sanitize_str(user_query))
+        if len(knowledge_list) == 0:
+            return None
         for knowledge in knowledge_list:
             user_prompt_str += "INFO: \n" + knowledge.payload
         self.log_verbose(f"--- DATABASE CLOSEST MATCHES ---\n{user_prompt_str}\n")
@@ -176,12 +178,18 @@ class DiscordBotResponse:
 
         user_query = await self.fetch_last_user_query(model)
         self.log_verbose(user_query, category="USER QUERY")
+
         knowledge = await self.summarize_relevant_facts(model, user_query)
-        system_prompt_str += f"\n[INFO FROM KNOWLEDGE DB]:\n{knowledge}\n"
+
+        if knowledge is not None:
+            system_prompt_str += f"\n[INFO FROM KNOWLEDGE DB]:\n{knowledge}\n"
+            self.log_verbose(knowledge, category="INFO FROM KNOWLEDGE DB")
+        else:
+            self.log_verbose("The knowledge database has nothing relevant", category="INFO FROM KNOWLEDGE DB")
+
         prompt: list[Any] = [
             OAICompatibleProvider.system_msg(system_prompt_str)
         ]
-        self.log_verbose(knowledge, category="INFO FROM KNOWLEDGE DB")
         old_messages_str = ""
         for old_message in await self.bot_data.vector_db_conn.query_relevant_messages(original_msg.content):
             old_messages_str += f"[{old_message.sent.isoformat()} by {old_message.nick}] {old_message.text}"
@@ -197,8 +205,6 @@ class DiscordBotResponse:
                 prompt.append(OAICompatibleProvider.assistant_msg(memorized_message.text))
             else:
                 prompt.append(OAICompatibleProvider.user_msg(memorized_message.text))
-
-
 
         img_desc = await self.describe_image_if_present(original_msg)
         if img_desc:
