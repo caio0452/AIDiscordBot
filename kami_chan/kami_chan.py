@@ -74,7 +74,7 @@ class DiscordBotResponse:
         self.verbose_log = ""
 
     def log_verbose(self, text: str, *, category: str|None = None):
-        current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        current_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         if category:
             self.verbose_log += f"[{current_time}] --- {category} ---\n{text}\n"
         else:
