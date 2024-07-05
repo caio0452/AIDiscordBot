@@ -88,7 +88,7 @@ class DiscordBotResponse:
                 response = await self.bot_data.clients[MAIN_CLIENT_NAME].generate_response(
                     prompt=full_prompt,
                     model=model_name,
-                    max_tokens=1000,
+                    max_tokens=2000,
                     temperature=0.2
                 )
                 response_txt = response.message.content
@@ -110,7 +110,7 @@ class DiscordBotResponse:
         response = await self.bot_data.clients[PERSONALITY_REWRITER_NAME].generate_response(
             prompt=prompts.REWRITER_PROMPT.replace("<message>", message).to_openai_format(),
             model="meta-llama/llama-3-70b-instruct",
-            max_tokens=500,
+            max_tokens=2000,
             temperature=0.3,
         )
         return response.message.content \
