@@ -145,7 +145,7 @@ class ImageGenCommand(commands.Cog):
             "num_images": 1
         }
 
-        async with httpx.AsyncClient(timeout=30) as client:
+        async with httpx.AsyncClient(timeout=60) as client:
             response = await client.post(url, headers=headers, json=data)
             return response
 
