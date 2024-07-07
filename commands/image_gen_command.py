@@ -145,7 +145,7 @@ class ImageGenCommand(commands.Cog):
             "num_images": 1
         }
 
-        async with httpx.AsyncClient() as client:
+        async with httpx.AsyncClient(timeout=30) as client:
             response = await client.post(url, headers=headers, json=data)
             return response
 
@@ -177,8 +177,7 @@ class ImageGenCommand(commands.Cog):
             await interaction.followup.send(
                 f"`PROMPT:` **{query}**", file=file1
             )
-
         except Exception as e:
             traceback.print_exc()
             await interaction.followup.send(
-                f":x: There was error generating the image: {str(e)[:1700]}")
+                f":x: There was error generating the image: {str(e)}")
