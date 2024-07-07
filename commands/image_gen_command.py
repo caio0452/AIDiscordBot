@@ -129,7 +129,7 @@ class ImageGenCommand(commands.Cog):
         return False
 
     async def _fal_ai_request_image(self, request: str):
-        url = "https://fal.run/fal-ai/pixart-sigma"
+        url = "https://fal.run/fal-ai/realistic-vision"
 
         headers = {
             "Authorization": f"Key {self.fal_ai_key}",
@@ -137,6 +137,7 @@ class ImageGenCommand(commands.Cog):
         }
         data = {
             "prompt": request,
+            "model_name": "SG161222/RealVisXL_V4.0",
             "negative_prompt": "Bad anatomy, ugly, low quality, low detail, blurry",
             "enable_safety_checker": True,
             "num_images": 1
@@ -154,20 +155,20 @@ class ImageGenCommand(commands.Cog):
         user_id = interaction.user.id
         await interaction.response.defer()
 
-        if await self._is_blocked_prompt(query):
-            await interaction.followup.send(":x: Prompt flagged")
-            return
-        
-        if self.image_gen_rate_limiter.is_rate_limited(user_id):
-            await interaction.followup.send(":x: You are being rate limited (3 / min)")
-            return
-        
-        self.image_gen_rate_limiter.register_request(user_id)
-        req = await self._fal_ai_request_image(query)
-        json_data = req.content.decode('utf-8')
-        data = json.loads(json_data)
-
         try:
+            if await self._is_blocked_prompt(query):
+                await interaction.followup.send(":x: Prompt flagged")
+                return
+            
+            if self.image_gen_rate_limiter.is_rate_limited(user_id):
+                await interaction.followup.send(":x: You are being rate limited (3 / min)")
+                return
+            
+            self.image_gen_rate_limiter.register_request(user_id)
+            req = await self._fal_ai_request_image(query)
+            json_data = req.content.decode('utf-8')
+            data = json.loads(json_data)
+
             image_url1 = data["images"][0]["url"]
             file1 = discord.File(io.BytesIO(requests.get(image_url1).content), filename="image1.png")
 
@@ -175,7 +176,6 @@ class ImageGenCommand(commands.Cog):
                 f"`PROMPT:` **{query}**", file=file1
             )
 
-        except KeyError:
+        except Exception as e:
             await interaction.followup.send(
-                f":x: Error generating image.\n```json\n{json_data[0:1700]}```"
-            )
+                f":x: There was error generating the image: {str(e)[:1700]}")
