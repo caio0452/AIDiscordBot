@@ -1,3 +1,4 @@
+from inspect import trace
 import discord
 import json
 import io
@@ -6,6 +7,7 @@ import requests
 import httpx
 import parameters
 import providers
+import traceback
 from discord import app_commands
 from discord.ext import commands
 from rate_limits import RateLimiter, RateLimit
@@ -177,5 +179,6 @@ class ImageGenCommand(commands.Cog):
             )
 
         except Exception as e:
+            traceback.print_exc()
             await interaction.followup.send(
                 f":x: There was error generating the image: {str(e)[:1700]}")
