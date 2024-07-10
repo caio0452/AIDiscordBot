@@ -112,7 +112,7 @@ LLM response: {classification_result.llm_classification_json}
         self.rate_limiter.register_request(message.author.id)
         await self.ai_bot.memorize_short_term(message)
         await self.vector_db_conn.add_messages([message])
-        reply = await message.reply(f"{KamiChan.Vocabulary.EMOJI_UWU} {BOT_NAME} is typing...")
+        reply = await message.reply(f"-# {KamiChan.Vocabulary.EMOJI_UWU} {BOT_NAME} is typing...")
         verbose = message.content.endswith("--v")
         
         try:
