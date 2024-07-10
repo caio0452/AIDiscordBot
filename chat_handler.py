@@ -116,7 +116,7 @@ LLM response: {classification_result.llm_classification_json}
         verbose = message.content.endswith("--v")
         
         try:
-            disclaimer = f"{KamiChan.Vocabulary.EMOJIS_COMBO_UNOFFICIAL} | [Learn more.](https://discord.com/channels/532557135167619093/1192649325709381673/1196285641978302544)"
+            disclaimer = f"-# Unofficial bot. FICTITIOUS AI-generated content. | [Learn more.](https://discord.com/channels/532557135167619093/1192649325709381673/1196285641978302544)"
             resp = DiscordBotResponse(self.ai_bot, verbose)
             resp_str = await resp.create_or_fallback(message, ["google/gemini-flash-1.5", "qwen/qwen-2-72b-instruct", "meta-llama/llama-3-70b-instruct"])
             reply_msg = await reply.edit(content=resp_str)

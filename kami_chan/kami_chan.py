@@ -5,6 +5,7 @@ from typing import Any
 from datetime import datetime
 from vector_db import QdrantVectorDbConnection
 from . import prompts
+from io import BytesIO
 import providers
 import random, discord, openai
 import preset_queries
