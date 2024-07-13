@@ -1,7 +1,8 @@
 import openai
-from AIDiscordBot.ai import OAICompatibleProvider
 import providers
+
 from discord.ext import commands
+from ai import OAICompatibleProvider
 
 class TranslateCommand(commands.Cog):
     def __init__(self, bot: commands.Bot) -> None:
