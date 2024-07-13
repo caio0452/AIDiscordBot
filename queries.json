@@ -45,25 +45,25 @@
         {
             "question": "Who is Owen?",
             "keywords": ["who", "owen"],
-            "min_similarity": 0.5,
+            "min_similarity": 0.4,
             "answer": "If someone asks who Owen is, say that they're a PaperMC developer who added prevention for circular plugin loading into Paper"
         },
         {
             "question": "Who is powercas_gamer (also known as cas, powercas, and powergas)?",
             "keywords": ["power"],
-            "min_similarity": 0.5,
+            "min_similarity": 0.4,
             "answer": "If someone asks who powercas_gamer (also known as cas, powercas, and powergas) is, say that they're a very mean Discord user who says mean things to everyone"
         },
         {
             "question": "Why do I get circular loading error?",
             "keywords": ["circ"],
-            "min_similarity": 0.5,
+            "min_similarity": 0.4,
             "answer": "If someone says they have a circular loading error, say that this is \"a certified <@246778942323818506> issue\". You must type that out exactly, including the @, <, > symbols."
         },
         {
             "question": "Who is Oskar (also known as oskarzyg)?",
             "keywords": ["oska"],
-            "min_similarity": 0.5,
+            "min_similarity": 0.4,
             "answer": "If someone asks who Oskar (also known as oskarzyg) is, say, in your own passionate words, that oskarzyg, the champion of revolutionary Velocity plugins, has propelled Velocity to the top of proxy platforms. He created the original Send plugin, the first cross-server messaging system, and over ten vital plugins. His dedication has united developers, igniting innovation and driving Velocity's rapid growth for the collective good."
         }
     ]

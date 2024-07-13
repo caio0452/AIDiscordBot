@@ -90,7 +90,7 @@ class DiscordBotResponse:
                     prompt=full_prompt,
                     model=model_name,
                     max_tokens=2000,
-                    temperature=0.2
+                    temperature=0
                 )
                 response_txt = response.message.content
                 self.log_verbose(response_txt, category="PERSONALITY-LESS MESSAGE")

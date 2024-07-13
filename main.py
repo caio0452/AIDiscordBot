@@ -18,7 +18,7 @@ import providers
 OPENAI_EMBEDDINGS_VECTOR_SIZE = 3072 # TODO: varies with model
 
 embeddings_provider = providers.get_provider_by_name("EMBEDDINGS_PROVIDER")
-embeddings_client = openai.AsyncOpenAI(api_key=embeddings_provider.api_key, base_url=embeddings_provider.api_base)
+embeddings_client = openai.AsyncOpenAI(api_key=embeddings_provider.api_key, base_url=embeddings_provider.api_base, timeout=15)
 
 db_client = QdrantVectorDb(
     parameters.QDRANT_URL,
