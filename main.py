@@ -1,9 +1,9 @@
 import openai
-from AIDiscordBot.commands.translate import TranslateCommand
 from ai import OAICompatibleProvider
 import parameters
 import preset_queries
 
+from commands.translate import TranslateCommand
 from commands.image_gen_command import ImageGenCommand
 from commands.search_command import SearchCommand
 from commands.find_close_preset import FindClosePreset
