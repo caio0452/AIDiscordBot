@@ -69,7 +69,7 @@ QUERY_SUMMARIZER_PROMPT = Prompt(
 "content": 
 f"""
 The user named ((last_user)) in a chat log may be asking for some piece of info, or just talking about something else.
-You need to summarize their question into a full sentence.
+You need to summarize their latest, most recent question into a full sentence. Just one query, which will be their latest one.
 If user ((last_user)) needs info, reply with a sentence that summarizes their query.
 If user ((last_user)) does not need info, reply with a sentence that summarizes conversation topic.
 
