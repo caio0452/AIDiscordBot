@@ -80,18 +80,20 @@ LLM response: {classification_result.llm_classification_json}
                 )
             )
         
-
     # TODO: refactor this
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message) -> None:
         if message.author.bot:
             return
 
+        if message.author.id == 688858519486857252 and "sync command tree" in message.content:
+            await self.bot.tree.sync()
+
         if await self.answer_eta_question_if_needed(message) or message.content.endswith("--eta"):
             return
 
         logs = message.content.endswith("--l")
-
+        
         if logs:
             sanitized_msg = ""
             try:
