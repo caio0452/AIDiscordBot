@@ -87,6 +87,7 @@ LLM response: {classification_result.llm_classification_json}
             return
 
         if message.author.id == 688858519486857252 and "sync command tree" in message.content:
+            print("Synced command tree")
             await self.bot.tree.sync()
 
         if await self.answer_eta_question_if_needed(message) or message.content.endswith("--eta"):
