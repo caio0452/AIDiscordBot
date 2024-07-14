@@ -1,5 +1,7 @@
+from discord import app_commands
 import openai
 import providers
+import discord
 
 from discord.ext import commands
 from ai import OAICompatibleProvider
@@ -19,17 +21,18 @@ class TranslateCommand(commands.Cog):
                 timeout=15
             )
 
-    @commands.command(
+    @app_commands.command(
         name="translate", 
         description="Translate text using an LLM"
     )
-    async def translate(self, ctx: commands.Context, *, text: str) -> None:
+    async def translate(self, interaction: discord.Interaction, *, text: str) -> None:
+        await interaction.response.defer()
         if self._translation_client is None:
-            await ctx.send(":x: Missing TRANSLATION provider")
+            await interaction.followup.send(":x: Missing TRANSLATION provider")
             return
 
         translated_text = await self.call_llm_translate(text)
-        await ctx.send(translated_text)
+        await interaction.followup.send(translated_text)
     
     async def call_llm_translate(self, text: str) -> str:
         resp = await self._translation_client.chat.completions.create(

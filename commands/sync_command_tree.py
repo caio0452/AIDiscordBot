@@ -7,14 +7,14 @@ class SyncCommand(commands.Cog):
         self.bot = bot
         self.allowed_user_id = allowed_user_id
     
-    @commands.command(
+    @app_commands.command(
         name="sync", 
         description="Sync the command tree"
     )
-    async def sync_commands(self, ctx: commands.Context) -> None:
-        if ctx.author.id != self.allowed_user_id:
-            await ctx.send("You do not have permission to run this command.")
+    async def sync_commands(self, interaction: discord.Interaction) -> None:
+        if interaction.user.id != self.allowed_user_id:
+            await interaction.followup.send("You do not have permission to run this command.")
             return
         
         await self.bot.tree.sync()
-        await ctx.send("Command tree synced.")
+        await interaction.followup.send("Command tree synced.")
