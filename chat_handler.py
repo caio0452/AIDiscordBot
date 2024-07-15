@@ -1,10 +1,8 @@
 import discord
 import io
-import providers
 import traceback
 import preset_queries
 
-from openai import AsyncOpenAI
 from discord.ext import commands
 from vector_db import QdrantVectorDbConnection
 from rate_limits import RateLimit, RateLimiter

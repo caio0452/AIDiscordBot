@@ -1,6 +1,6 @@
 from memorized_message import MemorizedMessage
 from ai import OAICompatibleProvider
-from ai_bot import AIBotData
+from ai_bot import AIBotData, BotMemory
 from typing import Any
 from datetime import datetime
 from vector_db import QdrantVectorDbConnection
@@ -24,12 +24,12 @@ class KamiChan(AIBotData):
                  name: str,
                  vector_db_conn: QdrantVectorDbConnection,
                  discord_bot_id: int):
-        super().__init__(name, [])
+        super().__init__(name, BotMemory())
         self.clients: dict[str, OAICompatibleProvider] = {}
         self._create_clients()
         self.discord_bot_id = discord_bot_id
         self.vector_db_conn = vector_db_conn
-        self.memory = []
+        self.memory: BotMemory = BotMemory()
         self.RECENT_MEMORY_LENGTH = 5
         
     def _create_clients(self):
@@ -53,14 +53,6 @@ class KamiChan(AIBotData):
         if sanitized.startswith(f"<@{self.discord_bot_id}>"):
             sanitized = sanitized.replace(f"<@{self.discord_bot_id}>", "", 1)
         return sanitized
-    
-    async def memorize_short_term(self, message: discord.Message):
-        self.memory.append(await MemorizedMessage.of_discord_message(message, self.sanitize_msg))
-        if len(self.memory) > self.RECENT_MEMORY_LENGTH:
-            self.memory.pop(0)
-
-    async def forget_short_term(self, message: discord.Message):
-        self.memory = [mem_msg for mem_msg in self.memory if mem_msg.message_id != message.id ]  
 
     class Vocabulary:
         EMOJI_NO = "<:Paperno:1022991562810077274>"
@@ -82,7 +74,10 @@ class DiscordBotResponse:
             self.verbose_log += f"[{current_time}] {text}\n"
 
     async def create_or_fallback(self, message: discord.Message, model_names: list[str]) -> str:
-        full_prompt = await self.build_full_prompt(self.bot_data.memory, message)
+        full_prompt = await self.build_full_prompt(
+            self.bot_data.memory.without_dupe_ending_user_msgs(), 
+            message
+        )
         
         for model_name in model_names:
             try:
@@ -105,7 +100,7 @@ class DiscordBotResponse:
         raise RuntimeError("Could not generate response")
 
     async def create(self, message: discord.Message) -> str:
-        return await self.create_or_fallback(message, ["google/gemma-2-27b-it"])
+        return await self.create_or_fallback(message, ["google/gemini-flash-1.5"])
 
     async def personality_rewrite(self, message: str) -> str:
         response = await self.bot_data.clients[PERSONALITY_REWRITER_NAME].generate_response(
@@ -113,7 +108,7 @@ class DiscordBotResponse:
             model="meta-llama/llama-3-70b-instruct",
             max_tokens=2000,
             temperature=0.3,
-        )
+        )  
         return response.message.content \
             .strip() \
             .removeprefix("REWRITTEN: ") \
@@ -170,13 +165,13 @@ class DiscordBotResponse:
                 response = await self.bot_data.clients[IMAGE_VIEWER_NAME].describe_image(attachment.url, message.content)
                 return response.message.content
 
-    async def build_full_prompt(self, memory_snapshot: list[MemorizedMessage], original_msg: discord.Message) -> list[Any]:
+    async def build_full_prompt(self, memory_snapshot: BotMemory, original_msg: discord.Message) -> list[Any]:
         now_str = datetime.datetime.now().strftime("%B %d, %H:%M:%S")
         model = self.bot_data.clients[MAIN_CLIENT_NAME]
 
         # TODO: the "Prompt" class is weirdly used here, but not worth looking too much into as of this will be replaced by a JSON file eventually
         system_prompt_str = prompts.KAMI_CHAN_PROMPT \
-            .replace("((nick))", memory_snapshot[-1].nick) \
+            .replace("((nick))", memory_snapshot.get_memory()[-1].nick) \
             .replace("((now))", now_str)._dict[0]["content"]
 
         user_query = await self.fetch_last_user_query(model)
@@ -203,7 +198,7 @@ class DiscordBotResponse:
         [[RECENT CONVERSATION HISTORY]]:\n{knowledge}
         """
 
-        for memorized_message in memory_snapshot:
+        for memorized_message in memory_snapshot.get_memory():
             if memorized_message.is_bot:
                 prompt.append(OAICompatibleProvider.assistant_msg(memorized_message.text))
             else:
