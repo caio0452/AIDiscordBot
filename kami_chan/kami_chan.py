@@ -5,7 +5,6 @@ from typing import Any
 from datetime import datetime
 from vector_db import QdrantVectorDbConnection
 from . import prompts
-from io import BytesIO
 import providers
 import random, discord, openai
 import preset_queries
@@ -119,9 +118,9 @@ class DiscordBotResponse:
     async def fetch_last_user_query(self, model: OAICompatibleProvider) -> str:
         user_prompt_str: str = ""
         user_prompt_str = "\n".join(
-            [memorized_message.text for memorized_message in self.bot_data.memory]
+            [memorized_message.text for memorized_message in self.bot_data.memory.get_memory()]
         )
-        last_user = self.bot_data.memory[-1].nick
+        last_user = self.bot_data.memory.get_memory()[-1].nick
 
         response_choice = await model.generate_response(
             prompt=prompts.QUERY_SUMMARIZER_PROMPT \
