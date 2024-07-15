@@ -13,7 +13,7 @@ class BotMemory:
             self._memory.pop(0)
 
     async def forget_short_term(self, message: MemorizedMessage):
-        self.memory = [mem_msg for mem_msg in self._memory if mem_msg.message_id != message.message_id]
+        self._memory = [mem_msg for mem_msg in self._memory if mem_msg.message_id != message.message_id]
 
     def clone(self):
         new_instance = BotMemory(
@@ -37,7 +37,7 @@ class BotMemory:
 
         
     def get_memory(self) -> list[MemorizedMessage]:
-        return self.memory
+        return self._memory
 
 class AIBotData(ABC):
     def __init__(self, name: str, memory: BotMemory | None = None):
