@@ -1,7 +1,7 @@
 import discord
 import io
 import traceback
-from AIDiscordBot.memorized_message import MemorizedMessage
+from memorized_message import MemorizedMessage
 import preset_queries
 
 from discord.ext import commands
