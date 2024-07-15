@@ -1,6 +1,7 @@
 import discord
 import io
 import traceback
+from AIDiscordBot.memorized_message import MemorizedMessage
 import preset_queries
 
 from discord.ext import commands
@@ -111,7 +112,10 @@ LLM response: {classification_result.llm_classification_json}
             return
 
         self.rate_limiter.register_request(message.author.id)
-        await self.ai_bot.memorize_short_term(message)
+        await self.ai_bot.memory.memorize_short_term(
+            await MemorizedMessage.of_discord_message(message), 
+            None
+        )
         await self.vector_db_conn.add_messages([message])
         reply = await message.reply(f"-# {KamiChan.Vocabulary.EMOJI_UWU} {BOT_NAME} is typing...")
         verbose = message.content.endswith("--v")
@@ -121,7 +125,10 @@ LLM response: {classification_result.llm_classification_json}
             resp = DiscordBotResponse(self.ai_bot, verbose)
             resp_str = await resp.create_or_fallback(message, ["google/gemini-flash-1.5", "qwen/qwen-2-72b-instruct", "meta-llama/llama-3-70b-instruct"])
             reply_msg = await reply.edit(content=resp_str)
-            await self.ai_bot.memorize_short_term(reply_msg)
+            await self.ai_bot.memory.memorize_short_term(
+                await MemorizedMessage.of_discord_message(reply_msg), 
+                None
+            )
             await self.vector_db_conn.add_messages([reply_msg])
             if resp.verbose:
                 log_file = io.StringIO(resp.verbose_log)
@@ -132,7 +139,13 @@ LLM response: {classification_result.llm_classification_json}
             await reply.edit(content=f"{resp_str}\n{disclaimer}") # TODO: clean up logic so that this isn't needed
             self.cache_log(reply.id, resp.verbose_log)
         except Exception as e:
-            await self.ai_bot.forget_short_term(message)
-            await self.ai_bot.forget_short_term(reply)
+            await self.ai_bot.memory.memorize_short_term(
+                await MemorizedMessage.of_discord_message(message), 
+                None
+            )
+            await self.ai_bot.memory.memorize_short_term(
+                await MemorizedMessage.of_discord_message(reply), 
+                None
+            )
             traceback.print_exc()
             await reply.edit(content=f"Sorry, there was an error!! {KamiChan.Vocabulary.EMOJI_DESPAIR} ```{str(e)}```")
