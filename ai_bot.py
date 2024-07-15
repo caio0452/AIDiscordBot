@@ -27,7 +27,7 @@ class BotMemory:
 
         for i, mem in enumerate(self._memory):
             ret.append(mem)
-            if i < len(self._memory):
+            if i < len(self._memory) - 1:
                 is_dupe_user_msg = (not self._memory[i].is_bot) and (not self._memory[i + 1].is_bot)
                 if is_dupe_user_msg:
                     # Don't append the next user message, use only earliest one
