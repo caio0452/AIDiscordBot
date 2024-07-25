@@ -99,12 +99,12 @@ class DiscordBotResponse:
         raise RuntimeError("Could not generate response")
 
     async def create(self, message: discord.Message) -> str:
-        return await self.create_or_fallback(message, ["google/gemini-flash-1.5"])
+        return await self.create_or_fallback(message, ["openai/gpt-4o-mini"])
 
     async def personality_rewrite(self, message: str) -> str:
         response = await self.bot_data.clients[PERSONALITY_REWRITER_NAME].generate_response(
             prompt=prompts.REWRITER_PROMPT.replace("<message>", message).to_openai_format(),
-            model="meta-llama/llama-3-70b-instruct",
+            model="openai/gpt-4o-mini",
             max_tokens=2000,
             temperature=0.3,
         )  
@@ -126,7 +126,7 @@ class DiscordBotResponse:
             prompt=prompts.QUERY_SUMMARIZER_PROMPT \
                 .replace("((user_query))", user_prompt_str) \
                 .replace("((last_user))", last_user).to_openai_format(),
-            model='meta-llama/llama-3-70b-instruct',
+            model='openai/gpt-4o-mini',
             temperature=0.2
         )
         return response_choice.message.content

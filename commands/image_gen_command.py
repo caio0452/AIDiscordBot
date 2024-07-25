@@ -118,7 +118,7 @@ class ImageGenCommand(commands.Cog):
                 'content': prompt
             }
         ],
-            model="gpt-3.5-turbo",
+            model="openai/gpt-4o-mini",
             max_tokens=64,
             temperature=0,
             response_format={ "type": "json_object" }

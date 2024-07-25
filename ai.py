@@ -1,8 +1,9 @@
 import openai
 import json
-from typing import Any, List
+from typing import Any, List, Optional
 from abc import ABC, abstractmethod
 from openai.types import CompletionChoice
+from dataclasses import dataclass
 
 class ContentModerator(ABC):
     @abstractmethod
@@ -26,7 +27,7 @@ async def _text_to_vector(self, openai_client: openai.AsyncOpenAI, texts: List[s
     )
     vectors = [e.embedding for e in response.data]
     return vectors
-    
+
 class OAICompatibleProvider:
     def __init__(self, client: openai.AsyncClient):
         self.client = client
