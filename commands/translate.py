@@ -39,7 +39,7 @@ class TranslateCommand(commands.Cog):
             messages=[OAICompatibleProvider.system_msg(
                 f'Translate to english the text between the <TEXT> tag. <TEXT>{text}</TEXT>.' \
                  'Reply with just a JSON containing {"translation": "[insert translated text here]"}')],
-            model="openai/gpt-4o-mini",
+            model="meta-llama/llama-3.1-405b-instruct",
             max_tokens=1000,
             response_format={ "type": "json_object"}
         )

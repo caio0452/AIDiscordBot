@@ -104,7 +104,7 @@ class DiscordBotResponse:
     async def personality_rewrite(self, message: str) -> str:
         response = await self.bot_data.clients[PERSONALITY_REWRITER_NAME].generate_response(
             prompt=prompts.REWRITER_PROMPT.replace("<message>", message).to_openai_format(),
-            model="openai/gpt-4o-mini",
+            model="meta-llama/llama-3.1-405b-instruct",
             max_tokens=2000,
             temperature=0.3,
         )  
@@ -126,7 +126,7 @@ class DiscordBotResponse:
             prompt=prompts.QUERY_SUMMARIZER_PROMPT \
                 .replace("((user_query))", user_prompt_str) \
                 .replace("((last_user))", last_user).to_openai_format(),
-            model='openai/gpt-4o-mini',
+            model='meta-llama/llama-3.1-405b-instruct',
             temperature=0.2
         )
         return response_choice.message.content
