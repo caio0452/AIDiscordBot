@@ -2,6 +2,7 @@ from discord import app_commands
 import openai
 import providers
 import discord
+import asyncio
 
 from discord.ext import commands
 from ai import OAICompatibleProvider
@@ -54,10 +55,7 @@ class RewriteCommand(commands.Cog):
             except Exception as e:
                 return f"**{model}**: Error - {str(e)}"
 
-        # Create a list of coroutines
         tasks = [rewrite_with_model(model, i) for i, model in enumerate(models)]
-
-        # Run all tasks concurrently and wait for them to complete
         rewrites = await asyncio.gather(*tasks)
 
         return "**REWRITES:**\n" + "\n\n".join(rewrites)
