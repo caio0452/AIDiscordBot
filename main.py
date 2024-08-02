@@ -1,4 +1,5 @@
 import openai
+from AIDiscordBot.commands.rewrite import RewriteCommand
 from ai import OAICompatibleProvider
 import parameters
 import preset_queries
@@ -37,6 +38,7 @@ async def setup_commands():
     await bot.add_cog(FindClosePreset(presets_manager=await preset_queries.manager(OAICompatibleProvider(embeddings_client)), bot=bot))
     await bot.add_cog(SyncCommand(bot=bot, allowed_user_id=688858519486857252))
     await bot.add_cog(TranslateCommand(bot=bot))
+    await bot.add_cog(RewriteCommand(bot=bot))
     if parameters.FAL_AI_KEY == "":
         print("No Fal.AI key specified, image generation will be disabled")
     else:
