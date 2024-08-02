@@ -13,7 +13,7 @@ import datetime
 #
 # TODO: This is a mess that has to be replaced with something data-driven
 #
-MAIN_CLIENT_NAME = "KAMI_CHAN_MAIN"
+MAIN_CLIENT_NAME = "DEFAULT"
 KNOWLEDGE_EXTRACTOR_NAME = "KAMI_CHAN_KNOWLEDGE_EXTRACTOR"
 PERSONALITY_REWRITER_NAME = "KAMI_CHAN_PERSONALITY_REWRITER"
 IMAGE_VIEWER_NAME = "KAMI_CHAN_IMAGE_VIEWER"
@@ -144,7 +144,7 @@ class DiscordBotResponse:
         response_choice = await model.generate_response(
             prompt=prompts.INFO_SELECTOR_PROMPT \
                 .replace("((user_query))", user_prompt_str).to_openai_format(),
-            model=''
+            model='gpt-4o-mini'
         )
         queries_manager = await preset_queries.manager(model)
         known_query_info = ""
