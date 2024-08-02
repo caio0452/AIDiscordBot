@@ -26,7 +26,7 @@ class RewriteCommand(commands.Cog):
         description="Rewrite text using multiple LLMs"
     )
     async def rewrite(self, interaction: discord.Interaction, *, text: str) -> None:
-        await interaction.response.defer()
+        await interaction.followup.send("This may take up to 30 seconds, querying multiple AIs...")
 
         if self._rewrite_client is None:
             await interaction.followup.send(":x: Missing DEFAULT provider")
@@ -37,9 +37,8 @@ class RewriteCommand(commands.Cog):
     
     async def call_llm_rewrite(self, text: str) -> str:
         models = ["microsoft/phi-3-medium-128k-instruct", "anthropic/claude-3-haiku:beta", "meta-llama/llama-3.1-70b-instruct"]
-        rewrites = []
-
-        for model in models:
+        
+        async def rewrite_with_model(model, index):
             try:
                 resp = await self._rewrite_client.chat.completions.create(
                     messages=[OAICompatibleProvider.system_msg(
@@ -47,11 +46,17 @@ class RewriteCommand(commands.Cog):
                         'Reply with just a JSON containing {"rewrite": "[insert reworded text here]"}')],
                     model=model,
                     max_tokens=4000,
-                    response_format={"type": "json_object"}
+                    response_format={"type": "json_object"},
+                    timeout=30
                 )
-                rewrite = f"**{model}**: {resp.choices[0].message.content}"
-                rewrites.append(rewrite)
+                return f"`#{index}:`\n{resp.choices[0].message.content}"
             except Exception as e:
-                rewrites.append(f"**{model}**: Error - {str(e)}")
+                return f"**{model}**: Error - {str(e)}"
+
+        # Create a list of coroutines
+        tasks = [rewrite_with_model(model, i) for i, model in enumerate(models)]
+
+        # Run all tasks concurrently and wait for them to complete
+        rewrites = await asyncio.gather(*tasks)
 
         return "**REWRITES:**\n" + "\n\n".join(rewrites)
