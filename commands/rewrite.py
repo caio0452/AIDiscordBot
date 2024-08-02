@@ -26,14 +26,14 @@ class RewriteCommand(commands.Cog):
         description="Rewrite text using multiple LLMs"
     )
     async def rewrite(self, interaction: discord.Interaction, *, text: str) -> None:
-        await interaction.followup.send("This may take up to 30 seconds, querying multiple AIs...")
+        msg = await interaction.followup.send("This may take up to 30 seconds, querying multiple AIs...")
 
         if self._rewrite_client is None:
             await interaction.followup.send(":x: Missing DEFAULT provider")
             return
 
         rewritten_text = await self.call_llm_rewrite(text)
-        await interaction.followup.send(content=rewritten_text)
+        await interaction.followup.edit_message(message_id=msg.id, content=rewritten_text)
     
     async def call_llm_rewrite(self, text: str) -> str:
         models = ["microsoft/phi-3-medium-128k-instruct", "anthropic/claude-3-haiku:beta", "meta-llama/llama-3.1-70b-instruct"]
