@@ -1,9 +1,9 @@
 import openai
-from AIDiscordBot.commands.rewrite import RewriteCommand
 from ai import OAICompatibleProvider
 import parameters
 import preset_queries
 
+from commands.rewrite import RewriteCommand
 from commands.translate import TranslateCommand
 from commands.image_gen_command import ImageGenCommand
 from commands.search_command import SearchCommand
