@@ -23,10 +23,9 @@ class RewriteCommand(commands.Cog):
 
     @app_commands.command(
         name="rewrite", 
-        description="Rewrite text using an LLM"
+        description="Rewrite text using multiple LLMs"
     )
     async def rewrite(self, interaction: discord.Interaction, *, text: str) -> None:
-        msg = await interaction.followup.send(content="This wil take a while, querying multiple AIs...")
         await interaction.response.defer()
 
         if self._rewrite_client is None:
@@ -34,7 +33,7 @@ class RewriteCommand(commands.Cog):
             return
 
         rewritten_text = await self.call_llm_rewrite(text)
-        await msg.edit(rewritten_text)
+        await interaction.followup.send(content=rewritten_text)
     
     async def call_llm_rewrite(self, text: str) -> str:
         models = ["microsoft/phi-3-medium-128k-instruct", "anthropic/claude-3-haiku:beta", "meta-llama/llama-3.1-70b-instruct"]
