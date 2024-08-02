@@ -26,6 +26,7 @@ class RewriteCommand(commands.Cog):
         description="Rewrite text using multiple LLMs"
     )
     async def rewrite(self, interaction: discord.Interaction, *, text: str) -> None:
+        await interaction.response.defer()
         msg = await interaction.followup.send("This may take up to 30 seconds, querying multiple AIs...")
 
         if self._rewrite_client is None:
