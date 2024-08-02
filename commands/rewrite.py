@@ -38,7 +38,7 @@ class RewriteCommand(commands.Cog):
         await interaction.followup.edit_message(message_id=msg.id, content=rewritten_text)
     
     async def call_llm_rewrite(self, text: str) -> str:
-        models = ["microsoft/phi-3-medium-128k-instruct", "anthropic/claude-3-haiku:beta", "meta-llama/llama-3.1-70b-instruct"]
+        models = ["microsoft/phi-3-medium-4k-instruct", "anthropic/claude-3-haiku:beta", "meta-llama/llama-3.1-70b-instruct"]
         
         async def rewrite_with_model(model, index):
             try:
