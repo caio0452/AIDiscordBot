@@ -99,7 +99,7 @@ class DiscordBotResponse:
         raise RuntimeError("Could not generate response")
 
     async def create(self, message: discord.Message) -> str:
-        return await self.create_or_fallback(message, ["01-ai/yi-large-turbo", "openai/gpt-4o-mini", "meta-llama/llama-3.1-405b-instruct"])
+        return await self.create_or_fallback(message, ["google/gemini-pro-1.5-exp", "openai/gpt-4o-mini", "meta-llama/llama-3.1-405b-instruct"])
 
     async def personality_rewrite(self, message: str) -> str:
         response = await self.bot_data.clients[PERSONALITY_REWRITER_NAME].generate_response(
