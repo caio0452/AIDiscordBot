@@ -22,7 +22,7 @@ class VectorDatabase:
                 "content": True,
                 "indexes": {
                     "knowledge": {},
-                    "past_messages": {}
+                    "messages": {}
                 }
             }
         )
