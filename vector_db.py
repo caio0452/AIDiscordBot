@@ -13,7 +13,7 @@ class VectorDatabase:
 
         def transform(inputs): # TODO: this is sync. Performance concern?
             resp = self.vectorizer.vectorize(input=inputs)
-            return np.array([resp], dtype=np.float32)
+            return np.array(resp, dtype=np.float32)
 
         self.db_data = Embeddings(
             config={
