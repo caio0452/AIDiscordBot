@@ -21,6 +21,7 @@ class DiscordBot:
             json_data: str = file.read()
         self.provider_store = ProviderStore.load_from_json(json_data)
         self.vector_db = VectorDatabase(self.provider_store.get_provider_by_name("EMBEDDINGS_PROVIDER"))
+        self.bot.event(self.on_ready)
 
     def run(self):
         self.bot.run(parameters.BOT_TOKEN)
@@ -41,7 +42,6 @@ class DiscordBot:
         #    print("No Fal.AI key specified, image generation will be disabled")
         # else:
         #    await self.bot.add_cog(ImageGenCommand(bot=self.bot))
-        self.bot.event(self.on_ready)
 
     async def on_ready(self):
         await self.setup_commands()
