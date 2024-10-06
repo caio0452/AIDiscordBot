@@ -27,6 +27,8 @@ class VectorDatabase:
             }
         )
 
+        self.db_data.initindex(False)
+
     async def search(self, data: str, limit: int=5, index_name: str | None = None) -> list[Any]:
         if index_name is None:
             ret = self.db_data.search(data, limit=limit)
