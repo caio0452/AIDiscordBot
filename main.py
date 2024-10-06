@@ -20,7 +20,7 @@ class DiscordBot:
         with open("providers.json", "r") as file:
             json_data: str = file.read()
         self.provider_store = ProviderStore.load_from_json(json_data)
-        self.vector_db = VectorDatabase(self.provider_store.get_provider_by_name("EMBEDDDINGS"))
+        self.vector_db = VectorDatabase(self.provider_store.get_provider_by_name("EMBEDDINGS_PROVIDER"))
 
     def run(self):
         self.bot.run(parameters.BOT_TOKEN)
