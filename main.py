@@ -3,11 +3,11 @@ import parameters
 
 from discord.ext import commands
 from chat_handler import ChatHandler
-from commands.rewrite import RewriteCommand
-from commands.translate import TranslateCommand
-from commands.search_command import SearchCommand
-from commands.sync_command_tree import SyncCommand
-from commands.image_gen_command import ImageGenCommand
+# from commands.rewrite import RewriteCommand
+# from commands.translate import TranslateCommand
+# from commands.search_command import SearchCommand
+# from commands.sync_command_tree import SyncCommand
+# from commands.image_gen_command import ImageGenCommand
 from providers import ProviderStore
 from vector_db import VectorDatabase
 
