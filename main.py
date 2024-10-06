@@ -1,5 +1,6 @@
 import json
 import discord
+import logging
 import parameters
 
 from discord.ext import commands
@@ -11,6 +12,13 @@ from chat_handler import ChatHandler
 # from commands.image_gen_command import ImageGenCommand
 from providers import ProviderStore
 from vector_db import VectorDatabase
+
+logger = logging.getLogger(__name__)
+file_handler = logging.FileHandler("app.log")
+file_handler.setLevel(logging.WARN) 
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+file_handler.setFormatter(formatter)
+logger.addHandler(file_handler)
 
 class DiscordBot:
     def __init__(self):
