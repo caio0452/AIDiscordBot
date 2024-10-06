@@ -1,3 +1,4 @@
+import json
 import discord
 import parameters
 
@@ -16,7 +17,9 @@ class DiscordBot:
         intents = discord.Intents.default()
         intents.message_content = True
         self.bot = commands.Bot(command_prefix='paper!', intents=intents)
-        self.provider_store = ProviderStore.load_from_json("providers.json")
+        with open("providers.json", "r") as file:
+            json_data = json.load(file)
+        self.provider_store = ProviderStore.load_from_json(json_data)
         self.vector_db = VectorDatabase(self.provider_store.get_provider_by_name("EMBEDDDINGS"))
 
     def run(self):
