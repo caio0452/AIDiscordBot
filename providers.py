@@ -30,13 +30,19 @@ class ProviderStore:
 
     @classmethod
     def load_from_json(cls, providers_json: str):
+        return ProviderStore(ProviderStore._load_provder_list_from_json(providers_json))
+
+    @staticmethod
+    def _load_provder_list_from_json(providers_json: str) -> List[Provider]:
         try:
             providers_data = json.loads(providers_json)
+            if not isinstance(providers_data, list):
+                raise ValueError("Providers data must be a list of JSON objects.")
             providers = [Provider(**provider_dict) for provider_dict in providers_data]
-            return cls(providers)
+            return providers 
         except (json.JSONDecodeError, ValueError) as e:
             raise RuntimeError(
-                f"Invalid providers JSON, must be a list of JSON objects containing provider_name, api_base, api_key."
+                "Invalid providers JSON, must be a list of JSON objects containing provider_name, api_base, api_key."
             ) from e
 
     def get_provider_by_name(self, name: str) -> Provider:
