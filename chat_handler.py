@@ -78,9 +78,9 @@ class ChatHandler(commands.Cog):
             return
         elif MessageFlag.LOG_REQUEST in message_flags:
             await self.handle_log_request(message)
-        elif MessageFlag.TOO_LONG:
+        elif MessageFlag.TOO_LONG in message_flags:
             await self.handle_too_long_message(message)
-        elif MessageFlag.PINGED_BOT:
+        elif MessageFlag.PINGED_BOT in message_flags:
             is_verbose = (MessageFlag.VERBOSE_REQUEST in message_flags)
             await self.respond_with_llm(message, verbose=is_verbose)
 
