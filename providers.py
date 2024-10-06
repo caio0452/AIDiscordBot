@@ -30,10 +30,10 @@ class ProviderStore:
 
     @classmethod
     def load_from_json(cls, providers_json: str):
-        return ProviderStore(ProviderStore._load_provder_list_from_json(providers_json))
+        return ProviderStore(ProviderStore._load_provider_list_from_json(providers_json))
 
     @staticmethod
-    def _load_provder_list_from_json(providers_json: str) -> List[Provider]:
+    def _load_provider_list_from_json(providers_json: str) -> List[Provider]:
         try:
             providers_data = json.loads(providers_json)
             if not isinstance(providers_data, list):

@@ -18,7 +18,7 @@ class DiscordBot:
         intents.message_content = True
         self.bot = commands.Bot(command_prefix='paper!', intents=intents)
         with open("providers.json", "r") as file:
-            json_data = json.load(file)
+            json_data: str = file.read()
         self.provider_store = ProviderStore.load_from_json(json_data)
         self.vector_db = VectorDatabase(self.provider_store.get_provider_by_name("EMBEDDDINGS"))
 
