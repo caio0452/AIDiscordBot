@@ -25,11 +25,11 @@ class KamiChan(AIBotData):
                  discord_bot_id: int):
         super().__init__(name, BotMemory())
         self.provider_store = provider_store
+        self.clients: dict[str, Any] = {}
         self._create_clients()
         self.discord_bot_id = discord_bot_id
         self.vector_db = vector_db
         self.memory: BotMemory = BotMemory()
-        self.clients: dict[str, Any] = {}
         self.RECENT_MEMORY_LENGTH = 5
         
     def _create_clients(self):
