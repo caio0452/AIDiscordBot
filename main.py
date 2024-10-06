@@ -19,6 +19,7 @@ file_handler.setLevel(logging.WARN)
 formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 file_handler.setFormatter(formatter)
 logger.addHandler(file_handler)
+logger.setLevel(logging.DEBUG)
 
 class DiscordBot:
     def __init__(self):
