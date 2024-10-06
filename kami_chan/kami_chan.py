@@ -1,14 +1,13 @@
-from memorized_message import MemorizedMessage
-from ai import OAICompatibleProvider
-from ai_bot import AIBotData, BotMemory
+from . import prompts
 from typing import Any
 from datetime import datetime
-from vector_db import QdrantVectorDbConnection
-from . import prompts
+from ai import LLMRequest, Prompt, LLMProvider
+from vector_db import VectorDatabase
+from ai_bot import AIBotData, BotMemory
+
+import datetime
 import providers
 import random, discord, openai
-import preset_queries
-import datetime
 
 #
 # TODO: This is a mess that has to be replaced with something data-driven
@@ -21,14 +20,16 @@ IMAGE_VIEWER_NAME = "KAMI_CHAN_IMAGE_VIEWER"
 class KamiChan(AIBotData):
     def __init__(self,
                  name: str,
-                 vector_db_conn: QdrantVectorDbConnection,
+                 vector_db: VectorDatabase,
+                 provider_store: providers.ProviderStore,
                  discord_bot_id: int):
         super().__init__(name, BotMemory())
-        self.clients: dict[str, OAICompatibleProvider] = {}
+        self.provider_store = provider_store
         self._create_clients()
         self.discord_bot_id = discord_bot_id
-        self.vector_db_conn = vector_db_conn
+        self.vector_db = vector_db
         self.memory: BotMemory = BotMemory()
+        self.clients: dict[str, Any] = {}
         self.RECENT_MEMORY_LENGTH = 5
         
     def _create_clients(self):
@@ -36,8 +37,8 @@ class KamiChan(AIBotData):
            MAIN_CLIENT_NAME, KNOWLEDGE_EXTRACTOR_NAME, PERSONALITY_REWRITER_NAME, IMAGE_VIEWER_NAME
         ]
         for name in required_provider_names:
-            provider = providers.get_provider_by_name(name)
-            client = OAICompatibleProvider(openai.AsyncOpenAI(
+            provider = self.provider_store.get_provider_by_name(name)
+            client = LLMProvider(openai.AsyncOpenAI(
                 api_key=provider.api_key, base_url=provider.api_base))
             self.clients[name] = client
 
@@ -115,41 +116,49 @@ class DiscordBotResponse:
             .replace("<-1>", random.choice(["<a:notlikepaper:1165467302578360401>"])) \
             .replace("<0>",  random.choice(["<:paperOhhh:1018366673423695872>"]))
 
-    async def fetch_last_user_query(self, model: OAICompatibleProvider) -> str:
+    async def fetch_last_user_query(self, model: LLMProvider) -> str:
         user_prompt_str: str = ""
         user_prompt_str = "\n".join(
             [memorized_message.text for memorized_message in self.bot_data.memory.get_memory()]
         )
         last_user = self.bot_data.memory.get_memory()[-1].nick
 
-        response_choice = await model.generate_response(
-            prompt=prompts.QUERY_SUMMARIZER_PROMPT \
-                .replace("((user_query))", user_prompt_str) \
-                .replace("((last_user))", last_user).to_openai_format(),
-            model='meta-llama/llama-3.1-405b-instruct',
-            temperature=0.2
+        response_choice = await model.send_request(
+            LLMRequest(
+                prompt=prompts.QUERY_SUMMARIZER_PROMPT \
+                    .replace("((user_query))", user_prompt_str) \
+                    .replace("((last_user))", last_user).to_openai_format(),
+                model_name='meta-llama/llama-3.1-405b-instruct',
+                temperature=0.2
+            )
         )
         return response_choice.message.content
 
-    async def summarize_relevant_facts(self, model: OAICompatibleProvider, user_query: str) -> str | None:
+    async def summarize_relevant_facts(self, model: LLMProvider, user_query: str) -> str | None:
         user_prompt_str = ""
-        knowledge_list = await self.bot_data.vector_db_conn.query_relevant_knowledge(
-            await self.bot_data.sanitize_str(user_query))
+        sanitized_msg = await self.bot_data.sanitize_str(user_query)
+
+        knowledge_list = await self.bot_data.vector_db.search(sanitized_msg, 5, "knowledge")
+
         if len(knowledge_list) == 0:
             return None
+
         for knowledge in knowledge_list:
             user_prompt_str += "INFO: \n" + knowledge.payload
+
         self.log_verbose(f"--- DATABASE CLOSEST MATCHES ---\n{user_prompt_str}\n")
         user_prompt_str += "QUERY: " + user_query
-        response_choice = await model.generate_response(
-            prompt=prompts.INFO_SELECTOR_PROMPT \
-                .replace("((user_query))", user_prompt_str).to_openai_format(),
-            model='gpt-4o-mini'
+        response_choice = await model.send_request(
+            LLMRequest(
+                prompt=prompts.INFO_SELECTOR_PROMPT \
+                    .replace("((user_query))", user_prompt_str).to_openai_format(),
+                model_name='gpt-4o-mini'
+            )
         )
-        queries_manager = await preset_queries.manager(model)
+        # queries_manager = await preset_queries.manager(model)
         known_query_info = ""
-        for preset in await queries_manager.get_all_matching_user_utterance(user_query):
-            known_query_info += preset.answer + "\n"
+        # for preset in await queries_manager.get_all_matching_user_utterance(user_query):
+        #    known_query_info += preset.answer + "\n"
         return f"{response_choice.message.content}\n{known_query_info}"
 
     async def describe_image_if_present(self, message) -> str | None:
@@ -185,11 +194,11 @@ class DiscordBotResponse:
             self.log_verbose("The knowledge database has nothing relevant", category="INFO FROM KNOWLEDGE DB")
 
         prompt: list[Any] = [
-            OAICompatibleProvider.system_msg(system_prompt_str)
+            Prompt.system_msg(system_prompt_str)
         ]
         old_messages_str = ""
-        for old_message in await self.bot_data.vector_db_conn.query_relevant_messages(original_msg.content):
-            old_messages_str += f"[{old_message.sent.isoformat()} by {old_message.nick}] {old_message.text}"
+        # for old_message in await self.bot_data.vector_db_conn.query_relevant_messages(original_msg.content):
+        #     old_messages_str += f"[{old_message.sent.isoformat()} by {old_message.nick}] {old_message.text}"
 
         system_prompt_str += \
         f"""
@@ -199,13 +208,13 @@ class DiscordBotResponse:
 
         for memorized_message in memory_snapshot.get_memory():
             if memorized_message.is_bot:
-                prompt.append(OAICompatibleProvider.assistant_msg(memorized_message.text))
+                prompt.append(Prompt.assistant_msg(memorized_message.text))
             else:
-                prompt.append(OAICompatibleProvider.user_msg(memorized_message.text))
+                prompt.append(Prompt.user_msg(memorized_message.text))
 
         img_desc = await self.describe_image_if_present(original_msg)
         if img_desc:
-            prompt.append(OAICompatibleProvider.user_msg(img_desc))
+            prompt.append(Prompt.user_msg(img_desc))
 
         self.log_verbose(f"--- FULL PROMPT ---\n{str(prompt)}\n")
         return prompt

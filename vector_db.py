@@ -1,178 +1,62 @@
-import discord
-import openai
-from datetime import datetime
-from typing import List
-from memorized_message import MemorizedMessage
-from qdrant_client import QdrantClient
-from qdrant_client.http import models
-from dataclasses import dataclass
-from ai import OAICompatibleProvider
+import hashlib
+import numpy as np
 
-@dataclass
-class VectorSearchResult:
-    vector: list[float]
-    payload: str
-    score: float
+from typing import Any
+from openai import AsyncOpenAI
+from txtai import Embeddings
+from providers import Provider
+from ai import EmbeddingsClient
 
-class QdrantVectorDbConnection:
-    def __init__(self, qdrant_client: QdrantClient, openai_client: openai.AsyncOpenAI, vector_dimension: int):
-        self.qdrant_client = qdrant_client
-        self.openai_client = OAICompatibleProvider(openai_client)
-        self.vector_dimension = vector_dimension
-        self.upserted_count = 0
+class VectorDatabase:
+    def __init__(self, provider: Provider): 
+        self.vectorizer = EmbeddingsClient(provider)
 
-        collection_names = [col.name for col in self.qdrant_client.get_collections().collections]
+        def transform(inputs): # TODO: this is sync. Performance concern?
+            resp = self.vectorizer.vectorize(input=inputs)
+            return np.array([resp], dtype=np.float32)
 
-        # TODO: check if files changed instead, we don't always need to re-index
-        if "messages" in collection_names:
-            self.qdrant_client.delete_collection("messages")
-        if "knowledge" in collection_names:
-            self.qdrant_client.delete_collection("knowledge")
-        if "qa_knowledge" in collection_names:
-            self.qdrant_client.delete_collection("qa_knowledge")
-
-        self.qdrant_client.create_collection(
-            collection_name="messages",
-            vectors_config=models.VectorParams(size=3072, distance=models.Distance.DOT),
-        )
-        self.qdrant_client.create_collection(
-            collection_name="knowledge",
-            vectors_config=models.VectorParams(size=3072, distance=models.Distance.DOT),
-        )
-        self.qdrant_client.create_collection(
-            collection_name="qa_knowledge",
-            vectors_config=models.VectorParams(size=3072, distance=models.Distance.DOT),
-        )
-
-    def _collection_exists(self, name: str) -> bool:
-        try:
-            self.qdrant_client.get_collection(name)
-            return True
-        except:
-            return False
-
-    async def add_messages(self, messages: List[discord.Message]):
-        payloads = []
-        message_contents = [message.content for message in messages]
-        vectors = await self.openai_client.vectorize_many(message_contents)
-
-        for i, message in enumerate(messages):
-            payload = {
-                "text": message.content,
-                "nick": message.author.nick or message.author.name,
-                "sent": message.created_at.strftime("%Y-%m-%d %H:%M:%S"),
-                "is_bot": message.author.bot,
+        self.db_data = Embeddings(
+            config={
+                "transform": transform, 
+                "backend": "numpy", 
+                "content": True,
+                "indexes": {
+                    "knowledge": {},
+                    "past_messages": {}
+                }
             }
-            payloads.append({
-                "id": self.upserted_count + i,
-                "vector": vectors[i],
-                "payload": payload
-            })
-        self.qdrant_client.upsert(
-            collection_name="messages",
-            points=payloads
-        )
-        self.upserted_count += len(payloads)
-
-    async def add_qa_knowledge(self, qa_pairs: List[dict[str, str]]):
-        questions = [qa_pair["question"] for qa_pair in qa_pairs]
-        vectors = await self.openai_client.vectorize_many(questions)
-
-        payloads = []
-        for i, qa_pair in enumerate(qa_pairs):
-            payload = {"text": qa_pair["answer"]}
-            payloads.append({
-                "id": self.upserted_count + i,
-                "vector": vectors[i],
-                "payload": payload
-            })
-        self.qdrant_client.upsert(
-            collection_name="qa_knowledge",
-            points=payloads
         )
 
-        self.upserted_count += len(payloads)
+    async def search(self, data: str, limit: int=5, index_name: str | None = None) -> list[Any]:
+        if index_name is None:
+            ret = self.db_data.search(data, limit=limit)
+        else:
+            ret = self.db_data.search(data, limit=limit, index=index_name)
 
-    async def add_text_knowledge(self, knowledge_list: List[str]):
-        vectors = await self.openai_client.vectorize_many(knowledge_list)
-        payloads = []
-
-        for i, paragraph in enumerate(knowledge_list):
-            payload = {"text": paragraph}
-            payloads.append({
-                "id": self.upserted_count + i,
-                "vector": vectors[i],
-                "payload": payload
-            })
-
-        self.qdrant_client.upsert(
-            collection_name="knowledge",
-            points=payloads
-        )
-
-        self.upserted_count += len(payloads)
-
-    async def query_relevant_messages(self, query: str) -> List[MemorizedMessage]:
-        vector = await self.openai_client.vectorize(query)
-        search_results = self.qdrant_client.search(
-            collection_name="messages",
-            query_vector=vector,
-            query_filter=None,
-            limit=5,
-            with_payload=True,
-            search_params=models.SearchParams(hnsw_ef=128, exact=True),
-        )
-        IRRELEVANT_MSG_ID = -1
-        msgs = [
-            MemorizedMessage(text=hit.payload['text'], nick=hit.payload['nick'],
-                             sent=datetime.strptime(hit.payload['sent'], "%Y-%m-%d %H:%M:%S"),
-                             is_bot=hit.payload['is_bot'],
-                             message_id=IRRELEVANT_MSG_ID)
-            for hit in search_results
-        ]
-        return msgs
-
-    async def query_relevant_knowledge(self, query: str) -> List[VectorSearchResult]:
-        vector = await self.openai_client.vectorize(query)
-        search_results = self.qdrant_client.search(
-            collection_name="knowledge",
-            query_vector=vector,
-            query_filter=None,
-            limit=5,
-            with_payload=True,
-            score_threshold=0.3
-        )
-
-        ret: list[VectorSearchResult] = []
-        for result in search_results:
-            ret.append(VectorSearchResult(result.vector, result.payload['text'], result.score))
-
+        if not isinstance(ret, list):
+            raise RuntimeError(f"Expected database search to return list, not object {str(ret)} of type {type(ret)}")
         return ret
 
-    async def query_qa_knowledge(self, question: str) -> List[VectorSearchResult]:
-        vector = await self.openai_client.vectorize(query)
+    async def get_index(self, index_name: str):
+        indexes = self.db_data.indexes
+        if indexes is None:
+            raise RuntimeError("There are no indexes to search")
+        try:
+            return indexes[index_name]
+        except Exception as e:
+            raise RuntimeError(f"Failed to access index {index_name}") from e
 
-        search_results = self.qdrant_client.search(
-            collection_name="qa_knowledge",
-            query_vector=vector,
-            query_filter=None,
-            limit=5,
-            with_payload=True,
-        )
+    async def index(self, *, index_name: str, data: str, metadata: str, entry_id: int | None):
+        target_index = await self.get_index(index_name)
 
-        ret: List[VectorSearchResult] = []
-        for result in search_results:
-            ret.append(VectorSearchResult(result.vector, result.payload['text'], result.score))
+        if entry_id is None:
+            combined = data + metadata
+            id = int(hashlib.sha256(combined.encode()).hexdigest(), 16) & 0xFFFFFFFF  
+        else:
+            id = entry_id
 
-        return ret
+        target_index.index((id, data, metadata))
 
-class QdrantVectorDb:
-    def __init__(self, host: str, openai_client: openai.AsyncOpenAI, port: int, vector_dimension: int):
-        self.host = host
-        self.port = port
-        self.openai_client = openai_client
-        self.vector_dimension = vector_dimension
-
-    def connect(self) -> QdrantVectorDbConnection:
-        client = QdrantClient(host=self.host, port=self.port)
-        return QdrantVectorDbConnection(client, self.openai_client, self.vector_dimension)
+    async def delete_ids(self, *, index_name: str, entry_ids: list[int]) -> int:
+        target_index = await self.get_index(index_name)
+        return target_index.remove_ids(entry_ids)

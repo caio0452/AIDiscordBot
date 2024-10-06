@@ -1,44 +1,46 @@
-from dataclasses import dataclass
+from pydantic import BaseModel, Field, model_validator
+from typing import List
 from environment_vars import get_environment_var
 import json
 
-ENVIRONMENT_VAR_NAME = "API_PROVIDERS"
-
-@dataclass
-class Provider:
+class Provider(BaseModel):
     provider_name: str
-    api_base: str
+    api_base: str = Field(default='https://api.openai.com/v1')
     api_key: str
 
-    def __post_init__(self):
-        if self.api_base is None or self.api_base == '':
-            self.api_base = 'https://api.openai.com/v1'
+    @model_validator(mode='before')
+    @classmethod
+    def check_and_load_api_key(cls, values):
+        api_key = values.get('api_key')
+        if api_key and api_key.startswith('[') and api_key.endswith(']'):
+            env_var_name = api_key[1:-1]
+            loaded_api_key = get_environment_var(env_var_name, required=True)
+            if not loaded_api_key:
+                raise ValueError(f"Environment variable {env_var_name} not set for API key.")
+            values['api_key'] = loaded_api_key
+        return values
 
-def _parse_providers(providers_json: str) -> list[Provider]:
-    providers_data = json.loads(providers_json)
-    providers = []
-    for provider_dict in providers_data:
+class ProviderStore:
+    def __init__(self, providers: List[Provider]):
+        self.providers = providers
+
+    @classmethod
+    def from_environment_var(cls, environment_var: str) -> "ProviderStore":
+        return ProviderStore.load_from_json(get_environment_var(environment_var, required=True))
+
+    @classmethod
+    def load_from_json(cls, providers_json: str):
         try:
-            provider = Provider(
-                provider_dict["provider_name"],
-                provider_dict["api_base"],
-                provider_dict["api_key"],
-            )
-        except KeyError as e:
+            providers_data = json.loads(providers_json)
+            providers = [Provider(**provider_dict) for provider_dict in providers_data]
+            return cls(providers)
+        except (json.JSONDecodeError, ValueError) as e:
             raise RuntimeError(
-                f"Invalid {ENVIRONMENT_VAR_NAME} environment variable, must be a list of JSON objects containing provider_name, api_base, api_key") from e
+                f"Invalid providers JSON, must be a list of JSON objects containing provider_name, api_base, api_key."
+            ) from e
 
-        providers.append(provider)
-    return providers
-
-def get_provider_by_name(name: str) -> Provider:
-    for provider in _providers_list:
-        if provider.provider_name == name:
-            return provider 
-    raise RuntimeError(
-        f"Missing provider named {name}, please add it to the {ENVIRONMENT_VAR_NAME}"
-        f"environment variable")
-
-_providers_json = get_environment_var(ENVIRONMENT_VAR_NAME, required=True)
-_providers_list = _parse_providers(_providers_json)
-
+    def get_provider_by_name(self, name: str) -> Provider:
+        for provider in self.providers:
+            if provider.provider_name == name:
+                return provider
+        raise RuntimeError(f"Missing provider named {name}, please add it to the providers list")

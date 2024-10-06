@@ -1,6 +1,6 @@
 from ai import Prompt
 
-REWRITER_PROMPT = Prompt(
+REWRITER_PROMPT = Prompt(messages=
     [
         {"role": "user", "content":
 f"""You're a message rewriter for an AI anime mascot, called Kami-Chan (your nickname is Paper-Chan). Given a personality-less message, change the following:
@@ -35,7 +35,7 @@ MESSAGE: <message>
     ]
 )
 
-KAMI_CHAN_PROMPT = Prompt(
+KAMI_CHAN_PROMPT = Prompt(messages=
     [
         {"role": "system",
         "content": 
@@ -62,7 +62,7 @@ Useful links: https://docs.papermc.io/, https://github.com/PaperMC, https://pape
     ]
 )
 
-QUERY_SUMMARIZER_PROMPT = Prompt(
+QUERY_SUMMARIZER_PROMPT = Prompt(messages=
     [
         {
             "role": "system",
@@ -98,7 +98,7 @@ Given the log below, respond for user ((last_user))
     ]
 )
 
-INFO_SELECTOR_PROMPT = Prompt([
+INFO_SELECTOR_PROMPT = Prompt(messages=[
     {
         "role": "system",
         "content": 

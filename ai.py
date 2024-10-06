@@ -1,94 +1,20 @@
-import openai
 import json
-from typing import Any, List, Optional
+import openai
+
+from providers import Provider
+from typing import Any, Optional
 from abc import ABC, abstractmethod
-from openai.types import CompletionChoice
-from dataclasses import dataclass
+from pydantic import BaseModel, Field
 
-class ContentModerator(ABC):
-    @abstractmethod
-    async def is_flagged(self, input: Any) -> bool:
-        raise NotImplementedError("is_flagged")
+class Prompt(BaseModel):
+    messages: list[dict[str, str]] = Field(...)
 
-class OpenAIModerator(ContentModerator):
-    def __init__(self, client: openai.AsyncClient):
-        self.client = client
-
-    async def is_flagged(self, input) -> Any:
-        response = await self.client.moderations.create(
-            input=input
-        )
-        return response.results[0].flagged
-
-async def _text_to_vector(self, openai_client: openai.AsyncOpenAI, texts: List[str]) -> List[List[float]]:
-    response = await openai_client.embeddings.create(
-        input=texts,
-        model="text-embedding-3-large"
-    )
-    vectors = [e.embedding for e in response.data]
-    return vectors
-
-class OAICompatibleProvider:
-    def __init__(self, client: openai.AsyncClient):
-        self.client = client
-
-    async def vectorize(self, text: str, model="text-embedding-3-large") -> List[float]:
-        model_in = [text]
-        response = await self.client.embeddings.create(
-            input=model_in,
-            model=model
-        )
-        return response.data[0].embedding
-
-    async def vectorize_many(self, texts: List[str], model="text-embedding-3-large") -> List[List[float]]:
-        model_in = texts
-        response = await self.client.embeddings.create(
-            input=model_in,
-            model=model
-        )
-        return [e.embedding for e in response.data]
-
-    async def generate_response(self,
-                                prompt: list[dict[str, str]],
-                                model: str,
-                                max_tokens: int=300,
-                                temperature: float=0.5,
-                                logit_bias: dict[str, int] = {}
-                                ) -> openai.types.CompletionChoice:
-        raw_response = await self.client.chat.completions.create(
-            messages=prompt,
-            model=model,
-            max_tokens=max_tokens,
-            temperature=temperature,
-            logit_bias=logit_bias
-        )
-
-        if raw_response.choices is None or len(raw_response.choices) == 0:
-            resp_json = json.loads(raw_response.to_json())
-            if "error" in resp_json and resp_json["error"]: # For OpenRouter compat
-                raise RuntimeError(resp_json["error"])
-            else:
-                raise RuntimeError(f"Provider returned no response choices. Response was {str(raw_response)}")
-        else:
-            return raw_response.choices[0]
-      
-    async def describe_image(self, image_url: str, user_context: str) -> CompletionChoice:
-        initial_msg = OAICompatibleProvider.user_msg(f"Describe the image. {user_context}", image_url=image_url)
-        print(initial_msg)
-        raw_response = await self.client.chat.completions.create(
-            messages=[initial_msg],
-            model="openai/gpt-4o",
-            max_tokens=4096
-        )
-        print(raw_response.choices[0])
-        return raw_response.choices[0]
-        
     @staticmethod
     def system_msg(content: str) -> dict[str, str]:
         return {"role": "system", "content": content}
 
     @staticmethod
-    def user_msg(content: str, image_url: str | None = None) -> dict[str, str]:
+    def user_msg(content: str, image_url: str | None = None) -> dict[str, Any]:
         if image_url:
             return {
                 "role": "user",
@@ -107,14 +33,10 @@ class OAICompatibleProvider:
     def assistant_msg(content: str) -> dict[str, str]:
         return {"role": "assistant", "content": content}
 
-class Prompt:
-    def __init__(self, messages: list[dict[str, str]]):
-        self._dict = messages
-
     def replace(self, placeholder: str, target: str) -> "Prompt":
         found_placeholder = False
         new_prompts = []
-        for msg in self._dict:
+        for msg in self.messages:
             new_prompt_dict = {}
             for key, value in msg.items():
                 new_value = value.replace(placeholder, target)
@@ -126,7 +48,104 @@ class Prompt:
         if not found_placeholder:
             raise ValueError(f"Placeholder '{placeholder}' not found")
 
-        return Prompt(new_prompts)
+        return Prompt(messages=new_prompts)
 
-    def to_openai_format(self) -> dict[str, str]:
-        return self._dict
+    def to_openai_format(self) -> list[dict[str, str]]:
+        return self.messages
+
+class LLMRequest(BaseModel):
+    prompt: Prompt 
+    model_name: str
+    temperature: float = 0.5
+    max_tokens: int = 300
+    logit_bias: Optional[dict[str, int]] = {}
+
+    class Config:
+        json_encoders = {
+            Prompt: lambda p: p.to_openai_format()
+        }
+
+class ContentModerator(ABC):
+    @abstractmethod
+    async def is_flagged(self, input: Any) -> bool:
+        raise NotImplementedError("is_flagged")
+
+class OpenAIModerator(ContentModerator):
+    def __init__(self, client: openai.AsyncClient):
+        self.client = client
+
+    async def is_flagged(self, input) -> Any:
+        response = await self.client.moderations.create(
+            input=input
+        )
+        return response.results[0].flagged
+
+# TODO: should be provider (e.g. OpenAI) agnostic
+class EmbeddingsClient:
+    def __init__(self, provider: Provider):
+        self.client = openai.AsyncOpenAI(
+            api_key=provider.api_key, 
+            base_url=provider.api_base
+        )
+
+    async def vectorize(self, input: str | list[str], model="text-embedding-3-large") -> list[float] | list[list[float]]:
+        if isinstance(input, str):
+            response = await self.client.embeddings.create(
+                input=input,
+                model=model
+            )
+            return response.data[0].embedding
+        elif isinstance(input, list):
+            response = await self.client.embeddings.create(
+                input=input,
+                model=model
+            )
+            return [e.embedding for e in response.data]
+
+class SyncEmbeddingsClient:
+    def __init__(self, provider: Provider):
+        self.client = openai.OpenAI(
+            api_key=provider.api_key, 
+            base_url=provider.api_base
+        )
+
+    def vectorize(self, input: str | list[str], model="text-embedding-3-large") -> list[float] | list[list[float]]:
+        if isinstance(input, str):
+            response = self.client.embeddings.create(
+                input=input,
+                model=model
+            )
+            return response.data[0].embedding
+        elif isinstance(input, list):
+            response = self.client.embeddings.create(
+                input=input,
+                model=model
+            )
+            return [e.embedding for e in response.data]
+
+class LLMProvider:
+    def __init__(self, client: openai.AsyncClient):
+        self.client = client
+
+    @classmethod
+    def from_openai_client(cls, client: openai.AsyncClient):
+        return cls(client)
+
+    async def send_request(self, request: LLMRequest) -> openai.types.CompletionChoice:
+        raw_response = await self.client.chat.completions.create(
+            messages=request.prompt.to_openai_format(),
+            model=request.model_name,
+            max_tokens=request.max_tokens,
+            temperature=request.temperature,
+            logit_bias=request.logit_bias
+        )
+
+        if raw_response.choices is None or len(raw_response.choices) == 0:
+            resp_json = json.loads(raw_response.to_json())
+            if "error" in resp_json and resp_json["error"]:
+                raise RuntimeError(resp_json["error"])
+            else:
+                raise RuntimeError(f"Provider returned no response choices. Response was {str(raw_response)}")
+        else:
+            return raw_response.choices[0]
+        

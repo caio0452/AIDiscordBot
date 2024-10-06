@@ -37,7 +37,6 @@ class BotMemory:
 
         return BotMemory(initial_memories=ret)
 
-        
     def get_memory(self) -> list[MemorizedMessage]:
         return self._memory
 
