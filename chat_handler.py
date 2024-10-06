@@ -44,29 +44,29 @@ class ChatHandler(commands.Cog):
         self.vector_database = vector_database
 
     def get_message_flags(self, message: discord.Message) -> list[MessageFlag]:
-        types = [] 
+        flags = [] 
         if message.author.bot:
-            types.append(MessageFlag.BOT_MESSAGE)
+            flags.append(MessageFlag.BOT_MESSAGE)
 
         if message.content.endswith("--l"):
-            types.append(MessageFlag.LOG_REQUEST)
+            flags.append(MessageFlag.LOG_REQUEST)
 
         if message.content.endswith("--v"):
-            types.append(MessageFlag.VERBOSE_REQUEST)
+            flags.append(MessageFlag.VERBOSE_REQUEST)
         
         if len(message.content) > MAX_CHAT_CHARACTERS:
-            types.append(MessageFlag.TOO_LONG)
+            flags.append(MessageFlag.TOO_LONG)
         
         if self.rate_limiter.is_rate_limited(message.author.id):
-            types.append(MessageFlag.RATE_LIMITED)
+            flags.append(MessageFlag.RATE_LIMITED)
         
         if self.bot.user in message.mentions:
-            types.append(MessageFlag.PINGED_BOT)
+            flags.append(MessageFlag.PINGED_BOT)
         
-        if len(types) == 0:
+        if len(flags) == 0:
             raise RuntimeError(f"Could not classify message: {message.content}")
 
-        return types
+        return flags
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message) -> None:
