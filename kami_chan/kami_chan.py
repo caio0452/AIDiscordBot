@@ -82,11 +82,13 @@ class DiscordBotResponse:
         
         for model_name in model_names:
             try:
-                response = await self.bot_data.clients[MAIN_CLIENT_NAME].generate_response(
-                    prompt=full_prompt,
-                    model=model_name,
-                    max_tokens=2000,
-                    temperature=0
+                response = await self.bot_data.clients[MAIN_CLIENT_NAME].send_request(
+                    LLMRequest(
+                        prompt=Prompt(messages=full_prompt),
+                        model_name=model_name,
+                        max_tokens=2000,
+                        temperature=0
+                    )
                 )
                 response_txt = response.message.content
                 self.log_verbose(response_txt, category="PERSONALITY-LESS MESSAGE")
@@ -105,11 +107,13 @@ class DiscordBotResponse:
         return await self.create_or_fallback(message, ["google/gemini-pro-1.5-exp", "openai/gpt-4o-mini", "meta-llama/llama-3.1-405b-instruct"])
 
     async def personality_rewrite(self, message: str) -> str:
-        response = await self.bot_data.clients[PERSONALITY_REWRITER_NAME].generate_response(
-            prompt=prompts.REWRITER_PROMPT.replace("<message>", message).to_openai_format(),
-            model="meta-llama/llama-3.1-405b-instruct",
-            max_tokens=2000,
-            temperature=0.3,
+        response = await self.bot_data.clients[PERSONALITY_REWRITER_NAME].send_request(
+            LLMRequest(
+                prompt=Prompt(messages=prompts.REWRITER_PROMPT.replace("<message>", message).to_openai_format()),
+                model_name="meta-llama/llama-3.1-405b-instruct",
+                max_tokens=2000,
+                temperature=0.3
+            )
         )  
         return response.message.content \
             .strip() \
