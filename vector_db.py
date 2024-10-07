@@ -12,8 +12,7 @@ class VectorDatabase:
 
         def transform(inputs): # TODO: this is sync. Performance concern?
             resp = self.vectorizer.vectorize(input=inputs)
-            return [0, 0, 0] # Test
-            # return np.array(resp, dtype=np.float32)
+            return np.array(resp, dtype=np.float32)
 
         self.db_data = Embeddings(
             config={
@@ -57,7 +56,7 @@ class VectorDatabase:
         else:
             id = entry_id
 
-        target_index.index((id, data, metadata))
+        target_index.index([(id, data, metadata)])
 
     async def delete_ids(self, *, index_name: str, entry_ids: list[int]) -> int:
         target_index = await self.get_index(index_name)
