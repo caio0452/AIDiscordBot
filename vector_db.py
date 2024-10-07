@@ -4,7 +4,7 @@ import numpy as np
 from typing import Any
 from txtai import Embeddings
 from providers import Provider
-from ai import EmbeddingsClient
+from ai import SyncEmbeddingsClient
 
 class VectorDatabase:
     def __init__(self, provider: Provider): 
