@@ -127,7 +127,7 @@ class DiscordBotResponse:
             LLMRequest(
                 prompt=prompts.QUERY_SUMMARIZER_PROMPT \
                     .replace("((user_query))", user_prompt_str) \
-                    .replace("((last_user))", last_user).to_openai_format(),
+                    .replace("((last_user))", last_user),
                 model_name='meta-llama/llama-3.1-405b-instruct',
                 temperature=0.2
             )
@@ -151,7 +151,7 @@ class DiscordBotResponse:
         response_choice = await model.send_request(
             LLMRequest(
                 prompt=prompts.INFO_SELECTOR_PROMPT \
-                    .replace("((user_query))", user_prompt_str).to_openai_format(),
+                    .replace("((user_query))", user_prompt_str),
                 model_name='gpt-4o-mini'
             )
         )
