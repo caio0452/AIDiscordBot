@@ -137,7 +137,6 @@ class DiscordBotResponse:
     async def summarize_relevant_facts(self, model: LLMProvider, user_query: str) -> str | None:
         user_prompt_str = ""
         sanitized_msg = await self.bot_data.sanitize_str(user_query)
-
         knowledge_list = await self.bot_data.vector_db.search(sanitized_msg, 5, "knowledge")
 
         if len(knowledge_list) == 0:
