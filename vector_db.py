@@ -8,7 +8,7 @@ from ai import EmbeddingsClient
 
 class VectorDatabase:
     def __init__(self, provider: Provider): 
-        self.vectorizer = EmbeddingsClient(provider)
+        self.vectorizer = SyncEmbeddingsClient(provider)
 
         def transform(inputs): # TODO: this is sync. Performance concern?
             resp = self.vectorizer.vectorize(input=inputs)
