@@ -180,7 +180,7 @@ class DiscordBotResponse:
         # TODO: the "Prompt" class is weirdly used here, but not worth looking too much into as of this will be replaced by a JSON file eventually
         system_prompt_str = prompts.KAMI_CHAN_PROMPT \
             .replace("((nick))", memory_snapshot.get_memory()[-1].nick) \
-            .replace("((now))", now_str)._dict[0]["content"]
+            .replace("((now))", now_str).messages[0]["content"]
 
         user_query = await self.fetch_last_user_query(model)
         self.log_verbose(user_query, category="USER QUERY")
