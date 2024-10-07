@@ -143,7 +143,7 @@ class DiscordBotResponse:
             return None
 
         for knowledge in knowledge_list:
-            user_prompt_str += "INFO: \n" + knowledge.payload
+            user_prompt_str += "INFO: \n" + str(knowledge) # TODO: what's the type of this?
 
         self.log_verbose(f"--- DATABASE CLOSEST MATCHES ---\n{user_prompt_str}\n")
         user_prompt_str += "QUERY: " + user_query
