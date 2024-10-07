@@ -2,7 +2,6 @@ import hashlib
 import numpy as np
 
 from typing import Any
-from openai import AsyncOpenAI
 from txtai import Embeddings
 from providers import Provider
 from ai import EmbeddingsClient
@@ -13,8 +12,8 @@ class VectorDatabase:
 
         def transform(inputs): # TODO: this is sync. Performance concern?
             resp = self.vectorizer.vectorize(input=inputs)
-            print(f"Response: {resp}")
-            return np.array(resp, dtype=np.float32)
+            return [0, 0, 0] # Test
+            # return np.array(resp, dtype=np.float32)
 
         self.db_data = Embeddings(
             config={
