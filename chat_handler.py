@@ -18,7 +18,7 @@ MSG_ERROR = f"Sorry, there was an error!! {KamiChan.Vocabulary.EMOJI_DESPAIR} ``
 MSG_DISCLAIMER = f"-# Unofficial bot. FICTITIOUS AI-generated content. | [Learn more.](https://discord.com/channels/532557135167619093/1192649325709381673/1196285641978302544)"
 MSG_LOG_FILE_REPLY = "Verbose logs for message ID {} attached (only last 10 are stored)"
 MSG_INVALID_LOG_REQUEST = ":x: Expected a message ID before --l, not '{}'"
-MODEL_REQUEST_ORDER = ["google/gemini-flash-1.5", "qwen/qwen-2-72b-instruct", "meta-llama/llama-3-70b-instruct"]
+MODEL_REQUEST_ORDER = ["qwen/qwen-2.5-72b-instruct", "meta-llama/llama-3.1-405b", "meta-llama/llama-3-70b-instruct"]
 
 class MessageFlag:
     BOT_MESSAGE = "BOT_MESSAGE"
