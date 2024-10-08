@@ -142,7 +142,19 @@ class ChatHandler(commands.Cog):
             return await reply.edit(content=resp_str)
 
     async def send_discord_response(self, reply: discord.Message, resp_str: str):
-        await reply.edit(content=f"{resp_str}\n{MSG_DISCLAIMER}")
+        CHUNK_SIZE = 1800 
+        chunks = []
+        for i in range(0, len(resp_str), CHUNK_SIZE):
+            chunks.append(resp_str[i:i + CHUNK_SIZE])
+        
+        previous_message: discord.Message | None = None
+        for i, chunk in enumerate(chunks):
+            if i == 0:
+                previous_message = await reply.edit(content=f"{chunk}\n{MSG_DISCLAIMER}")
+            else:
+                if previous_message is None: 
+                    raise RuntimeError("First message in reply chain is not set")
+                previous_message = await previous_message.reply(content=chunk)
 
     async def memorize_message(self, message: discord.Message):
         await self.ai_bot.memory.memorize_short_term(
