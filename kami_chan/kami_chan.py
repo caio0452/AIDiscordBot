@@ -175,7 +175,15 @@ class DiscordBotResponse:
             if attachment.content_type.startswith("image/"):
                 await message.add_reaction("👀")
                 # Todo: only last message is possibly not enough context
-                response = await self.bot_data.clients[IMAGE_VIEWER_NAME].describe_image(attachment.url, message.content)
+                response = await self.bot_data.clients[IMAGE_VIEWER_NAME].send_request(
+                    LLMRequest(
+                        prompt=Prompt.user_msg(
+                            content=f"Describe the image in a sufficient way to answer the following query: '{message.content}'" \
+                            "If the query is empty, just describe the image. ",
+                            image_url=attachment.url),
+                            model_name="google/gemini-pro-1.5"
+                    )
+                )
                 return response.message.content
 
     async def build_full_prompt(self, memory_snapshot: BotMemory, original_msg: discord.Message) -> list[Any]:
