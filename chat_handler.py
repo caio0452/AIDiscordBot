@@ -71,12 +71,12 @@ class ChatHandler(commands.Cog):
         
         if MessageFlag.BOT_MESSAGE in message_flags: 
             return
-        if not MessageFlag.PINGED_BOT in message_flags:
-            return
         elif MessageFlag.RATE_LIMITED in message_flags: 
             return
         elif MessageFlag.LOG_REQUEST in message_flags:
             await self.handle_log_request(message)
+        if not MessageFlag.PINGED_BOT in message_flags: # Handle logs even when bot is not pinged
+            return
         elif MessageFlag.TOO_LONG in message_flags:
             await self.handle_too_long_message(message)
         elif MessageFlag.PINGED_BOT in message_flags:
