@@ -117,10 +117,11 @@ class ChatHandler(commands.Cog):
         
         try:
             resp_str, verbose_log = await self.generate_response(message, verbose)
+            # TODO: superfluous edits
             if verbose:
                 reply = await self.attach_log(reply, resp_str, verbose_log)
             await self.memorize_message(reply)
-            await self.add_disclaimer(reply, resp_str)
+            await self.send_discord_response(reply, resp_str)
             self.cache_log(reply.id, verbose_log)
         except Exception as e:
             await self.handle_error(message, reply, e)
@@ -140,7 +141,7 @@ class ChatHandler(commands.Cog):
         else:
             return await reply.edit(content=resp_str)
 
-    async def add_disclaimer(self, reply: discord.Message, resp_str: str):
+    async def send_discord_response(self, reply: discord.Message, resp_str: str):
         await reply.edit(content=f"{resp_str}\n{MSG_DISCLAIMER}")
 
     async def memorize_message(self, message: discord.Message):
