@@ -7,7 +7,7 @@ from abc import ABC, abstractmethod
 from pydantic import BaseModel, Field
 
 class Prompt(BaseModel):
-    messages: list[dict[str, str]] = Field(...)
+    messages: list[dict[str, str | dict]] = Field(...)
 
     @staticmethod
     def system_msg(content: str) -> dict[str, str]:
