@@ -11,7 +11,7 @@ from memorized_message import MemorizedMessage
 from kami_chan.kami_chan import KamiChan, DiscordBotResponse
 
 BOT_NAME = "Kami-Chan"
-MAX_CHAT_CHARACTERS = 500
+MAX_CHAT_CHARACTERS = 1000
 MSG_RATE_LIMITED = f"{KamiChan.Vocabulary.EMOJI_NO} :x: `You are being rate limited`"
 MSG_BOT_TYPING = f"-# {KamiChan.Vocabulary.EMOJI_UWU} {BOT_NAME} is typing..."
 MSG_ERROR = f"Sorry, there was an error!! {KamiChan.Vocabulary.EMOJI_DESPAIR} ```{{}}```"
@@ -62,9 +62,6 @@ class ChatHandler(commands.Cog):
         
         if self.bot.user in message.mentions:
             flags.append(MessageFlag.PINGED_BOT)
-        
-        if len(flags) == 0:
-            raise RuntimeError(f"Could not classify message: {message.content}")
 
         return flags
 
@@ -73,6 +70,8 @@ class ChatHandler(commands.Cog):
         message_flags = self.get_message_flags(message)
         
         if MessageFlag.BOT_MESSAGE in message_flags: 
+            return
+        if not MessageFlag.PINGED_BOT in message_flags:
             return
         elif MessageFlag.RATE_LIMITED in message_flags: 
             return
