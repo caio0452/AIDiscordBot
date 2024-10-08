@@ -186,7 +186,7 @@ class DiscordBotResponse:
                                     )
                                 ]
                             ),
-                         model_name="google/gemini-pro-1.5"
+                         model_name="openai/gpt-4o"
                     )
                 )
                 return response.message.content
