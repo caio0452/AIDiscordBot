@@ -1,4 +1,22 @@
 from ai import Prompt
+import json
+
+class PromptStore:
+    def __init__(self, prompts: dict[str, Prompt]):
+        self.prompts = prompts
+
+    @staticmethod
+    def from_file(filepath: str) -> "PromptStore":
+        with open(filepath, 'r') as file:
+            prompts_data = json.load(file)
+
+        prompts = {key: Prompt(**value) for key, value in prompts_data.items()}
+        return PromptStore(prompts)
+
+    def get_prompt_from_name(self, name: str) -> Prompt:
+        if name not in self.prompts:
+            raise KeyError(f"Prompt '{name}' not found.")
+        return self.prompts[name]
 
 REWRITER_PROMPT = Prompt(messages=
     [
