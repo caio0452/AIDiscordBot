@@ -120,8 +120,8 @@ class ChatHandler(commands.Cog):
             # TODO: superfluous edits
             if verbose:
                 reply = await self.attach_log(reply, resp_str, verbose_log)
-            await self.memorize_message(reply)
             await self.send_discord_response(reply, resp_str)
+            await self.memorize_message(reply)
             self.cache_log(reply.id, verbose_log)
         except Exception as e:
             await self.handle_error(message, reply, e)
