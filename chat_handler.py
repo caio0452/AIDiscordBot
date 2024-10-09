@@ -157,7 +157,7 @@ class ChatHandler(commands.Cog):
                     raise RuntimeError("First message in reply chain is not set")
                 previous_message = await previous_message.reply(content=chunk)
 
-    async def memorize_message(self, *, text: str, nick: str, sent: datetime.datetime, is_bot: bool, message_id: int):
+    async def memorize_message(self, message: discord.Message):
         await self.ai_bot.memory.memorize_short_term(
             await MemorizedMessage.of_discord_message(message), 
             None
@@ -167,6 +167,24 @@ class ChatHandler(commands.Cog):
             data=message.content, 
             metadata="", 
             entry_id=message.id
+        )
+
+    async def memorize_raw_message(self, *, text: str, nick: str, sent: datetime.datetime, is_bot: bool, message_id: int):
+        await self.ai_bot.memory.memorize_short_term(
+            MemorizedMessage(
+                text=text,
+                nick=nick,
+                sent=sent,
+                is_bot=is_bot,
+                message_id=message_id
+            ),
+            sanitize_msg=None
+        )
+        await self.vector_database.index(
+            index_name="messages", 
+            data=text, 
+            metadata="", 
+            entry_id=message_id
         )
 
     async def handle_error(self, message: discord.Message, reply: discord.Message, error: Exception):
