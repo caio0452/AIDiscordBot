@@ -56,7 +56,7 @@ class VectorDatabase:
         else:
             id = entry_id
 
-        target_index.index([(id, data, metadata)])
+        target_index.index([(id, [data], metadata)])
 
     async def delete_ids(self, *, index_name: str, entry_ids: list[int]) -> int:
         target_index = await self.get_index(index_name)
