@@ -7,7 +7,10 @@ from ai_bot import AIBotData, BotMemory
 
 import datetime
 import providers
-import random, discord, openai
+import random
+import discord
+import openai
+import json
 
 #
 # TODO: This is a mess that has to be replaced with something data-driven
@@ -234,5 +237,5 @@ class DiscordBotResponse:
         if img_desc:
             prompt.append(Prompt.user_msg(img_desc))
 
-        self.log_verbose(f"--- FULL PROMPT ---\n{str(prompt)}\n")
+        self.log_verbose(f"--- FULL PROMPT ---\n{json.dumps(prompt, indent=4)}\n")
         return prompt

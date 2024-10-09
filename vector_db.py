@@ -11,6 +11,7 @@ class VectorDatabase:
         self.vectorizer = SyncEmbeddingsClient(provider)
 
         def transform(inputs): # TODO: this is sync. Performance concern?
+            print(f"Calling transform for inputs: {inputs}")
             resp = self.vectorizer.vectorize(input=inputs)
             return np.array(resp, dtype=np.float32)
 
@@ -26,7 +27,7 @@ class VectorDatabase:
             }
         )
 
-        self.db_data.index("Hello, world") # Better way to init this?
+        self.db_data.index(["Hello, world"]) # Better way to init this?
 
     async def search(self, data: str, limit: int=5, index_name: str | None = None) -> list[Any]:
         if index_name is None:

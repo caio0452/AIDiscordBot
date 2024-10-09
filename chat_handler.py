@@ -1,6 +1,7 @@
 import io
 import discord
 import traceback
+import datetime 
 
 from typing import Tuple
 from discord.ext import commands
@@ -156,7 +157,7 @@ class ChatHandler(commands.Cog):
                     raise RuntimeError("First message in reply chain is not set")
                 previous_message = await previous_message.reply(content=chunk)
 
-    async def memorize_message(self, message: discord.Message):
+    async def memorize_message(self, *, text: str, nick: str, sent: datetime.datetime, is_bot: bool, message_id: int):
         await self.ai_bot.memory.memorize_short_term(
             await MemorizedMessage.of_discord_message(message), 
             None
