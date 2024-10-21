@@ -6,8 +6,9 @@ from typing import Any, Optional
 from abc import ABC, abstractmethod
 from pydantic import BaseModel, Field
 
+OpenAIMessage = dict[str, list | str | dict]
+
 class Prompt(BaseModel):
-    OpenAIMessage = dict[str, list | str | dict]
     messages: list[OpenAIMessage] = Field(...)
 
     @staticmethod
