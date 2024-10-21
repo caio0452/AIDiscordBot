@@ -84,7 +84,7 @@ class ChatHandler(commands.Cog):
             is_verbose = (MessageFlag.VERBOSE_REQUEST in message_flags)
             await self.respond_with_llm(message, verbose=is_verbose)
 
-    def cache_log(self, message_id: int, log: str):
+    def store_log(self, message_id: int, log: str):
         print(f"Saved log for message id {message_id}")
         self._last_message_id_logs[message_id] = log
         if len(self._last_message_id_logs) > 10:
@@ -113,7 +113,7 @@ class ChatHandler(commands.Cog):
 
     async def respond_with_llm(self, message: discord.Message, *, verbose: bool=False):
         self.rate_limiter.register_request(message.author.id)
-        await self.memorize_message(message)
+        await self.memorize_discord_message(message)
         reply = await message.reply(MSG_BOT_TYPING)
         
         try:
@@ -121,9 +121,18 @@ class ChatHandler(commands.Cog):
             # TODO: superfluous edits
             if verbose:
                 reply = await self.attach_log(reply, resp_str, verbose_log)
-            await self.send_discord_response(reply, resp_str)
-            await self.memorize_message(reply)
-            self.cache_log(reply.id, verbose_log)
+            resp_msg: discord.Message = await self.send_discord_response(reply, resp_str)
+            await self.memorize_message(
+                MemorizedMessage(
+                    text=resp_msg.content,  
+                    nick=resp_msg.author.name,
+                    sent=resp_msg.created_at,
+                    is_bot=True,
+                    message_id=resp_msg.id 
+                ),
+                id=resp_msg.id 
+            )
+            self.store_log(reply.id, verbose_log)
         except Exception as e:
             await self.handle_error(message, reply, e)
 
@@ -142,25 +151,33 @@ class ChatHandler(commands.Cog):
         else:
             return await reply.edit(content=resp_str)
 
-    async def send_discord_response(self, reply: discord.Message, resp_str: str):
+    async def send_discord_response(self, reply: discord.Message, resp_str: str) -> discord.Message:
         CHUNK_SIZE = 1800 
         chunks = []
         for i in range(0, len(resp_str), CHUNK_SIZE):
             chunks.append(resp_str[i:i + CHUNK_SIZE])
         
-        previous_message: discord.Message | None = None
-        for i, chunk in enumerate(chunks):
-            if i == 0:
-                previous_message = await reply.edit(content=f"{chunk}\n{MSG_DISCLAIMER}")
-            else:
-                if previous_message is None: 
-                    raise RuntimeError("First message in reply chain is not set")
-                previous_message = await previous_message.reply(content=chunk)
+        previous_message = await reply.edit(content=f"{chunks[0]}\n{MSG_DISCLAIMER}")  
+        if len(chunks) >= 2:
+            for chunk in chunks[1:]:
+                previous_message = await reply.reply(content=chunk)
 
-    async def memorize_message(self, message: discord.Message):
-        await self.ai_bot.memory.memorize_short_term(
-            await MemorizedMessage.of_discord_message(message), 
-            None
+        return previous_message
+
+    async def memorize_message(self, message: MemorizedMessage, *, id: int):
+        await self.ai_bot.recent_history.add(
+            message
+        )
+        await self.vector_database.index(
+            index_name="messages", 
+            data=message.text, 
+            metadata="", 
+            entry_id=id
+        )
+
+    async def memorize_discord_message(self, message: discord.Message):
+        await self.ai_bot.recent_history.add(
+            await MemorizedMessage.of_discord_message(message)
         )
         await self.vector_database.index(
             index_name="messages", 
@@ -170,15 +187,14 @@ class ChatHandler(commands.Cog):
         )
 
     async def memorize_raw_message(self, *, text: str, nick: str, sent: datetime.datetime, is_bot: bool, message_id: int):
-        await self.ai_bot.memory.memorize_short_term(
+        await self.ai_bot.recent_history.add(
             MemorizedMessage(
                 text=text,
                 nick=nick,
                 sent=sent,
                 is_bot=is_bot,
                 message_id=message_id
-            ),
-            sanitize_msg=None
+            )
         )
         await self.vector_database.index(
             index_name="messages", 
@@ -188,7 +204,8 @@ class ChatHandler(commands.Cog):
         )
 
     async def handle_error(self, message: discord.Message, reply: discord.Message, error: Exception):
-        await self.memorize_message(message)
-        await self.memorize_message(reply)
+        # TODO: implement message forgetting
+        # await self.forget_message(message)
+        # await self.forget_message(reply)
         traceback.print_exc()
         await reply.edit(content=MSG_ERROR.format(str(error)))

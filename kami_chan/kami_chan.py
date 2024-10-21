@@ -3,7 +3,7 @@ from typing import Any
 from datetime import datetime
 from ai import LLMRequest, Prompt, LLMProvider
 from vector_db import VectorDatabase
-from ai_bot import AIBotData, BotMemory
+from ai_bot import AIBotData, MemorizedMessageHistory
 
 import datetime
 import providers
@@ -26,13 +26,13 @@ class KamiChan(AIBotData):
                  vector_db: VectorDatabase,
                  provider_store: providers.ProviderStore,
                  discord_bot_id: int):
-        super().__init__(name, BotMemory())
+        super().__init__(name, MemorizedMessageHistory())
         self.provider_store = provider_store
         self.clients: dict[str, Any] = {}
         self._create_clients()
         self.discord_bot_id = discord_bot_id
         self.vector_db = vector_db
-        self.memory: BotMemory = BotMemory()
+        self.recent_history = MemorizedMessageHistory()
         self.RECENT_MEMORY_LENGTH = 5
         
     def _create_clients(self):
@@ -79,7 +79,7 @@ class DiscordBotResponse:
     async def create_or_fallback(self, message: discord.Message, model_names: list[str]) -> str:
         all_errors = []
         full_prompt = await self.build_full_prompt(
-            self.bot_data.memory.without_dupe_ending_user_msgs(), 
+            self.bot_data.recent_history.without_dupe_ending_user_msgs(), 
             message
         )
         
@@ -128,9 +128,9 @@ class DiscordBotResponse:
     async def fetch_last_user_query(self, model: LLMProvider) -> str:
         user_prompt_str: str = ""
         user_prompt_str = "\n".join(
-            [memorized_message.text for memorized_message in self.bot_data.memory.get_memory()]
+            [memorized_message.text for memorized_message in self.bot_data.recent_history.as_list()]
         )
-        last_user = self.bot_data.memory.get_memory()[-1].nick
+        last_user = self.bot_data.recent_history.as_list()[-1].nick
 
         response_choice = await model.send_request(
             LLMRequest(
@@ -194,14 +194,17 @@ class DiscordBotResponse:
                 )
                 return response.message.content
 
-    async def build_full_prompt(self, memory_snapshot: BotMemory, original_msg: discord.Message) -> list[Any]:
+    async def build_full_prompt(self, memory_snapshot: MemorizedMessageHistory, original_msg: discord.Message) -> list[Any]:
         now_str = datetime.datetime.now().strftime("%B %d, %H:%M:%S")
         model = self.bot_data.clients[MAIN_CLIENT_NAME]
 
         # TODO: the "Prompt" class is weirdly used here, but not worth looking too much into as of this will be replaced by a JSON file eventually
         system_prompt_str = prompts.KAMI_CHAN_PROMPT \
-            .replace("((nick))", memory_snapshot.get_memory()[-1].nick) \
+            .replace("((nick))", memory_snapshot.as_list()[-1].nick) \
             .replace("((now))", now_str).messages[0]["content"]
+
+        if not isinstance(system_prompt_str, str):
+            raise RuntimeError(f"System prompt is not plain text")
 
         user_query = await self.fetch_last_user_query(model)
         self.log_verbose(user_query, category="USER QUERY")
@@ -227,7 +230,7 @@ class DiscordBotResponse:
         [[RECENT CONVERSATION HISTORY]]:\n{knowledge}
         """
 
-        for memorized_message in memory_snapshot.get_memory():
+        for memorized_message in memory_snapshot.as_list():
             if memorized_message.is_bot:
                 prompt.append(Prompt.assistant_msg(memorized_message.text))
             else:

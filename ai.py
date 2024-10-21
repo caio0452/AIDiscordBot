@@ -7,7 +7,8 @@ from abc import ABC, abstractmethod
 from pydantic import BaseModel, Field
 
 class Prompt(BaseModel):
-    messages: list[dict[str, list | str | dict]] = Field(...)
+    OpenAIMessage = dict[str, list | str | dict]
+    messages: list[OpenAIMessage] = Field(...)
 
     @staticmethod
     def system_msg(content: str) -> dict[str, str]:
@@ -39,6 +40,7 @@ class Prompt(BaseModel):
         for msg in self.messages:
             new_prompt_dict = {}
             for key, value in msg.items():
+                # TODO: value is not necessarily a string. It could be a dict. Implement recursive replacing
                 new_value = value.replace(placeholder, target)
                 if new_value != value:
                     found_placeholder = True
@@ -50,7 +52,7 @@ class Prompt(BaseModel):
 
         return Prompt(messages=new_prompts)
 
-    def to_openai_format(self) -> list[dict[str, str]]:
+    def to_openai_format(self) -> list[OpenAIMessage]:
         return self.messages
 
 class LLMRequest(BaseModel):
