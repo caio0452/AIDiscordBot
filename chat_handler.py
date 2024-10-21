@@ -156,6 +156,9 @@ class ChatHandler(commands.Cog):
         chunks = []
         for i in range(0, len(resp_str), CHUNK_SIZE):
             chunks.append(resp_str[i:i + CHUNK_SIZE])
+
+        if len(chunks) == 0:
+            raise RuntimeError(f"Ended up with 0 chunks while trying to chunk message with content '{resp_str}'")
         
         previous_message = await reply.edit(content=f"{chunks[0]}\n{MSG_DISCLAIMER}")  
         if len(chunks) >= 2:
