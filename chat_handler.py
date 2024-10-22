@@ -124,7 +124,7 @@ class ChatHandler(commands.Cog):
             resp_msg: discord.Message = await self.send_discord_response(reply, resp_str)
             await self.memorize_message(
                 MemorizedMessage(
-                    text=resp_msg.content,  
+                    text=resp_str,  
                     nick=resp_msg.author.name,
                     sent=resp_msg.created_at,
                     is_bot=True,
