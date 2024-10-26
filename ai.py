@@ -1,5 +1,6 @@
 import json
 import openai
+import warnings
 
 from providers import Provider
 from typing import Any, Optional
@@ -42,7 +43,12 @@ class Prompt(BaseModel):
             new_prompt_dict = {}
             for key, value in msg.items():
                 # TODO: value is not necessarily a string. It could be a dict. Implement recursive replacing
-                new_value = value.replace(placeholder, target)
+                if isinstance(value, str):
+                    new_value = value.replace(placeholder, target)
+                else:
+                    warnings.warn(f"Placeholders in complex (non-string) messages are not supported yet, will not scan: {value}")
+                    continue
+
                 if new_value != value:
                     found_placeholder = True
                 new_prompt_dict[key] = new_value
