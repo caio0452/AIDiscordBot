@@ -3,8 +3,8 @@ import discord
 from util import bot_config
 from discord.ext import commands
 from bot_workflow.vector_db import VectorDatabase
-from AIDiscordBot.ai_apis.providers import ProviderDataStore
-from AIDiscordBot.bot_workflow.personality_loader import PersonalityLoader
+from ai_apis.providers import ProviderDataStore
+from bot_workflow.personality_loader import PersonalityLoader
 from bot_workflow.discord_chat_handler import DiscordChatHandler
 # from commands.rewrite import RewriteCommand
 # from commands.translate import TranslateCommand
