@@ -5,8 +5,8 @@ import datetime
 
 from typing import Tuple
 from discord.ext import commands
-from AIDiscordBot.bot_workflow.ai_bot import CustomBotData, DiscordBotResponse
-from AIDiscordBot.bot_workflow.personality_loader import PersonalityLoader
+from bot_workflow.ai_bot import CustomBotData, DiscordBotResponse
+from bot_workflow.personality_loader import PersonalityLoader
 from ai_apis.providers import ProviderDataStore
 from vector_db import VectorDatabase
 from memorized_message import MemorizedMessage

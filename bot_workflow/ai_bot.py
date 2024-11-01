@@ -4,7 +4,7 @@ from vector_db import VectorDatabase
 from ai_apis.client import LLMClient
 from ai_apis.types import LLMRequestParams, Prompt
 from bot_workflow.types import AIBotData, MemorizedMessageHistory
-from AIDiscordBot.bot_workflow.personality_loader import Personality
+from bot_workflow.personality_loader import Personality
 
 import json
 import discord
