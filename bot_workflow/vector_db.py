@@ -3,11 +3,11 @@ import numpy as np
 
 from typing import Any
 from txtai import Embeddings
-from providers import Provider
-from ai import SyncEmbeddingsClient
+from ai_apis.providers import ProviderData
+from ai_apis.client import SyncEmbeddingsClient
 
 class VectorDatabase:
-    def __init__(self, provider: Provider): 
+    def __init__(self, provider: ProviderData): 
         self.vectorizer = SyncEmbeddingsClient(provider)
 
         def transform(inputs): # TODO: this is sync. Performance concern?

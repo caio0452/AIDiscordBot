@@ -5,18 +5,15 @@ import datetime
 
 from typing import Tuple
 from discord.ext import commands
-from providers import ProviderStore
+from AIDiscordBot.bot_workflow.ai_bot import CustomBotData, DiscordBotResponse
+from AIDiscordBot.bot_workflow.personality_loader import PersonalityLoader
+from ai_apis.providers import ProviderDataStore
 from vector_db import VectorDatabase
-from rate_limits import RateLimit, RateLimiter
 from memorized_message import MemorizedMessage
-from kami_chan.kami_chan import KamiChan, DiscordBotResponse
+from util.rate_limits import RateLimiter, RateLimit
 
 BOT_NAME = "Kami-Chan"
 MAX_CHAT_CHARACTERS = 1000
-MSG_RATE_LIMITED = f"{KamiChan.Vocabulary.EMOJI_NO} :x: `You are being rate limited`"
-MSG_BOT_TYPING = f"-# {KamiChan.Vocabulary.EMOJI_UWU} {BOT_NAME} is typing..."
-MSG_ERROR = f"Sorry, there was an error!! {KamiChan.Vocabulary.EMOJI_DESPAIR} ```{{}}```"
-MSG_DISCLAIMER = f"-# Unofficial bot. FICTITIOUS AI-generated content. | [Learn more.](https://discord.com/channels/532557135167619093/1192649325709381673/1196285641978302544)"
 MSG_LOG_FILE_REPLY = "Verbose logs for message ID {} attached (only last 10 are stored)"
 MSG_INVALID_LOG_REQUEST = ":x: Expected a message ID before --l, not '{}'"
 MODEL_REQUEST_ORDER = ["qwen/qwen-2.5-72b-instruct", "meta-llama/llama-3.1-405b", "meta-llama/llama-3-70b-instruct"]
@@ -29,8 +26,8 @@ class MessageFlag:
     RATE_LIMITED = "RATE_LIMITED"
     PINGED_BOT = "PINGED_BOT"
 
-class ChatHandler(commands.Cog):
-    def __init__(self, bot: commands.Bot, provider_store: ProviderStore, vector_database: VectorDatabase):
+class DiscordChatHandler(commands.Cog):
+    def __init__(self, bot: commands.Bot, provider_store: ProviderDataStore, vector_database: VectorDatabase):
         self.bot: commands.Bot = bot
         self.RECENT_MEMORY_LENGTH = 5
         self.rate_limiter = RateLimiter(
@@ -40,7 +37,8 @@ class ChatHandler(commands.Cog):
             RateLimit(n_messages=100, seconds=2 * 3600),
             RateLimit(n_messages=250, seconds=8 * 3600)
         )
-        self.ai_bot = KamiChan(BOT_NAME, vector_database, provider_store, bot.user.id)
+        personality = PersonalityLoader("personality.json").load_personality()
+        self.ai_bot = CustomBotData(BOT_NAME, vector_database, personality, provider_store, bot.user.id)
         self._last_message_id_logs: dict[int, str] = {}
         self.vector_database = vector_database
 
@@ -76,7 +74,7 @@ class ChatHandler(commands.Cog):
             return
         elif MessageFlag.LOG_REQUEST in message_flags:
             await self.handle_log_request(message)
-        if not MessageFlag.PINGED_BOT in message_flags: # Handle logs even when bot is not pinged
+        if MessageFlag.PINGED_BOT not in message_flags: # Handle logs even when bot is not pinged
             return
         elif MessageFlag.TOO_LONG in message_flags:
             await self.handle_too_long_message(message)
@@ -114,7 +112,7 @@ class ChatHandler(commands.Cog):
     async def respond_with_llm(self, message: discord.Message, *, verbose: bool=False):
         self.rate_limiter.register_request(message.author.id)
         await self.memorize_discord_message(message)
-        reply = await message.reply(MSG_BOT_TYPING)
+        reply = await message.reply(self.ai_bot.personality.lang["TYPING"])
         
         try:
             resp_str, verbose_log = await self.generate_response(message, verbose)
@@ -160,7 +158,9 @@ class ChatHandler(commands.Cog):
         if len(chunks) == 0:
             raise RuntimeError(f"Ended up with 0 chunks while trying to chunk message with content '{resp_str}'")
         
-        previous_message = await reply.edit(content=f"{chunks[0]}\n{MSG_DISCLAIMER}")  
+        last_message = chunks[0]
+        disclaimer = self.ai_bot.personality.lang["disclaimer"]
+        previous_message = await reply.edit(content=f"{last_message}\n{disclaimer}")  
         if len(chunks) >= 2:
             for chunk in chunks[1:]:
                 previous_message = await reply.reply(content=chunk)
@@ -211,4 +211,4 @@ class ChatHandler(commands.Cog):
         # await self.forget_message(message)
         # await self.forget_message(reply)
         traceback.print_exc()
-        await reply.edit(content=MSG_ERROR.format(str(error)))
+        await reply.edit(content=f"There was an error: ```{str(error)}```") # TODO: send custom message if possible

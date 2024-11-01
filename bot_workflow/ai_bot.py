@@ -1,16 +1,14 @@
-from . import prompts
 from typing import Any
-from datetime import datetime
-from ai import LLMRequest, Prompt, LLMProvider
+from ai_apis import providers
 from vector_db import VectorDatabase
-from ai_bot import AIBotData, MemorizedMessageHistory
+from ai_apis.client import LLMClient
+from ai_apis.types import LLMRequestParams, Prompt
+from bot_workflow.types import AIBotData, MemorizedMessageHistory
+from AIDiscordBot.bot_workflow.personality_loader import Personality
 
-import datetime
-import providers
-import random
-import discord
-import openai
 import json
+import discord
+import datetime
 
 #
 # TODO: This is a mess that has to be replaced with something data-driven
@@ -20,51 +18,25 @@ KNOWLEDGE_EXTRACTOR_NAME = "KAMI_CHAN_KNOWLEDGE_EXTRACTOR"
 PERSONALITY_REWRITER_NAME = "KAMI_CHAN_PERSONALITY_REWRITER"
 IMAGE_VIEWER_NAME = "KAMI_CHAN_IMAGE_VIEWER"
 
-class KamiChan(AIBotData):
+class CustomBotData(AIBotData):
     def __init__(self,
                  name: str,
                  vector_db: VectorDatabase,
-                 provider_store: providers.ProviderStore,
-                 discord_bot_id: int):
+                 personality: Personality,
+                 provider_store: providers.ProviderDataStore,
+                 discord_bot_id: int
+                ):
         super().__init__(name, MemorizedMessageHistory())
         self.provider_store = provider_store
-        self.clients: dict[str, Any] = {}
-        self._create_clients()
+        self.clients: dict[str, LLMClient] = {}
         self.discord_bot_id = discord_bot_id
         self.vector_db = vector_db
         self.recent_history = MemorizedMessageHistory()
         self.RECENT_MEMORY_LENGTH = 5
-        
-    def _create_clients(self):
-        required_provider_names = [
-           MAIN_CLIENT_NAME, KNOWLEDGE_EXTRACTOR_NAME, PERSONALITY_REWRITER_NAME, IMAGE_VIEWER_NAME
-        ]
-        for name in required_provider_names:
-            provider = self.provider_store.get_provider_by_name(name)
-            client = LLMProvider(openai.AsyncOpenAI(
-                api_key=provider.api_key, base_url=provider.api_base))
-            self.clients[name] = client
-
-    async def sanitize_msg(self, message: discord.Message) -> str:
-        new_content = message.content
-        for mention in message.mentions:
-            new_content = new_content.replace(f'<@{mention.id}>', f'@{mention.name}')
-        return await self.sanitize_str(new_content)
-
-    async def sanitize_str(self, message: str) -> str:
-        sanitized = message
-        if sanitized.startswith(f"<@{self.discord_bot_id}>"):
-            sanitized = sanitized.replace(f"<@{self.discord_bot_id}>", "", 1)
-        return sanitized
-
-    class Vocabulary:
-        EMOJI_NO = "<:Paperno:1022991562810077274>"
-        EMOJI_DESPAIR = "<a:notlikepaper:1165467302578360401>"
-        EMOJI_UWU = "<:paperUwU:1018366709658308688>"
-        EMOJIS_COMBO_UNOFFICIAL = "<:unofficial:1233866785862848583><:unofficial_1:1233866787314073781><:unofficial_2:1233866788777754644>"
+        self.personality = personality
 
 class DiscordBotResponse:
-    def __init__(self, bot_data: KamiChan, verbose: bool=False):
+    def __init__(self, bot_data: CustomBotData, verbose: bool=False):
         self.verbose = verbose
         self.bot_data = bot_data
         self.verbose_log = ""
@@ -86,8 +58,8 @@ class DiscordBotResponse:
         for model_name in model_names:
             try:
                 response = await self.bot_data.clients[MAIN_CLIENT_NAME].send_request(
-                    LLMRequest(
-                        prompt=Prompt(messages=full_prompt),
+                    prompt=Prompt(messages=full_prompt),
+                    params=LLMRequestParams(
                         model_name=model_name,
                         max_tokens=2000,
                         temperature=0
@@ -110,43 +82,36 @@ class DiscordBotResponse:
         return await self.create_or_fallback(message, ["google/gemini-pro-1.5-exp", "openai/gpt-4o-mini", "meta-llama/llama-3.1-405b-instruct"])
 
     async def personality_rewrite(self, message: str) -> str:
-        response = await self.bot_data.clients[PERSONALITY_REWRITER_NAME].send_request(
-            LLMRequest(
-                prompt=Prompt(messages=prompts.REWRITER_PROMPT.replace("<message>", message).to_openai_format()),
-                model_name="meta-llama/llama-3.1-405b-instruct",
-                max_tokens=2000,
-                temperature=0.3
-            )
-        )  
-        return response.message.content \
-            .strip() \
-            .removeprefix("REWRITTEN: ") \
-            .replace("<+1>", random.choice(["<:paperUwU:1018366709658308688>", "<:Paperyis:1022991557978238976>", "<:Paperyis:1022991557978238976>"])) \
-            .replace("<-1>", random.choice(["<a:notlikepaper:1165467302578360401>"])) \
-            .replace("<0>",  random.choice(["<:paperOhhh:1018366673423695872>"]))
+        NAME = "PERSONALITY_REWRITE"
+        prompt = self.bot_data.personality.prompts[NAME] \
+            .replace("<message>", message)
 
-    async def fetch_last_user_query(self, model: LLMProvider) -> str:
-        user_prompt_str: str = ""
+        response = await self.send_llm_request(
+            name=NAME,
+            prompt=prompt
+        )  
+        return response.message.content
+
+    async def user_query_rephrase(self) -> str:
+        NAME = "USER_QUERY_REPHRASE"
         user_prompt_str = "\n".join(
             [memorized_message.text for memorized_message in self.bot_data.recent_history.as_list()]
         )
         last_user = self.bot_data.recent_history.as_list()[-1].nick
-
-        response_choice = await model.send_request(
-            LLMRequest(
-                prompt=prompts.QUERY_SUMMARIZER_PROMPT \
-                    .replace("((user_query))", user_prompt_str) \
-                    .replace("((last_user))", last_user),
-                model_name='meta-llama/llama-3.1-405b-instruct',
-                temperature=0.2
-            )
+        prompt = self.bot_data.personality.prompts[NAME] \
+                .replace("((user_query))", user_prompt_str) \
+                .replace("((last_user))", last_user)
+        
+        response = await self.send_llm_request(
+            name=NAME,
+            prompt=prompt
         )
-        return response_choice.message.content
+        return response.message.content
 
-    async def summarize_relevant_facts(self, model: LLMProvider, user_query: str) -> str | None:
+    async def info_select(self, user_query: str) -> str | None:
+        NAME = "INFO_SELECT"
         user_prompt_str = ""
-        sanitized_msg = await self.bot_data.sanitize_str(user_query)
-        knowledge_list = await self.bot_data.vector_db.search(sanitized_msg, 5, "knowledge")
+        knowledge_list = await self.bot_data.vector_db.search(user_query, 5, "knowledge")
 
         if len(knowledge_list) == 0:
             return None
@@ -154,20 +119,15 @@ class DiscordBotResponse:
         for knowledge in knowledge_list:
             user_prompt_str += "INFO: \n" + str(knowledge) # TODO: what's the type of this?
 
-        self.log_verbose(f"--- DATABASE CLOSEST MATCHES ---\n{user_prompt_str}\n")
         user_prompt_str += "QUERY: " + user_query
-        response_choice = await model.send_request(
-            LLMRequest(
-                prompt=prompts.INFO_SELECTOR_PROMPT \
-                    .replace("((user_query))", user_prompt_str),
-                model_name='gpt-4o-mini'
-            )
+        prompt = self.bot_data.personality.prompts[NAME] \
+            .replace("((user_query))", user_prompt_str)
+
+        response = await self.send_llm_request(
+            name=NAME,
+            prompt=prompt
         )
-        # queries_manager = await preset_queries.manager(model)
-        known_query_info = ""
-        # for preset in await queries_manager.get_all_matching_user_utterance(user_query):
-        #    known_query_info += preset.answer + "\n"
-        return f"{response_choice.message.content}\n{known_query_info}"
+        return response.message.content
 
     async def describe_image_if_present(self, message) -> str | None:
         if len(message.attachments) == 1:
@@ -179,8 +139,7 @@ class DiscordBotResponse:
                 await message.add_reaction("👀")
                 # Todo: only last message is possibly not enough context
                 response = await self.bot_data.clients[IMAGE_VIEWER_NAME].send_request(
-                    LLMRequest(
-                        prompt=Prompt(
+                    prompt=Prompt(
                                 messages=[
                                     Prompt.user_msg(
                                         content=f"Describe the image in a sufficient way to answer the following query: '{message.content}'" \
@@ -189,6 +148,7 @@ class DiscordBotResponse:
                                     )
                                 ]
                             ),
+                   params=LLMRequestParams(
                          model_name="openai/gpt-4o"
                     )
                 )
@@ -197,19 +157,18 @@ class DiscordBotResponse:
     async def build_full_prompt(self, memory_snapshot: MemorizedMessageHistory, original_msg: discord.Message) -> list[Any]:
         now_str = datetime.datetime.now().strftime("%B %d, %H:%M:%S")
         model = self.bot_data.clients[MAIN_CLIENT_NAME]
+        user_query = await self.user_query_rephrase()
 
         # TODO: the "Prompt" class is weirdly used here, but not worth looking too much into as of this will be replaced by a JSON file eventually
-        system_prompt_str = prompts.KAMI_CHAN_PROMPT \
+        bot_prompt = self.bot_data.personality.prompts["MAIN"]
+        system_prompt_str = bot_prompt \
             .replace("((nick))", memory_snapshot.as_list()[-1].nick) \
             .replace("((now))", now_str).messages[0]["content"]
 
         if not isinstance(system_prompt_str, str):
-            raise RuntimeError(f"System prompt is not plain text")
+            raise RuntimeError("System prompt must be plain text")
 
-        user_query = await self.fetch_last_user_query(model)
-        self.log_verbose(user_query, category="USER QUERY")
-
-        knowledge = await self.summarize_relevant_facts(model, user_query)
+        knowledge = await self.info_select(user_query)
 
         if knowledge is not None:
             system_prompt_str += f"\n[INFO FROM KNOWLEDGE DB]:\n{knowledge}\n"
@@ -242,3 +201,11 @@ class DiscordBotResponse:
 
         self.log_verbose(f"--- FULL PROMPT ---\n{json.dumps(prompt, indent=4)}\n")
         return prompt
+
+    async def send_llm_request(self, *, name: str, prompt: Prompt):
+        params = self.bot_data.personality.request_params[name]
+        prompt = self.bot_data.personality.prompts[name]
+        provider: providers.ProviderData = self.bot_data.personality.providers[name]
+        client: LLMClient = LLMClient.from_provider(provider)
+
+        return await client.send_request(prompt=prompt, params=params) 

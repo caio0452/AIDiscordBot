@@ -1,11 +1,9 @@
 from discord import app_commands
 import openai
-import providers
 import discord
 import asyncio
-
+from ai_apis import providers
 from discord.ext import commands
-from ai import OAICompatibleProvider
 
 class RewriteCommand(commands.Cog):
     def __init__(self, bot: commands.Bot) -> None:
@@ -43,7 +41,7 @@ class RewriteCommand(commands.Cog):
         async def rewrite_with_model(model, index):
             try:
                 resp = await self._rewrite_client.chat.completions.create(
-                    messages=[OAICompatibleProvider.system_msg(
+                    messages=[OAICompatibleProviderData.system_msg(
                         f'Rewrite the text between the <TEXT> tags in a different way. Avoid using the same words, and change the text structure, but keep the length. <TEXT>{text}</TEXT>.' \
                         'Reply with just a JSON containing {"rewrite": "[insert reworded text here]"}')],
                     model=model,

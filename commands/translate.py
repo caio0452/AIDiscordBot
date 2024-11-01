@@ -4,7 +4,7 @@ import providers
 import discord
 
 from discord.ext import commands
-from ai import OAICompatibleProvider
+from ai import OAICompatibleProviderData
 
 class TranslateCommand(commands.Cog):
     def __init__(self, bot: commands.Bot) -> None:
@@ -36,7 +36,7 @@ class TranslateCommand(commands.Cog):
     
     async def call_llm_translate(self, text: str) -> str:
         resp = await self._translation_client.chat.completions.create(
-            messages=[OAICompatibleProvider.system_msg(
+            messages=[OAICompatibleProviderData.system_msg(
                 f'Translate to english the text between the <TEXT> tag. <TEXT>{text}</TEXT>.' \
                  'Reply with just a JSON containing {"translation": "[insert translated text here]"}')],
             model="meta-llama/llama-3.1-405b-instruct",

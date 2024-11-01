@@ -1,5 +1,8 @@
-discord.py==2.2.0
+discord.py==2.3.2
+httpx==0.27.2
+numpy==2.1.2
+openai==1.52.2
+pydantic==2.9.2
 python-dotenv==1.0.1
-qdrant_client==1.8.0
-~penai==0.26.5
-~penai==0.27.2
+Requests==2.32.3
+txtai==7.4.0
