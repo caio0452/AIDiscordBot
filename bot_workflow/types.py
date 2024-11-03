@@ -1,5 +1,5 @@
 from abc import ABC
-from memorized_message import MemorizedMessage
+from bot_workflow.memorized_message import MemorizedMessage
 
 class MemorizedMessageHistory:
     def __init__(self, initial_history: list[MemorizedMessage] = [], memory_length: int = 5):

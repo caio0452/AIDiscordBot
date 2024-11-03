@@ -8,8 +8,8 @@ from discord.ext import commands
 from bot_workflow.ai_bot import CustomBotData, DiscordBotResponse
 from bot_workflow.personality_loader import PersonalityLoader
 from ai_apis.providers import ProviderDataStore
-from vector_db import VectorDatabase
-from memorized_message import MemorizedMessage
+from bot_workflow.vector_db import VectorDatabase
+from bot_workflow.memorized_message import MemorizedMessage
 from util.rate_limits import RateLimiter, RateLimit
 
 BOT_NAME = "Kami-Chan"
