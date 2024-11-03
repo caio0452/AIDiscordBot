@@ -153,7 +153,6 @@ class DiscordBotResponse:
 
     async def build_full_prompt(self, memory_snapshot: MemorizedMessageHistory, original_msg: discord.Message) -> list[Any]:
         now_str = datetime.datetime.now().strftime("%B %d, %H:%M:%S")
-        model = self.bot_data.clients[MAIN_CLIENT_NAME]
         user_query = await self.user_query_rephrase()
 
         # TODO: the "Prompt" class is weirdly used here, but not worth looking too much into as of this will be replaced by a JSON file eventually
