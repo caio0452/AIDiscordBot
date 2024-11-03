@@ -15,7 +15,7 @@
          "PERSONALITY": {
             "provider_name": "PERSONALITY",
             "api_base": "https://api.openai.com/v1",
-            "api_key": "[KAMI_CHAN_API_KEY]"
+            "api_key": "[PERSONALITY_API_KEY]"
          },
          "USER_QUERY_REPHRASE": {
             "provider_name": "USER_QUERY_REPHRASE",
