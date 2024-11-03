@@ -32,7 +32,7 @@ class Prompt(BaseModel):
     def assistant_msg(content: str) -> dict[str, str]:
         return {"role": "assistant", "content": content}
 
-    def replace_in_prompt(self, placeholder: str, target: str) -> "Prompt":
+    def replace(self, placeholder: str, target: str) -> "Prompt":
         def replace_in_value(value: Any) -> Any:
             if isinstance(value, str):
                 return value.replace(placeholder, target)
