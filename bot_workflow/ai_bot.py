@@ -1,10 +1,10 @@
 from typing import Any
 from ai_apis import providers
-from vector_db import VectorDatabase
 from ai_apis.client import LLMClient
+from bot_workflow.vector_db import VectorDatabase
 from ai_apis.types import LLMRequestParams, Prompt
-from bot_workflow.types import AIBotData, MemorizedMessageHistory
 from bot_workflow.personality_loader import Personality
+from bot_workflow.types import AIBotData, MemorizedMessageHistory
 
 import json
 import discord
