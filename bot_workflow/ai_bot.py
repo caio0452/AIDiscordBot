@@ -159,7 +159,7 @@ class DiscordBotResponse:
         user_query = await self.user_query_rephrase()
 
         # TODO: the "Prompt" class is weirdly used here, but not worth looking too much into as of this will be replaced by a JSON file eventually
-        bot_prompt = self.bot_data.personality.prompts["MAIN"]
+        bot_prompt = self.bot_data.personality.prompts[MAIN_CLIENT_NAME]
         system_prompt_str = bot_prompt \
             .replace("((nick))", memory_snapshot.as_list()[-1].nick) \
             .replace("((now))", now_str).messages[0]["content"]
