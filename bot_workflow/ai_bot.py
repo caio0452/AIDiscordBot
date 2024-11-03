@@ -25,7 +25,6 @@ class CustomBotData(AIBotData):
                 ):
         super().__init__(name, MemorizedMessageHistory())
         self.provider_store = provider_store
-        self.clients: dict[str, LLMClient] = {}
         self.discord_bot_id = discord_bot_id
         self.vector_db = vector_db
         self.recent_history = MemorizedMessageHistory()
@@ -37,6 +36,10 @@ class DiscordBotResponse:
         self.verbose = verbose
         self.bot_data = bot_data
         self.verbose_log = ""
+        self.clients: dict[str, LLMClient] = {}
+
+        for k, v in bot_data.provider_store.providers.items():
+            self.clients[k] = LLMClient.from_provider(v)
 
     def log_verbose(self, text: str, *, category: str|None = None):
         current_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -54,7 +57,7 @@ class DiscordBotResponse:
         
         for model_name in model_names:
             try:
-                response = await self.bot_data.clients[MAIN_CLIENT_NAME].send_request(
+                response = await self.clients[MAIN_CLIENT_NAME].send_request(
                     prompt=Prompt(messages=full_prompt),
                     params=LLMRequestParams(
                         model_name=model_name,
@@ -135,7 +138,7 @@ class DiscordBotResponse:
             if attachment.content_type.startswith("image/"):
                 await message.add_reaction("👀")
                 # Todo: only last message is possibly not enough context
-                response = await self.bot_data.clients[IMAGE_VIEWER_NAME].send_request(
+                response = await self.clients[IMAGE_VIEWER_NAME].send_request(
                     prompt=Prompt(
                                 messages=[
                                     Prompt.user_msg(
