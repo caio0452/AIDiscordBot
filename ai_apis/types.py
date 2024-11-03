@@ -32,28 +32,21 @@ class Prompt(BaseModel):
     def assistant_msg(content: str) -> dict[str, str]:
         return {"role": "assistant", "content": content}
 
-    def replace(self, placeholder: str, target: str) -> "Prompt":
-        found_placeholder = False
-        new_prompts = []
-        for msg in self.messages:
-            new_prompt_dict = {}
-            for key, value in msg.items():
-                # TODO: value is not necessarily a string. It could be a dict. Implement recursive replacing
-                if isinstance(value, str):
-                    new_value = value.replace(placeholder, target)
-                else:
-                    warnings.warn(f"Placeholders in complex (non-string) messages are not supported yet, will not scan: {value}")
-                    continue
+    def replace_in_prompt(self, placeholder: str, target: str) -> "Prompt":
+        def replace_in_value(value: Any) -> Any:
+            if isinstance(value, str):
+                return value.replace(placeholder, target)
+            elif isinstance(value, list):
+                return [replace_in_value(item) for item in value]
+            elif isinstance(value, dict):
+                return {k: replace_in_value(v) for k, v in value.items()}
+            else:
+                return value
 
-                if new_value != value:
-                    found_placeholder = True
-                new_prompt_dict[key] = new_value
-            new_prompts.append(new_prompt_dict)
-
-        if not found_placeholder:
-            raise ValueError(f"Placeholder '{placeholder}' not found")
-
-        return Prompt(messages=new_prompts)
+        new_messages = [
+            replace_in_value(message) for message in self.messages
+        ]
+        return Prompt(messages=new_messages)
 
     def to_openai_format(self) -> list[OpenAIMessage]:
         return self.messages
