@@ -83,8 +83,10 @@ class DiscordBotResponse:
 
     async def personality_rewrite(self, message: str) -> str:
         NAME = "PERSONALITY_REWRITE"
-        prompt = self.bot_data.personality.prompts[NAME] \
-            .replace("((message))", message)
+        name_prompt = self.bot_data.personality.prompts[NAME]
+        print(f"Initial prompt: {name_prompt}")
+        prompt = name_prompt.replace("((message))", message)
+        print(f"Replaced prompt: {prompt}")
 
         response = await self.send_llm_request(
             name=NAME,
