@@ -68,6 +68,7 @@ class DiscordBotResponse:
                 response_txt = response.message.content
                 self.log_verbose(response_txt, category="PERSONALITY-LESS MESSAGE")
                 self.log_verbose(f"Length (chars): {len(response_txt)}")
+                print(f"Rewriting {response_txt}")
                 personality_rewrite = await self.personality_rewrite(response_txt)
                 self.log_verbose(personality_rewrite, category="IN-CHARACTER REWRITE")
                 self.log_verbose(str(response), category="RAW API RESPONSE")
@@ -92,6 +93,7 @@ class DiscordBotResponse:
             name=NAME,
             prompt=prompt
         )  
+        print(f"Returned: {response.message.content}")
         return response.message.content
 
     async def user_query_rephrase(self) -> str:
