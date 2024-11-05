@@ -38,7 +38,9 @@ class Prompt(BaseModel):
         json_string = json.dumps(self.model_dump())
         
         for placeholder, replacement in replacements.items():
-            formatted_placeholder = placeholder_format.replace("[placeholder]", placeholder)
+            # Inserting un-escaped newlines in the middle of a string can make the JSON invalid, so we escape it
+            escaped_replacement = replacement.replace("\r", "").replace("\n", "\\n") 
+            formatted_placeholder = placeholder_format.replace("[placeholder]", escaped_replacement)
             json_string, num_subs = re.subn(formatted_placeholder, replacement, json_string)
             
             if num_subs == 0:
