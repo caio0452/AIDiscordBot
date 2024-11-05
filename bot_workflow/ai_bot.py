@@ -123,7 +123,7 @@ class DiscordBotResponse:
 
         for knowledge in knowledge_list:
             text_content: str = knowledge["text"]
-            user_prompt_str += f"INFO: \n{text_content}"
+            user_prompt_str += f"INFO:\\n{text_content}"
 
         user_prompt_str += "QUERY: " + user_query
         prompt = self.bot_data.personality.prompts[NAME] \
