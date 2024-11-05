@@ -16,7 +16,7 @@ BOT_NAME = "Kami-Chan"
 MAX_CHAT_CHARACTERS = 1000
 MSG_LOG_FILE_REPLY = "Verbose logs for message ID {} attached (only last 10 are stored)"
 MSG_INVALID_LOG_REQUEST = ":x: Expected a message ID before --l, not '{}'"
-MODEL_REQUEST_ORDER = ["qwen/qwen-2.5-72b-instruct", "meta-llama/llama-3.1-405b", "meta-llama/llama-3-70b-instruct"]
+MODEL_REQUEST_ORDER = ["gpt-4o-mini", "qwen/qwen-2.5-72b-instruct", "meta-llama/llama-3-70b-instruct"] # TODO: don't hardcode this
 
 class MessageFlag:
     BOT_MESSAGE = "BOT_MESSAGE"

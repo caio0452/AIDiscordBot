@@ -75,12 +75,9 @@ class DiscordBotResponse:
                 return personality_rewrite
             except Exception as e:
                 self.log_verbose(f"Model {model_name} failed with error: {e}", category="MODEL FAILURE")
-                all_errors.append(e)
-    
+                all_errors.append(e)    
+        
         raise RuntimeError("Could not generate response and all fallbacks failed") from Exception(all_errors)
-
-    async def create(self, message: discord.Message) -> str:
-        return await self.create_or_fallback(message, ["google/gemini-pro-1.5-exp", "openai/gpt-4o-mini", "meta-llama/llama-3.1-405b-instruct"])
 
     async def personality_rewrite(self, message: str) -> str:
         NAME = "PERSONALITY_REWRITE"
