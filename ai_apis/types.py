@@ -43,6 +43,7 @@ class Prompt(BaseModel):
             if num_subs == 0:
                 raise ValueError(f"Missing prompt placeholder: '{formatted_placeholder}'")
         
+        print(json_string)
         updated_data = json.loads(json_string, strict=False)
         return Prompt(**updated_data)
 
