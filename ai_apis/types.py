@@ -35,23 +35,27 @@ class Prompt(BaseModel):
         return {"role": "assistant", "content": content}
 
     def replace(self, replacements: dict[str, str], placeholder_format: str = r"\(\([placeholder]\)\)") -> "Prompt":
-        # TODO: this is convoluted, perhaps edit the Prompt directly
         json_string = json.dumps(self.model_dump())
         
+        def replace_all_in_dict(dict_data, old_str, new_str):
+            if isinstance(dict_data, dict):
+                return {k: replace_all_in_dict(v, old_str, new_str) for k, v in dict_data.items()}
+            elif isinstance(dict_data, str):
+                return dict_data.replace(old_str, new_str)
+            else:
+                return dict_data 
+
+        ret = None 
         for placeholder, replacement in replacements.items():
-            # Escape common characters that can interfere with JSON structure
-            escaped_replacement = json.dumps(replacement)[1:-1]
+            if placeholder not in json_string:
+                raise ValueError(f"Missing prompt placeholder: '{placeholder}'")
             formatted_placeholder = placeholder_format.replace("[placeholder]", placeholder)
-            json_string, num_subs = re.subn(formatted_placeholder, escaped_replacement, json_string)
-            
-            if num_subs == 0:
-                raise ValueError(f"Missing prompt placeholder: '{formatted_placeholder}'")
+            ret = replace_all_in_dict(self, formatted_placeholder, replacement)
         
-        try:
-            updated_data = json.loads(json_string, strict=False)
-        except Exception as e:
-            raise ValueError(f"Could not turn JSON back into prompt: {json_string}") from e
-        return Prompt(**updated_data)
+        if ret is None:
+            raise RuntimeError("Could not make replacements")
+        
+        return ret
 
     def to_openai_format(self) -> list[OpenAIMessage]:
         return self.messages
