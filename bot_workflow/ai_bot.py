@@ -105,8 +105,8 @@ class DiscordBotResponse:
         )
         last_user = self.bot_data.recent_history.as_list()[-1].nick
         prompt = self.bot_data.personality.prompts[NAME].replace({
-            "((user_query))": user_prompt_str, 
-            "((last_user))": last_user
+            "user_query": user_prompt_str, 
+            "last_user": last_user
         })
         
         response = await self.send_llm_request(
