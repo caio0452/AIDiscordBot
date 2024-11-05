@@ -122,7 +122,8 @@ class DiscordBotResponse:
             return None
 
         for knowledge in knowledge_list:
-            user_prompt_str += "INFO: \n" + str(knowledge) # TODO: what's the type of this?
+            text_content: str = knowledge["text"]
+            user_prompt_str += f"INFO: \n{text_content}"
 
         user_prompt_str += "QUERY: " + user_query
         prompt = self.bot_data.personality.prompts[NAME] \
