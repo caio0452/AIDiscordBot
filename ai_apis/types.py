@@ -1,5 +1,6 @@
 import re
 import json
+import traceback
 
 from typing import Any, Optional
 from pydantic import BaseModel, Field
@@ -43,8 +44,10 @@ class Prompt(BaseModel):
             if num_subs == 0:
                 raise ValueError(f"Missing prompt placeholder: '{formatted_placeholder}'")
         
-        print(json_string)
-        updated_data = json.loads(json_string, strict=False)
+        try:
+            updated_data = json.loads(json_string, strict=False)
+        except Exception as e:
+            raise ValueError(f"Could not turn JSON back into prompt: {json_string}") from e
         return Prompt(**updated_data)
 
     def to_openai_format(self) -> list[OpenAIMessage]:
