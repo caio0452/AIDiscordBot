@@ -35,7 +35,7 @@ class Prompt(BaseModel):
         return {"role": "assistant", "content": content}
 
     def replace(self, replacements: dict[str, str], placeholder_format: str = r"\(\([placeholder]\)\)") -> "Prompt":
-        json_string = json.dumps(self.model_dump())
+        data_dict = self.model_dump()
         
         def replace_all_in_dict(dict_data, old_str, new_str):
             if isinstance(dict_data, dict):
@@ -45,18 +45,17 @@ class Prompt(BaseModel):
             else:
                 return dict_data 
 
-        ret = self
-        for placeholder, replacement in replacements.items():
+        json_string = json.dumps(data_dict)
+        for placeholder in replacements:
             if placeholder not in json_string:
                 raise ValueError(f"Missing prompt placeholder: '{placeholder}'")
+
+        result_dict = data_dict
+        for placeholder, replacement in replacements.items():
             formatted_placeholder = placeholder_format.replace("[placeholder]", placeholder)
-            ret = replace_all_in_dict(ret, formatted_placeholder, replacement)
+            result_dict = replace_all_in_dict(result_dict, formatted_placeholder, replacement)
         
-        if ret is None:
-            raise RuntimeError("Could not make replacements")
-        
-        print(ret)
-        return ret
+        return self.__class__.model_validate(result_dict)
 
     def to_openai_format(self) -> list[OpenAIMessage]:
         return self.messages
