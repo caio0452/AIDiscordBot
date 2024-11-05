@@ -55,6 +55,7 @@ class Prompt(BaseModel):
         if ret is None:
             raise RuntimeError("Could not make replacements")
         
+        print(ret)
         return ret
 
     def to_openai_format(self) -> list[OpenAIMessage]:
