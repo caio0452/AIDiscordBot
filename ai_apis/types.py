@@ -1,4 +1,5 @@
 import re
+import json
 
 from typing import Any, Optional
 from pydantic import BaseModel, Field
@@ -32,32 +33,18 @@ class Prompt(BaseModel):
     def assistant_msg(content: str) -> dict[str, str]:
         return {"role": "assistant", "content": content}
 
-    def replace(self, replacements: dict[str, str], placeholder_format: str = r"\(\((%p)\)\)") -> "Prompt":
-        def replace_in_value(value: Any) -> Any:
-            if isinstance(value, str):
-                pattern = placeholder_format.replace("%p", r"\w+")
-                found_placeholders = re.findall(pattern, value)
-                found_placeholders = [p.strip("()") for p in found_placeholders]
-                
-                missing_placeholders = [p for p in found_placeholders if p not in replacements]
-                if missing_placeholders:
-                    raise ValueError(f"Missing replacements for placeholders: {', '.join(missing_placeholders)}")
-                
-                for placeholder, replacement in replacements.items():
-                    specific_pattern = re.escape(placeholder_format.replace("%p", placeholder))
-                    value = re.sub(specific_pattern, replacement, value)
-                return value
-            elif isinstance(value, list):
-                return [replace_in_value(item) for item in value]
-            elif isinstance(value, dict):
-                return {k: replace_in_value(v) for k, v in value.items()}
-            else:
-                return value
-
-        new_messages = [
-            replace_in_value(message) for message in self.messages
-        ]
-        return Prompt(messages=new_messages)
+    def replace(self, replacements: dict[str, str], placeholder_format: str = r"\(\(([placeholder])\)\)") -> "Prompt":
+        json_string = json.dumps(self.model_dump)
+        
+        for placeholder, replacement in replacements.items():
+            formatted_placeholder = placeholder_format.replace("[placeholder]", placeholder)
+            json_string, num_subs = re.subn(formatted_placeholder, replacement, json_string)
+            
+            if num_subs == 0:
+                raise ValueError(f"Missing prompt placeholder: '{formatted_placeholder}'")
+        
+        updated_data = json.loads(json_string)
+        return Prompt(**updated_data)
 
     def to_openai_format(self) -> list[OpenAIMessage]:
         return self.messages
