@@ -86,7 +86,9 @@ class DiscordBotResponse:
         NAME = "PERSONALITY_REWRITE"
         name_prompt = self.bot_data.personality.prompts[NAME]
         print(f"Initial prompt: {name_prompt}")
-        prompt = name_prompt.replace("((message))", message)
+        prompt = name_prompt.replace({
+            "message": message
+        })
         print(f"Replaced prompt: {prompt}")
 
         response = await self.send_llm_request(
@@ -102,9 +104,10 @@ class DiscordBotResponse:
             [memorized_message.text for memorized_message in self.bot_data.recent_history.as_list()]
         )
         last_user = self.bot_data.recent_history.as_list()[-1].nick
-        prompt = self.bot_data.personality.prompts[NAME] \
-                .replace("((user_query))", user_prompt_str) \
-                .replace("((last_user))", last_user)
+        prompt = self.bot_data.personality.prompts[NAME].replace({
+            "((user_query))": user_prompt_str, 
+            "((last_user))": last_user
+        })
         
         response = await self.send_llm_request(
             name=NAME,
@@ -125,7 +128,9 @@ class DiscordBotResponse:
 
         user_prompt_str += "QUERY: " + user_query
         prompt = self.bot_data.personality.prompts[NAME] \
-            .replace("((user_query))", user_prompt_str)
+            .replace({
+                "user_query": user_prompt_str
+            })
 
         response = await self.send_llm_request(
             name=NAME,
@@ -164,9 +169,11 @@ class DiscordBotResponse:
 
         # TODO: the "Prompt" class is weirdly used here, but not worth looking too much into as of this will be replaced by a JSON file eventually
         bot_prompt = self.bot_data.personality.prompts[MAIN_CLIENT_NAME]
-        system_prompt_str = bot_prompt \
-            .replace("((nick))", memory_snapshot.as_list()[-1].nick) \
-            .replace("((now))", now_str).messages[0]["content"]
+        system_prompt_str = bot_prompt.replace(
+            {
+                "nick": memory_snapshot.as_list()[-1].nick,
+                "now": now_str
+            }).messages[0]["content"]
 
         if not isinstance(system_prompt_str, str):
             raise RuntimeError("System prompt must be plain text")
