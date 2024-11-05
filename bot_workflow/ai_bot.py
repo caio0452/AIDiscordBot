@@ -214,7 +214,6 @@ class DiscordBotResponse:
 
     async def send_llm_request(self, *, name: str, prompt: Prompt):
         params = self.bot_data.personality.request_params[name]
-        prompt = self.bot_data.personality.prompts[name]
         provider: providers.ProviderData = self.bot_data.personality.providers[name]
         client: LLMClient = LLMClient.from_provider(provider)
 
