@@ -9,6 +9,7 @@ from bot_workflow.types import AIBotData, MemorizedMessageHistory
 import json
 import discord
 import datetime
+import traceback
 
 MAIN_CLIENT_NAME = "PERSONALITY"
 KNOWLEDGE_EXTRACTOR_NAME = "KAMI_CHAN_KNOWLEDGE_EXTRACTOR"
@@ -49,7 +50,6 @@ class DiscordBotResponse:
             self.verbose_log += f"[{current_time}] {text}\n"
 
     async def create_or_fallback(self, message: discord.Message, model_names: list[str]) -> str:
-        all_errors = []
         full_prompt = await self.build_full_prompt(
             self.bot_data.recent_history.without_dupe_ending_user_msgs(), 
             message
@@ -74,10 +74,10 @@ class DiscordBotResponse:
                 self.log_verbose(str(response), category="RAW API RESPONSE")
                 return personality_rewrite
             except Exception as e:
+                traceback.print_exc()
                 self.log_verbose(f"Model {model_name} failed with error: {e}", category="MODEL FAILURE")
-                all_errors.append(e)    
         
-        raise RuntimeError("Could not generate response and all fallbacks failed") from Exception(all_errors)
+        raise RuntimeError("Could not generate response and all fallbacks failed")
 
     async def personality_rewrite(self, message: str) -> str:
         NAME = "PERSONALITY_REWRITE"
