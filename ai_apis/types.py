@@ -34,7 +34,7 @@ class Prompt(BaseModel):
         return {"role": "assistant", "content": content}
 
     def replace(self, replacements: dict[str, str], placeholder_format: str = r"\(\(([placeholder])\)\)") -> "Prompt":
-        json_string = json.dumps(self.model_dump)
+        json_string = json.dumps(self.model_dump())
         
         for placeholder, replacement in replacements.items():
             formatted_placeholder = placeholder_format.replace("[placeholder]", placeholder)
