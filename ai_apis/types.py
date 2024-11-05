@@ -45,12 +45,12 @@ class Prompt(BaseModel):
             else:
                 return dict_data 
 
-        ret = None 
+        ret = self
         for placeholder, replacement in replacements.items():
             if placeholder not in json_string:
                 raise ValueError(f"Missing prompt placeholder: '{placeholder}'")
             formatted_placeholder = placeholder_format.replace("[placeholder]", placeholder)
-            ret = replace_all_in_dict(self, formatted_placeholder, replacement)
+            ret = replace_all_in_dict(ret, formatted_placeholder, replacement)
         
         if ret is None:
             raise RuntimeError("Could not make replacements")
