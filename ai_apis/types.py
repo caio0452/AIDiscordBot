@@ -38,10 +38,10 @@ class Prompt(BaseModel):
         json_string = json.dumps(self.model_dump())
         
         for placeholder, replacement in replacements.items():
-            # Inserting un-escaped newlines in the middle of a string can make the JSON invalid, so we escape it
-            escaped_replacement = replacement.replace("\r", "").replace("\n", "\\n") 
+            # Escape common characters that can interfere with JSON structure
+            escaped_replacement = json.dumps(replacement)[1:-1]
             formatted_placeholder = placeholder_format.replace("[placeholder]", placeholder)
-            json_string, num_subs = re.subn(formatted_placeholder, replacement, json_string)
+            json_string, num_subs = re.subn(formatted_placeholder, escaped_replacement, json_string)
             
             if num_subs == 0:
                 raise ValueError(f"Missing prompt placeholder: '{formatted_placeholder}'")
