@@ -34,7 +34,7 @@ class Prompt(BaseModel):
     def assistant_msg(content: str) -> dict[str, str]:
         return {"role": "assistant", "content": content}
 
-    def replace(self, replacements: dict[str, str], placeholder_format: str = r"\(\([placeholder]\)\)") -> "Prompt":
+    def replace(self, replacements: dict[str, str], placeholder_format: str = "(([placeholder]))") -> "Prompt":
         data_dict = self.model_dump()
         
         def replace_all_in_dict(dict_data, old_str, new_str):
