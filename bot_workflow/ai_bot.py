@@ -83,7 +83,7 @@ class DiscordBotResponse:
             name=NAME,
             prompt=prompt
         )  
-        await self.log_verbose(f"Prompt: {prompt}\nResponse: {response}", NAME)
+        self.log_verbose(f"Prompt: {prompt}\nResponse: {response}", category=NAME)
         return response.message.content
 
     async def user_query_rephrase(self) -> str:
@@ -100,7 +100,7 @@ class DiscordBotResponse:
             name=NAME,
             prompt=prompt
         )
-        await self.log_verbose(f"Prompt: {prompt}\nResponse: {response}", NAME)
+        self.log_verbose(f"Prompt: {prompt}\nResponse: {response}", category=NAME)
         return response.message.content
 
     async def info_select(self, user_query: str) -> str | None:
@@ -124,7 +124,7 @@ class DiscordBotResponse:
             name=NAME,
             prompt=prompt
         )
-        await self.log_verbose(f"Prompt: {prompt}\nResponse: {response}", NAME)
+        self.log_verbose(f"Prompt: {prompt}\nResponse: {response}", category=NAME)
         return response.message.content
 
     async def describe_image_if_present(self, message) -> str | None:
