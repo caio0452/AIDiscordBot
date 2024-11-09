@@ -36,13 +36,6 @@ class ResponseLogger:
     def __init__(self):
         self.text = ""
 
-    @staticmethod
-    def formatted_json(object: Any) -> str:
-        try:
-            return json.dumps(object, indent=4)
-        except Exception:
-            return json.dumps(json.loads(str(object)), indent=4)
-
     def verbose(self, text: str, *, category: str | None = None):
         current_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         if category:
@@ -93,7 +86,7 @@ class DiscordBotResponse:
             name=NAME,
             prompt=prompt
         )  
-        self.logger.verbose(f"Prompt: {ResponseLogger.formatted_json(prompt)}\nResponse: {ResponseLogger.formatted_json(response)}", category=NAME)
+        self.logger.verbose(f"Prompt: {prompt}\nResponse: {response}", category=NAME)
         return response.message.content
 
     async def user_query_rephrase(self) -> str:
@@ -110,7 +103,7 @@ class DiscordBotResponse:
             name=NAME,
             prompt=prompt
         )
-        self.logger.verbose(f"Prompt: {ResponseLogger.formatted_json(prompt)}\nResponse: {ResponseLogger.formatted_json(response)}", category=NAME)
+        self.logger.verbose(f"Prompt: {prompt}\nResponse: {response}", category=NAME)
         return response.message.content
 
     async def info_select(self, user_query: str) -> str | None:
@@ -134,7 +127,7 @@ class DiscordBotResponse:
             name=NAME,
             prompt=prompt
         )
-        self.logger.verbose(f"Prompt: {ResponseLogger.formatted_json(prompt)}\nResponse: {ResponseLogger.formatted_json(response)}", category=NAME)
+        self.logger.verbose(f"Prompt: {prompt}\nResponse: {response}", category=NAME)
         return response.message.content
 
     async def describe_image_if_present(self, message) -> str | None:
