@@ -34,28 +34,37 @@ class Prompt(BaseModel):
     def assistant_msg(content: str) -> dict[str, str]:
         return {"role": "assistant", "content": content}
 
-    def replace(self, replacements: dict[str, str], placeholder_format: str = "(([placeholder]))") -> "Prompt":
-        data_dict = self.model_dump()
-        
-        def replace_all_in_dict(dict_data, old_str, new_str):
-            if isinstance(dict_data, dict):
-                return {k: replace_all_in_dict(v, old_str, new_str) for k, v in dict_data.items()}
-            elif isinstance(dict_data, str):
-                return dict_data.replace(old_str, new_str)
-            else:
-                return dict_data 
+    # TODO: don't hardcode format
+    def replace(self, replacements: dict[str, str]) -> "Prompt":
+        placeholder_format = "((placeholder))"
+        modified_messages = []
+        prompt_as_str = json.dumps(self.messages)
+        all_formatted_placeholders = [
+            placeholder_format.replace("placeholder", k) for k, v in replacements.items()
+        ]
+        for match in re.findall(r"\(\(\w+\)\)", prompt_as_str):
+            if match not in all_formatted_placeholders:
+                raise ValueError(f"Missing placeholder replacement for '{match}'. Must specify all prompt placeholders, got only: {replacements}")
 
-        json_string = json.dumps(data_dict)
-        for placeholder in replacements:
-            if placeholder not in json_string:
-                raise ValueError(f"Missing prompt placeholder: '{placeholder}'")
+        def replace_all_in_dict(dict_data: dict, old_str, new_str) -> dict:
+            replaced_dict = dict_data
+            for k, v in dict_data.items():
+                if isinstance(v, str):
+                    replaced_dict[k] = v.replace(old_str, new_str)
+                elif isinstance(v, dict):
+                    replaced_dict[k] = replace_all_in_dict(replaced_dict, old_str, new_str)
+                else:
+                    raise ValueError(f"Cannot parse prompt dictionary because one of the keys is not str or dict: {dict_data}")
+            return replaced_dict 
+    
+        for message in self.messages:
+            modified_message = message
+            for placeholder, replacement in replacements.items():
+                formatted_placeholder = placeholder_format.replace("placeholder", placeholder)
+                modified_message = replace_all_in_dict(modified_message, formatted_placeholder, replacement)
+            modified_messages.append(modified_message)
 
-        result_dict = data_dict
-        for placeholder, replacement in replacements.items():
-            formatted_placeholder = placeholder_format.replace("[placeholder]", placeholder)
-            result_dict = replace_all_in_dict(result_dict, formatted_placeholder, replacement)
-        
-        return self.__class__.model_validate(result_dict)
+        return self.__class__(messages=modified_messages)
 
     def to_openai_format(self) -> list[OpenAIMessage]:
         return self.messages
