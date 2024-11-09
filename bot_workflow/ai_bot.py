@@ -38,8 +38,11 @@ class ResponseLogger:
 
     @staticmethod
     def formatted_json(object: Any) -> str:
-        return json.dumps(object, indent=4)
-    
+        try:
+            return json.dumps(object, indent=4)
+        except Exception:
+            return json.dumps(object.__dict__, indent=4)
+
     def verbose(self, text: str, *, category: str | None = None):
         current_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         if category:
