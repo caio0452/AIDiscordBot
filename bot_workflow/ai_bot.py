@@ -49,7 +49,7 @@ class DiscordBotResponse:
     def __init__(self, bot_data: CustomBotData, verbose: bool=False):
         self.verbose = verbose
         self.bot_data = bot_data
-        self.logger: ResponseLogger
+        self.logger: ResponseLogger = ResponseLogger()
         self.clients: dict[str, LLMClient] = {}
 
         for k, v in bot_data.provider_store.providers.items():
