@@ -41,7 +41,7 @@ class ResponseLogger:
         try:
             return json.dumps(object, indent=4)
         except Exception:
-            return json.dumps(object.__dict__, indent=4)
+            return json.dumps(json.loads(str(object)), indent=4)
 
     def verbose(self, text: str, *, category: str | None = None):
         current_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
