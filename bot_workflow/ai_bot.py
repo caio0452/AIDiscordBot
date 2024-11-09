@@ -65,13 +65,7 @@ class DiscordBotResponse:
                         temperature=0
                     )
                 )
-                response_txt = response.message.content
-                self.log_verbose(response_txt, category="PERSONALITY-LESS MESSAGE")
-                self.log_verbose(f"Length (chars): {len(response_txt)}")
-                print(f"Rewriting {response_txt}")
-                personality_rewrite = await self.personality_rewrite(response_txt)
-                self.log_verbose(personality_rewrite, category="IN-CHARACTER REWRITE")
-                self.log_verbose(str(response), category="RAW API RESPONSE")
+                personality_rewrite = await self.personality_rewrite(response.message.content)
                 return personality_rewrite
             except Exception as e:
                 traceback.print_exc()
@@ -85,12 +79,11 @@ class DiscordBotResponse:
         prompt = name_prompt.replace({
             "message": message
         })
-
         response = await self.send_llm_request(
             name=NAME,
             prompt=prompt
         )  
-        print(f"Returned: {response.message.content}")
+        await self.log_verbose(f"Prompt: {prompt}\nResponse: {response}", NAME)
         return response.message.content
 
     async def user_query_rephrase(self) -> str:
@@ -103,11 +96,11 @@ class DiscordBotResponse:
             "user_query": user_prompt_str, 
             "last_user": last_user
         })
-        
         response = await self.send_llm_request(
             name=NAME,
             prompt=prompt
         )
+        await self.log_verbose(f"Prompt: {prompt}\nResponse: {response}", NAME)
         return response.message.content
 
     async def info_select(self, user_query: str) -> str | None:
@@ -127,11 +120,11 @@ class DiscordBotResponse:
             .replace({
                 "user_query": user_prompt_str
             })
-
         response = await self.send_llm_request(
             name=NAME,
             prompt=prompt
         )
+        await self.log_verbose(f"Prompt: {prompt}\nResponse: {response}", NAME)
         return response.message.content
 
     async def describe_image_if_present(self, message) -> str | None:
