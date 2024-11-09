@@ -32,22 +32,28 @@ class CustomBotData(AIBotData):
         self.RECENT_MEMORY_LENGTH = 5
         self.personality = personality
 
+class ResponseLogger:
+    def __init__(self):
+        self.text = ""
+
+    def verbose(self, text: str, *, category: str | None = None, json_object_to_dump: Any = None):
+        current_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        if json_object_to_dump is not None:
+            self.text += json.dumps(json_object_to_dump, indent=4)
+        if category:
+            self.text += f"[{current_time}] --- {category} ---\n{text}\n"
+        else:
+            self.text += f"[{current_time}] {text}\n"
+
 class DiscordBotResponse:
     def __init__(self, bot_data: CustomBotData, verbose: bool=False):
         self.verbose = verbose
         self.bot_data = bot_data
-        self.verbose_log = ""
+        self.logger: ResponseLogger
         self.clients: dict[str, LLMClient] = {}
 
         for k, v in bot_data.provider_store.providers.items():
             self.clients[k] = LLMClient.from_provider(v)
-
-    def log_verbose(self, text: str, *, category: str|None = None):
-        current_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        if category:
-            self.verbose_log += f"[{current_time}] --- {category} ---\n{text}\n"
-        else:
-            self.verbose_log += f"[{current_time}] {text}\n"
 
     async def create_or_fallback(self, message: discord.Message, model_names: list[str]) -> str:
         full_prompt = await self.build_full_prompt(
@@ -69,7 +75,7 @@ class DiscordBotResponse:
                 return personality_rewrite
             except Exception as e:
                 traceback.print_exc()
-                self.log_verbose(f"Model {model_name} failed with error: {e}", category="MODEL FAILURE")
+                self.logger.verbose(f"Model {model_name} failed with error: {e}", category="MODEL FAILURE")
         
         raise RuntimeError("Could not generate response and all fallbacks failed")
 
@@ -83,7 +89,7 @@ class DiscordBotResponse:
             name=NAME,
             prompt=prompt
         )  
-        self.log_verbose(f"Prompt: {prompt}\nResponse: {response}", category=NAME)
+        self.logger.verbose(f"Prompt: {prompt}\nResponse: {response}", category=NAME)
         return response.message.content
 
     async def user_query_rephrase(self) -> str:
@@ -100,7 +106,7 @@ class DiscordBotResponse:
             name=NAME,
             prompt=prompt
         )
-        self.log_verbose(f"Prompt: {prompt}\nResponse: {response}", category=NAME)
+        self.logger.verbose(f"Prompt: {prompt}\nResponse: {response}", category=NAME)
         return response.message.content
 
     async def info_select(self, user_query: str) -> str | None:
@@ -124,7 +130,7 @@ class DiscordBotResponse:
             name=NAME,
             prompt=prompt
         )
-        self.log_verbose(f"Prompt: {prompt}\nResponse: {response}", category=NAME)
+        self.logger.verbose(f"Prompt: {prompt}\nResponse: {response}", category=NAME)
         return response.message.content
 
     async def describe_image_if_present(self, message) -> str | None:
@@ -171,9 +177,9 @@ class DiscordBotResponse:
 
         if knowledge is not None:
             system_prompt_str += f"\n[INFO FROM KNOWLEDGE DB]:\n{knowledge}\n"
-            self.log_verbose(knowledge, category="INFO FROM KNOWLEDGE DB")
+            self.logger.verbose(knowledge, category="INFO FROM KNOWLEDGE DB")
         else:
-            self.log_verbose("The knowledge database has nothing relevant", category="INFO FROM KNOWLEDGE DB")
+            self.logger.verbose("The knowledge database has nothing relevant", category="INFO FROM KNOWLEDGE DB")
 
         prompt: list[Any] = [
             Prompt.system_msg(system_prompt_str)
@@ -198,7 +204,7 @@ class DiscordBotResponse:
         if img_desc:
             prompt.append(Prompt.user_msg(img_desc))
 
-        self.log_verbose(f"--- FULL PROMPT ---\n{json.dumps(prompt, indent=4)}\n")
+        self.logger.verbose(f"--- FULL PROMPT ---\n{json.dumps(prompt, indent=4)}\n")
         return prompt
 
     async def send_llm_request(self, *, name: str, prompt: Prompt):

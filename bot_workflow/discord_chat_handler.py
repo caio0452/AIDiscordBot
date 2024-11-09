@@ -137,7 +137,7 @@ class DiscordChatHandler(commands.Cog):
     async def generate_response(self, message: discord.Message, verbose: bool) -> Tuple[str, str]:
         resp = DiscordBotResponse(self.ai_bot, verbose)
         resp_str = await resp.create_or_fallback(message, MODEL_REQUEST_ORDER)
-        return resp_str, resp.verbose_log
+        return resp_str, resp.logger.text
 
     async def attach_log(self, reply: discord.Message, resp_str: str, verbose_log: str) -> discord.Message:
         if verbose_log:
