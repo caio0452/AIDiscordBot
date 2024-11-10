@@ -64,7 +64,9 @@ class DiscordBotResponse:
                     )
                 )
                 self.logger.verbose(f"Pre-rewrite response: {response}", category="PERSONALITY RESPONSE")
-                personality_rewrite = await self.personality_rewrite(response.message.content)
+                passed_msg = response.message.content # TODO: temporary debug
+                print(f"Passed message {passed_msg}") # TODO: temporary debug
+                personality_rewrite = await self.personality_rewrite(passed_msg) # TODO: temporary debug
                 return personality_rewrite
             except Exception as e:
                 traceback.print_exc()
@@ -74,10 +76,13 @@ class DiscordBotResponse:
     
     async def personality_rewrite(self, message: str) -> str:
         NAME = "PERSONALITY_REWRITE"
+        print(f"into personality_rewrite: {message}") # TODO: temporary debug
         name_prompt = self.bot_data.personality.prompts[NAME]
+        print(f"pre-replacement prompt: {name_prompt}") # TODO: temporary debug
         prompt = name_prompt.replace({
             "message": message
         })
+        print(f"post-replacement prompt: {prompt}") # TODO: temporary debug
         response = await self.send_llm_request(
             name=NAME,
             prompt=prompt
