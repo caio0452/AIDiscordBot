@@ -50,7 +50,7 @@ class Prompt(BaseModel):
                 raise ValueError(f"Missing placeholder replacement for '{match}'. Must specify all prompt placeholders, got only: {replacements}")
 
         def replace_all_in_dict(dict_data: dict, old_str, new_str) -> dict:
-            replaced_dict = dict_data
+            replaced_dict = dict_data.copy()
             for k, v in dict_data.items():
                 if isinstance(v, str):
                     replaced_dict[k] = v.replace(old_str, new_str)
