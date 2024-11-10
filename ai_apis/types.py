@@ -14,8 +14,11 @@ class Prompt(BaseModel):
     def system_msg(content: str) -> dict[str, str]:
         return {"role": "system", "content": content}
 
+    def append(self, message: OpenAIMessage):
+        self.messages.append(message)
+
     @staticmethod
-    def user_msg(content: str, image_url: str | None = None) -> dict[str, Any]:
+    def user_msg(content: str, image_url: str | None = None) -> OpenAIMessage:
         if image_url:
             return {
                 "role": "user",
@@ -31,7 +34,7 @@ class Prompt(BaseModel):
             return {"role": "user", "content": content}
 
     @staticmethod
-    def assistant_msg(content: str) -> dict[str, str]:
+    def assistant_msg(content: str) -> OpenAIMessage:
         return {"role": "assistant", "content": content}
 
     # TODO: don't hardcode format

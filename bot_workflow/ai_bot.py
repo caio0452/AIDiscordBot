@@ -1,4 +1,3 @@
-from typing import Any
 from ai_apis import providers
 from ai_apis.client import LLMClient
 from bot_workflow.vector_db import VectorDatabase
@@ -6,15 +5,9 @@ from ai_apis.types import LLMRequestParams, Prompt
 from bot_workflow.personality_loader import Personality
 from bot_workflow.types import AIBotData, MemorizedMessageHistory
 
-import json
 import discord
 import datetime
 import traceback
-
-MAIN_CLIENT_NAME = "PERSONALITY"
-KNOWLEDGE_EXTRACTOR_NAME = "KAMI_CHAN_KNOWLEDGE_EXTRACTOR"
-PERSONALITY_REWRITER_NAME = "KAMI_CHAN_PERSONALITY_REWRITER"
-IMAGE_VIEWER_NAME = "KAMI_CHAN_IMAGE_VIEWER"
 
 class CustomBotData(AIBotData):
     def __init__(self,
@@ -25,12 +18,12 @@ class CustomBotData(AIBotData):
                  discord_bot_id: int
                 ):
         super().__init__(name, MemorizedMessageHistory())
+        self.personality = personality
         self.provider_store = provider_store
         self.discord_bot_id = discord_bot_id
         self.vector_db = vector_db
         self.recent_history = MemorizedMessageHistory()
-        self.RECENT_MEMORY_LENGTH = 5
-        self.personality = personality
+        self.RECENT_MEMORY_LENGTH = personality.recent_message_history_length
 
 class ResponseLogger:
     def __init__(self):
@@ -53,7 +46,9 @@ class DiscordBotResponse:
         for k, v in bot_data.provider_store.providers.items():
             self.clients[k] = LLMClient.from_provider(v)
 
+    # TODO: clean this method up
     async def create_or_fallback(self, message: discord.Message, model_names: list[str]) -> str:
+        MAIN_CLIENT_NAME = "PERSONALITY"
         full_prompt = await self.build_full_prompt(
             self.bot_data.recent_history.without_dupe_ending_user_msgs(), 
             message
@@ -61,7 +56,7 @@ class DiscordBotResponse:
         for model_name in model_names:
             try:
                 response = await self.clients[MAIN_CLIENT_NAME].send_request(
-                    prompt=Prompt(messages=full_prompt),
+                    prompt=full_prompt,
                     params=LLMRequestParams(
                         model_name=model_name,
                         max_tokens=2000,
@@ -75,7 +70,7 @@ class DiscordBotResponse:
                 self.logger.verbose(f"Model {model_name} failed with error: {e}", category="MODEL FAILURE")
         
         raise RuntimeError("Could not generate response and all fallbacks failed")
-
+    
     async def personality_rewrite(self, message: str) -> str:
         NAME = "PERSONALITY_REWRITE"
         name_prompt = self.bot_data.personality.prompts[NAME]
@@ -130,6 +125,7 @@ class DiscordBotResponse:
         self.logger.verbose(f"Prompt: {prompt}\nResponse: {response}", category=NAME)
         return response.message.content
 
+    # TODO: clean this method up
     async def describe_image_if_present(self, message) -> str | None:
         if len(message.attachments) == 1:
             if message.channel.nsfw:
@@ -155,54 +151,40 @@ class DiscordBotResponse:
                 )
                 return response.message.content
 
-    async def build_full_prompt(self, memory_snapshot: MemorizedMessageHistory, original_msg: discord.Message) -> list[Any]:
+    async def build_full_prompt(self, memory_snapshot: MemorizedMessageHistory, original_msg: discord.Message) -> Prompt:
+        NAME = "PERSONALITY"
         now_str = datetime.datetime.now().strftime("%B %d, %H:%M:%S")
         user_query = await self.user_query_rephrase()
-
-        # TODO: the "Prompt" class is weirdly used here, but not worth looking too much into as of this will be replaced by a JSON file eventually
-        bot_prompt = self.bot_data.personality.prompts[MAIN_CLIENT_NAME]
-        system_prompt_str = bot_prompt.replace(
-            {
-                "nick": memory_snapshot.as_list()[-1].nick,
-                "now": now_str
-            }).messages[0]["content"]
-
-        if not isinstance(system_prompt_str, str):
-            raise RuntimeError("System prompt must be plain text")
-
         knowledge = await self.info_select(user_query)
+        old_memories: str = "" # TODO: implement
+        full_prompt: Prompt = self.bot_data.personality.prompts[NAME]
 
         if knowledge is not None:
-            system_prompt_str += f"\n[INFO FROM KNOWLEDGE DB]:\n{knowledge}\n"
+            knowledge_str = f"\n[INFO FROM KNOWLEDGE DB]:\n{knowledge}\n"
             self.logger.verbose(knowledge, category="INFO FROM KNOWLEDGE DB")
         else:
+            knowledge_str = ""
             self.logger.verbose("The knowledge database has nothing relevant", category="INFO FROM KNOWLEDGE DB")
-
-        prompt: list[Any] = [
-            Prompt.system_msg(system_prompt_str)
-        ]
-        old_messages_str = ""
-        # for old_message in await self.bot_data.vector_db_conn.query_relevant_messages(original_msg.content):
-        #     old_messages_str += f"[{old_message.sent.isoformat()} by {old_message.nick}] {old_message.text}"
-
-        system_prompt_str += \
-        f"""
-        [[OLD MESSAGES IN YOUR MEMORY]]:\n{old_messages_str}\n\n
-        [[RECENT CONVERSATION HISTORY]]:\n{knowledge}
-        """
 
         for memorized_message in memory_snapshot.as_list():
             if memorized_message.is_bot:
-                prompt.append(Prompt.assistant_msg(memorized_message.text))
+                full_prompt.append(Prompt.assistant_msg(memorized_message.text))
             else:
-                prompt.append(Prompt.user_msg(memorized_message.text))
+                full_prompt.append(Prompt.user_msg(memorized_message.text))
 
         img_desc = await self.describe_image_if_present(original_msg)
         if img_desc:
-            prompt.append(Prompt.user_msg(img_desc))
+            full_prompt.append(Prompt.user_msg(img_desc))
 
-        self.logger.verbose(f"--- FULL PROMPT ---\n{json.dumps(prompt, indent=4)}\n")
-        return prompt
+        full_prompt.replace({
+            "now": now_str,
+            "nick": original_msg.author.display_name,
+            "knowledge": knowledge_str,
+            "old_memories": old_memories
+        })
+
+        self.logger.verbose(f"FULL PROMPT: {full_prompt}", category="FULL PROMPT")
+        return full_prompt
 
     async def send_llm_request(self, *, name: str, prompt: Prompt):
         params = self.bot_data.personality.request_params[name]
