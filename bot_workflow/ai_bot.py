@@ -63,6 +63,7 @@ class DiscordBotResponse:
                         temperature=0
                     )
                 )
+                self.logger.verbose(f"Pre-rewrite response: {response}", category="PERSONALITY RESPONSE")
                 personality_rewrite = await self.personality_rewrite(response.message.content)
                 return personality_rewrite
             except Exception as e:
