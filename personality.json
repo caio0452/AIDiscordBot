@@ -102,7 +102,7 @@
             "model_name": "gpt-4o"
          }
       },
-      "replacements": {
+      "regex_replacements": {
          "<+1>": "<:paperUwU:1018366709658308688>",
          "<0>": "<:paperOhhh:1018366673423695872> <:paperUwU:1018366709658308688>",
          "<-1>": "<:Paperpatchnotes:1022991564588449902>"
