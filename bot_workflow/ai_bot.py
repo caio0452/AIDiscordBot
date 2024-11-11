@@ -5,6 +5,7 @@ from ai_apis.types import LLMRequestParams, Prompt
 from bot_workflow.personality_loader import Personality
 from bot_workflow.types import AIBotData, MemorizedMessageHistory
 
+import re
 import discord
 import datetime
 import traceback
@@ -65,7 +66,10 @@ class DiscordBotResponse:
                 )
                 self.logger.verbose(f"Pre-rewrite response: {response}", category="PERSONALITY RESPONSE")
                 personality_rewrite = await self.personality_rewrite(response.message.content)
-                return personality_rewrite
+                answer_with_replacements = personality_rewrite
+                for k, v in self.bot_data.personality.regex_replacements.items():
+                    answer_with_replacements = re.sub(k, v, answer_with_replacements)
+                return answer_with_replacements
             except Exception as e:
                 traceback.print_exc()
                 self.logger.verbose(f"Model {model_name} failed with error: {e}", category="MODEL FAILURE")
@@ -128,6 +132,7 @@ class DiscordBotResponse:
 
     # TODO: clean this method up
     async def describe_image_if_present(self, message) -> str | None:
+        NAME = "IMAGE_VIEW"
         if len(message.attachments) == 1:
             if message.channel.nsfw:
                 await message.reply(":X: I can't see attachments in NSFW channels!")
@@ -136,7 +141,7 @@ class DiscordBotResponse:
             if attachment.content_type.startswith("image/"):
                 await message.add_reaction("👀")
                 # Todo: only last message is possibly not enough context
-                response = await self.clients[IMAGE_VIEWER_NAME].send_request(
+                response = await self.clients[NAME].send_request(
                     prompt=Prompt(
                                 messages=[
                                     Prompt.user_msg(

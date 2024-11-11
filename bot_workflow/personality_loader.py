@@ -19,6 +19,7 @@ class Personality:
     request_params: dict[str, LLMRequestParams]
     lang: dict[str, str]
     providers: dict[str, ProviderData]
+    regex_replacements: dict[str, str]
     
 class PersonalityLoader:
     def __init__(self, filename: str):
@@ -45,6 +46,9 @@ class PersonalityLoader:
         lang = self.safe_get(
             path=["personality", "lang"], required_type=dict
         )
+        regex_replacements = self.safe_get(
+            path=["personality", "regex_replacements"], required_type=dict
+        )
         prompts: dict[str, Prompt] = self.safe_get_dict_of_model(
             path=["personality", "prompts"], required_type=Prompt
         )
@@ -61,7 +65,8 @@ class PersonalityLoader:
             prompts=prompts,
             lang=lang,
             request_params=request_params,
-            providers=providers
+            providers=providers,
+            regex_replacements=regex_replacements
         )
 
     def _get_raw(self, *, path: list[str], required: bool) -> dict | None:

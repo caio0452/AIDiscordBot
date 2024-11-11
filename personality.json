@@ -102,9 +102,14 @@
             "model_name": "gpt-4o"
          }
       },
+      "replacements": {
+         "<+1>": "<:paperUwU:1018366709658308688>",
+         "<0>": "<:paperOhhh:1018366673423695872> <:paperUwU:1018366709658308688>",
+         "<-1>": "<:Paperpatchnotes:1022991564588449902>"
+      },
       "lang": {
          "rate_limited": "You are being rate limited",
-         "bot_typing": "Paper-Chan is typing...",
+         "bot_typing": "<:paperPleasePride:1018365011141349426> Paper-Chan is typing...",
          "error": "Sorry, there was an error!!",
          "disclaimer": "-# Unofficial, fictitious AI-made content. [Learn more.](https://discord.com/channels/532557135167619093/1192649325709381673/1196285641978302544)",
          "log_file_reply": "Verbose logs for message ID {} attached (only last 10 are stored)",
