@@ -72,7 +72,6 @@ class DiscordBotResponse:
                 personality_rewrite = await self.personality_rewrite(response.message.content)
                 answer_with_replacements = personality_rewrite
                 for k, v in self.bot_data.personality.regex_replacements.items():
-                    print(f"Replacing '{k}' (any regex match) with literal string '{v}' in target {answer_with_replacements}")
                     answer_with_replacements = re.sub(k, v, answer_with_replacements)
                 return answer_with_replacements
             except Exception as e:
