@@ -1,6 +1,7 @@
 from ai_apis import providers
 from ai_apis.client import LLMClient
 from bot_workflow.vector_db import VectorDatabase
+from bot_workflow.knowledge import KnowledgeIndex
 from ai_apis.types import LLMRequestParams, Prompt
 from bot_workflow.personality_loader import Personality
 from bot_workflow.types import AIBotData, MemorizedMessageHistory
@@ -12,11 +13,13 @@ import traceback
 
 class CustomBotData(AIBotData):
     def __init__(self,
+                 *,
                  name: str,
                  vector_db: VectorDatabase,
                  personality: Personality,
                  provider_store: providers.ProviderDataStore,
-                 discord_bot_id: int
+                 knowledge: KnowledgeIndex,
+                 discord_bot_id: int,
                 ):
         super().__init__(name, MemorizedMessageHistory())
         self.personality = personality
@@ -24,6 +27,7 @@ class CustomBotData(AIBotData):
         self.discord_bot_id = discord_bot_id
         self.vector_db = vector_db
         self.recent_history = MemorizedMessageHistory()
+        self.knowledge = knowledge
         self.RECENT_MEMORY_LENGTH = personality.recent_message_history_length
 
 class ResponseLogger:
@@ -110,7 +114,7 @@ class DiscordBotResponse:
     async def info_select(self, user_query: str) -> str | None:
         NAME = "INFO_SELECT"
         user_prompt_str = ""
-        knowledge_list = await self.bot_data.vector_db.search(user_query, 5, "knowledge")
+        knowledge_list = await self.bot_data.knowledge.retrieve(user_query)
 
         if len(knowledge_list) == 0:
             return None

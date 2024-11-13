@@ -1,16 +1,14 @@
 import io
 import discord
-import traceback
 import datetime 
+
+import traceback
 
 from typing import Tuple
 from discord.ext import commands
-from bot_workflow.ai_bot import CustomBotData, DiscordBotResponse
-from bot_workflow.personality_loader import PersonalityLoader
-from ai_apis.providers import ProviderDataStore
-from bot_workflow.vector_db import VectorDatabase
-from bot_workflow.memorized_message import MemorizedMessage
 from util.rate_limits import RateLimiter, RateLimit
+from bot_workflow.memorized_message import MemorizedMessage
+from bot_workflow.ai_bot import CustomBotData, DiscordBotResponse
 
 BOT_NAME = "Kami-Chan"
 MAX_CHAT_CHARACTERS = 1000
@@ -27,8 +25,8 @@ class MessageFlag:
     PINGED_BOT = "PINGED_BOT"
 
 class DiscordChatHandler(commands.Cog):
-    def __init__(self, bot: commands.Bot, provider_store: ProviderDataStore, vector_database: VectorDatabase):
-        self.bot: commands.Bot = bot
+    def __init__(self, discord_bot: commands.Bot, ai_bot_data: CustomBotData):
+        self.bot: commands.Bot = discord_bot
         self.RECENT_MEMORY_LENGTH = 5
         self.rate_limiter = RateLimiter(
             RateLimit(n_messages=3, seconds=10),
@@ -37,10 +35,8 @@ class DiscordChatHandler(commands.Cog):
             RateLimit(n_messages=100, seconds=2 * 3600),
             RateLimit(n_messages=250, seconds=8 * 3600)
         )
-        personality = PersonalityLoader("personality.json").load_personality()
-        self.ai_bot = CustomBotData(BOT_NAME, vector_database, personality, provider_store, bot.user.id)
+        self.ai_bot = ai_bot_data
         self._last_message_id_logs: dict[int, str] = {}
-        self.vector_database = vector_database
 
     def get_message_flags(self, message: discord.Message) -> list[MessageFlag]:
         flags = [] 
@@ -168,10 +164,11 @@ class DiscordChatHandler(commands.Cog):
         return previous_message
 
     async def memorize_message(self, message: MemorizedMessage, *, id: int):
+        # TODO: this should be abstracted into a Memory class that wraps the vector database
         await self.ai_bot.recent_history.add(
             message
         )
-        await self.vector_database.index(
+        await self.ai_bot.vector_db.index(
             index_name="messages", 
             data=message.text, 
             metadata="", 
@@ -182,7 +179,7 @@ class DiscordChatHandler(commands.Cog):
         await self.ai_bot.recent_history.add(
             await MemorizedMessage.of_discord_message(message)
         )
-        await self.vector_database.index(
+        await self.ai_bot.vector_db.index(
             index_name="messages", 
             data=message.content, 
             metadata="", 
@@ -199,7 +196,7 @@ class DiscordChatHandler(commands.Cog):
                 message_id=message_id
             )
         )
-        await self.vector_database.index(
+        await self.ai_bot.vector_db.index(
             index_name="messages", 
             data=text, 
             metadata="", 
