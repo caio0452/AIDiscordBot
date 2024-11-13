@@ -26,6 +26,8 @@ class VectorDatabase:
             }
         )
 
+        self.db_data.index(["Hello, world"]) # Better way to init this?
+
     async def search(self, data: str, limit: int=5, index_name: str | None = None) -> list[Any]:
         if index_name is None:
             ret = self.db_data.search(data, limit=limit)
@@ -34,8 +36,6 @@ class VectorDatabase:
 
         if not isinstance(ret, list):
             raise RuntimeError(f"Expected database search to return list, not object {str(ret)} of type {type(ret)}")
-        
-        print(f"Search results: {ret}")
         return ret
 
     async def get_index(self, index_name: str):
