@@ -2,7 +2,7 @@ import re
 import os
 import glob
 
-from vector_db import VectorDatabase
+from bot_workflow.vector_db import VectorDatabase
 from ai_apis.providers import ProviderData
 
 class KnowledgeIndex:
