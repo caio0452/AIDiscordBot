@@ -19,9 +19,9 @@ class DiscordBot:
     def __init__(self):
         intents = discord.Intents.default()
         intents.message_content = True
-        embeddings_provider = self.ai_personality.providers["EMBEDDINGS"]
         self.bot = commands.Bot(command_prefix='paper!', intents=intents)
         self.ai_personality = PersonalityLoader("personality.json").load_personality()
+        embeddings_provider = self.ai_personality.providers["EMBEDDINGS"]
         self.vector_db = VectorDatabase(embeddings_provider)
         self.knowledge = KnowledgeIndex(embeddings_provider)
         self.bot.event(self.on_ready)
