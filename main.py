@@ -34,7 +34,7 @@ class DiscordBot:
         provider_store = ProviderDataStore(
             providers=provider_list
         ) # TODO: There should be required providers
-        personality = PersonalityLoader("pesonality.json").load_personality()
+        personality = PersonalityLoader("personality.json").load_personality()
         await self.bot.add_cog(DiscordChatHandler(
             discord_bot=self.bot, 
             ai_bot_data=CustomBotData(
