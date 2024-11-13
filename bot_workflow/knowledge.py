@@ -39,12 +39,14 @@ class KnowledgeIndex:
 
             with open(file_path, 'r') as file:
                 await self.index_text(file.read())
+                print(f"Indexed {file_path}")
                              
     async def index_text(self, text: str, *, metadata: str = "knowledge"):
         for chunk in KnowledgeIndex.chunk_text(text):
             await self.vector_db.index(
                 index_name="knowledge", 
-                data=chunk, metadata=metadata,
+                data=chunk, 
+                metadata=metadata,
                 entry_id=None
             )
 
