@@ -19,20 +19,13 @@ class VectorDatabase:
                 "transform": transform, 
                 "backend": "numpy", 
                 "content": True,
-                "indexes": {
-                    "knowledge": {},
-                    "messages": {}
-                }
             }
         )
 
         self.db_data.index(["Hello, world"]) # Better way to init this?
 
-    async def search(self, data: str, limit: int=5, index_name: str | None = None) -> list[Any]:
-        if index_name is None:
-            ret = self.db_data.search(data, limit=limit)
-        else:
-            ret = self.db_data.search(data, limit=limit, index=index_name)
+    async def search(self, data: str, limit: int=5) -> list[Any]:
+        ret = self.db_data.search(data, limit=limit)
 
         if not isinstance(ret, list):
             raise RuntimeError(f"Expected database search to return list, not object {str(ret)} of type {type(ret)}")
@@ -48,16 +41,14 @@ class VectorDatabase:
         except Exception as e:
             raise RuntimeError(f"Failed to access index {index_name}") from e
 
-    async def index(self, *, index_name: str, data: str, metadata: str, entry_id: int | None):
-        target_index = await self.get_index(index_name)
-
+    async def index(self, *, data: str, metadata: str, entry_id: int | None):
         if entry_id is None:
             combined = data + metadata
             id = int(hashlib.sha256(combined.encode()).hexdigest(), 16) & 0xFFFFFFFF  
         else:
             id = entry_id
 
-        target_index.index([(id, [data], metadata)])
+        self.db_data.upsert([(id, [data], metadata)])
 
     async def delete_ids(self, *, index_name: str, entry_ids: list[int]) -> int:
         target_index = await self.get_index(index_name)

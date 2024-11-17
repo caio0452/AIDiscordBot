@@ -5,6 +5,11 @@ import glob
 from bot_workflow.vector_db import VectorDatabase
 from ai_apis.providers import ProviderData
 
+# TODO: abstract this further
+class MemoryIndex:
+    def __init__(self, provider: ProviderData): 
+        self.vector_db: VectorDatabase = VectorDatabase(provider)
+
 class KnowledgeIndex:
     def __init__(self, provider: ProviderData): 
         self.vector_db: VectorDatabase = VectorDatabase(provider)
@@ -44,11 +49,10 @@ class KnowledgeIndex:
     async def index_text(self, text: str, *, metadata: str = "knowledge"):
         for chunk in KnowledgeIndex.chunk_text(text):
             await self.vector_db.index(
-                index_name="knowledge", 
                 data=chunk, 
                 metadata=metadata,
                 entry_id=None
             )
 
     async def retrieve(self, related_text: str):
-        return await self.vector_db.search(related_text, index_name="knowledge")
+        return await self.vector_db.search(related_text)

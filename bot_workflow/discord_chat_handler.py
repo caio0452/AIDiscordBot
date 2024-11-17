@@ -6,6 +6,7 @@ import traceback
 
 from typing import Tuple
 from discord.ext import commands
+from bot_workflow.knowledge import MemoryIndex
 from util.rate_limits import RateLimiter, RateLimit
 from bot_workflow.memorized_message import MemorizedMessage
 from bot_workflow.ai_bot import CustomBotData, DiscordBotResponse
@@ -164,29 +165,29 @@ class DiscordChatHandler(commands.Cog):
         return previous_message
 
     async def memorize_message(self, message: MemorizedMessage, *, id: int):
-        # TODO: this should be abstracted into a Memory class that wraps the vector database
+        memory_db: MemoryIndex = self.ai_bot.memory
         await self.ai_bot.recent_history.add(
             message
         )
-        await self.ai_bot.vector_db.index(
-            index_name="messages", 
+        await memory_db.vector_db.index(
             data=message.text, 
             metadata="", 
             entry_id=id
         )
 
     async def memorize_discord_message(self, message: discord.Message):
+        memory_db: MemoryIndex = self.ai_bot.memory
         await self.ai_bot.recent_history.add(
             await MemorizedMessage.of_discord_message(message)
         )
-        await self.ai_bot.vector_db.index(
-            index_name="messages", 
+        await memory_db.vector_db.index(
             data=message.content, 
             metadata="", 
             entry_id=message.id
         )
 
     async def memorize_raw_message(self, *, text: str, nick: str, sent: datetime.datetime, is_bot: bool, message_id: int):
+        memory_db: MemoryIndex = self.ai_bot.memory
         await self.ai_bot.recent_history.add(
             MemorizedMessage(
                 text=text,
@@ -196,8 +197,7 @@ class DiscordChatHandler(commands.Cog):
                 message_id=message_id
             )
         )
-        await self.ai_bot.vector_db.index(
-            index_name="messages", 
+        await memory_db.vector_db.index(
             data=text, 
             metadata="", 
             entry_id=message_id
