@@ -185,7 +185,7 @@ class DiscordBotResponse:
         if img_desc:
             full_prompt.append(Prompt.user_msg(img_desc))
 
-        full_prompt.replace({
+        full_prompt = full_prompt.replace({
             "now": now_str,
             "nick": original_msg.author.display_name,
             "knowledge": knowledge_str,
