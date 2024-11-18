@@ -5,7 +5,7 @@ from discord.ext import commands
 from bot_workflow.ai_bot import CustomBotData
 from ai_apis.providers import ProviderDataStore
 from bot_workflow.personality_loader import PersonalityLoader
-from bot_workflow.knowledge import KnowledgeIndex, MemoryIndex
+from bot_workflow.knowledge import KnowledgeIndex, LongTermMemoryIndex
 from bot_workflow.discord_chat_handler import DiscordChatHandler
 
 # from commands.rewrite import RewriteCommand
@@ -22,7 +22,7 @@ class DiscordBot:
         self.ai_personality = PersonalityLoader("personality.json").load_personality()
         embeddings_provider = self.ai_personality.providers["EMBEDDINGS"]
         self.knowledge = KnowledgeIndex(embeddings_provider)
-        self.memory = MemoryIndex(embeddings_provider)
+        self.long_term_memory = LongTermMemoryIndex(embeddings_provider)
         self.bot.event(self.on_ready)
 
     def run(self):
@@ -40,7 +40,7 @@ class DiscordBot:
                 name="Kami-Chan", 
                 personality=personality, 
                 provider_store=provider_store,
-                memory=self.memory,
+                long_term_memory=self.long_term_memory,
                 knowledge=self.knowledge,
                 discord_bot_id=self.bot.user.id
             )

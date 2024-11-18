@@ -17,14 +17,14 @@ class CustomBotData(AIBotData):
                  personality: Personality,
                  provider_store: providers.ProviderDataStore,
                  knowledge: KnowledgeIndex,
-                 memory: LongTermMemoryIndex,
+                 long_term_memory: LongTermMemoryIndex,
                  discord_bot_id: int,
                 ):
         super().__init__(name, MemorizedMessageHistory())
         self.personality = personality
         self.provider_store = provider_store
         self.discord_bot_id = discord_bot_id
-        self.long_term_memory = memory # TODO: unused
+        self.long_term_memory = long_term_memory # TODO: unused
         self.recent_history = MemorizedMessageHistory()
         self.knowledge = knowledge 
         self.RECENT_MEMORY_LENGTH = personality.recent_message_history_length
