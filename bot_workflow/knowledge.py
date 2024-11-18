@@ -6,7 +6,7 @@ from bot_workflow.vector_db import VectorDatabase
 from ai_apis.providers import ProviderData
 
 # TODO: abstract this further
-class MemoryIndex:
+class LongTermMemoryIndex:
     def __init__(self, provider: ProviderData): 
         self.vector_db: VectorDatabase = VectorDatabase(provider)
 

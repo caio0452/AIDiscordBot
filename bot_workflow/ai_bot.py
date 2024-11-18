@@ -2,7 +2,7 @@ from ai_apis import providers
 from ai_apis.client import LLMClient
 from ai_apis.types import LLMRequestParams, Prompt
 from bot_workflow.personality_loader import Personality
-from bot_workflow.knowledge import KnowledgeIndex, MemoryIndex
+from bot_workflow.knowledge import KnowledgeIndex, LongTermMemoryIndex
 from bot_workflow.types import AIBotData, MemorizedMessageHistory
 
 import re
@@ -17,14 +17,14 @@ class CustomBotData(AIBotData):
                  personality: Personality,
                  provider_store: providers.ProviderDataStore,
                  knowledge: KnowledgeIndex,
-                 memory: MemoryIndex,
+                 memory: LongTermMemoryIndex,
                  discord_bot_id: int,
                 ):
         super().__init__(name, MemorizedMessageHistory())
         self.personality = personality
         self.provider_store = provider_store
         self.discord_bot_id = discord_bot_id
-        self.memory = memory # TODO: unused
+        self.long_term_memory = memory # TODO: unused
         self.recent_history = MemorizedMessageHistory()
         self.knowledge = knowledge 
         self.RECENT_MEMORY_LENGTH = personality.recent_message_history_length
