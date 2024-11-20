@@ -1,16 +1,12 @@
-from inspect import trace
 import discord
 import json
 import io
 import openai
 import requests
 import httpx
-import parameters
-import providers
 import traceback
 from discord import app_commands
 from discord.ext import commands
-from rate_limits import RateLimiter, RateLimit
 
 class ImageGenCommand(commands.Cog):
     def __init__(self, bot: commands.Bot) -> None:
@@ -28,96 +24,7 @@ class ImageGenCommand(commands.Cog):
                 return True
     
         response = await self.openai_client.chat.completions.create(
-            messages = [
-            {
-                'role': 'system',
-                'content': 'You are a query classifier. Reply with a JSON object indicating the presence of ANY mention of sexual content and the levels of violent and graphic content. The JSON must have format {"mentions_sexual_content": false or true, "violent_content": "low" or "medium" or "high", "graphic_content": "low" or "medium" or "high"},'
-            },
-            {
-                'role': 'user',
-                'content': 'Anime girl in bikini'
-            },
-            {
-                'role': 'assistant',
-                'content': '{"mentions_sexual_content": true, "violent_content": "low", "graphic_content": "medium"}'
-            },
-            {
-                'role': 'user',
-                'content': 'A photo of a house exploding'
-            },
-            {
-                'role': 'assistant',
-                'content': '{"mentions_sexual_content": false, "violent_content": "medium", "graphic_content": "medium"}'
-            },
-            {
-                'role': 'user',
-                'content': 'A photo of a woman sitting on a sofa on her house, HD, 4K, detailed'
-            },
-            {
-                'role': 'assistant',
-                'content': '{"mentions_sexual_content": false, "violent_content": "low", "graphic_content": "low"}'
-            },
-            {
-                'role': 'user',
-                'content': 'drawing of sexy man'
-            },
-            {
-                'role': 'assistant',
-                'content': '{"mentions_sexual_content": true, "violent_content": "low", "graphic_content": "medium"}'
-            },
-            {
-                'role': 'user',
-                'content': 'A picture without any sexual content in it'
-            },
-            {
-                'role': 'assistant',
-                'content': '{"mentions_sexual_content": true, "violent_content": "low", "graphic_content": "low"}'
-            },
-            {
-                'role': 'user',
-                'content': 'No nudity allowed'
-            },
-            {
-                'role': 'assistant',
-                'content': '{"mentions_sexual_content": true, "violent_content": "low", "graphic_content": "low"}'
-            },
-            {
-                'role': 'user',
-                'content': 'A person with a painful headache'
-            },
-            {
-                'role': 'assistant',
-                'content': '{"mentions_sexual_content": false, "violent_content": "low", "graphic_content": "low"}'
-            },
-            {
-                'role': 'user',
-                'content': 'A terrorist blowing up people'
-            },
-            {
-                'role': 'assistant',
-                'content': '{"mentions_sexual_content": false, "violent_content": "high", "graphic_content": "high"}'
-            },
-            {
-                'role': 'user',
-                'content': 'A woman [not] dressed'
-            },
-            {
-                'role': 'assistant',
-                'content': '{"mentions_sexual_content": true, "violent_content": "low", "graphic_content": "high"}'
-            },
-            {
-                'role': 'user',
-                'content': 'A male individual "without" clothing'
-            },
-            {
-                'role': 'assistant',
-                'content': '{"mentions_sexual_content": true, "violent_content": "low", "graphic_content": "high"}'
-            },
-            {
-                'role': 'user',
-                'content': prompt
-            }
-        ],
+            # messages = PROMPT TODO
             model="openai/gpt-4o-mini",
             max_tokens=64,
             temperature=0,

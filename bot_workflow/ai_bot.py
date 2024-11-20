@@ -1,7 +1,7 @@
 from ai_apis import providers
 from ai_apis.client import LLMClient
 from ai_apis.types import LLMRequestParams, Prompt
-from bot_workflow.personality_loader import Personality
+from bot_workflow.profile_loader import Profile
 from bot_workflow.knowledge import KnowledgeIndex, LongTermMemoryIndex
 from bot_workflow.types import AIBotData, MemorizedMessageHistory
 
@@ -14,20 +14,20 @@ class CustomBotData(AIBotData):
     def __init__(self,
                  *,
                  name: str,
-                 personality: Personality,
+                 profile: Profile,
                  provider_store: providers.ProviderDataStore,
                  knowledge: KnowledgeIndex,
                  long_term_memory: LongTermMemoryIndex,
                  discord_bot_id: int,
                 ):
         super().__init__(name, MemorizedMessageHistory())
-        self.personality = personality
+        self.profile = profile
         self.provider_store = provider_store
         self.discord_bot_id = discord_bot_id
         self.long_term_memory = long_term_memory # TODO: unused
         self.recent_history = MemorizedMessageHistory()
         self.knowledge = knowledge 
-        self.RECENT_MEMORY_LENGTH = personality.recent_message_history_length
+        self.RECENT_MEMORY_LENGTH = profile.recent_message_history_length
 
 class ResponseLogger:
     def __init__(self):
@@ -70,7 +70,7 @@ class DiscordBotResponse:
                 self.logger.verbose(f"Pre-rewrite response: {response}", category="PERSONALITY RESPONSE")
                 personality_rewrite = await self.personality_rewrite(response.message.content)
                 answer_with_replacements = personality_rewrite
-                for k, v in self.bot_data.personality.regex_replacements.items():
+                for k, v in self.bot_data.profile.regex_replacements.items():
                     answer_with_replacements = re.sub(k, v, answer_with_replacements)
                 return answer_with_replacements
             except Exception as e:
@@ -81,7 +81,7 @@ class DiscordBotResponse:
     
     async def personality_rewrite(self, message: str) -> str:
         NAME = "PERSONALITY_REWRITE"
-        name_prompt = self.bot_data.personality.prompts[NAME]
+        name_prompt = self.bot_data.profile.prompts[NAME]
         prompt = name_prompt.replace({
             "message": message
         })
@@ -98,7 +98,7 @@ class DiscordBotResponse:
             [memorized_message.text for memorized_message in self.bot_data.recent_history.as_list()]
         )
         last_user = self.bot_data.recent_history.as_list()[-1].nick
-        prompt = self.bot_data.personality.prompts[NAME].replace({
+        prompt = self.bot_data.profile.prompts[NAME].replace({
             "user_query": user_prompt_str, 
             "last_user": last_user
         })
@@ -122,7 +122,7 @@ class DiscordBotResponse:
             user_prompt_str += f"INFO:n{text_content}"
 
         user_prompt_str += "QUERY: " + user_query
-        prompt = self.bot_data.personality.prompts[NAME] \
+        prompt = self.bot_data.profile.prompts[NAME] \
             .replace({
                 "user_query": user_prompt_str
             })
@@ -166,7 +166,7 @@ class DiscordBotResponse:
         user_query = await self.user_query_rephrase()
         knowledge = await self.info_select(user_query)
         old_memories: str = "" # TODO: implement
-        full_prompt: Prompt = self.bot_data.personality.prompts[NAME]
+        full_prompt: Prompt = self.bot_data.profile.prompts[NAME]
 
         if knowledge is not None:
             knowledge_str = f"\n[INFO FROM KNOWLEDGE DB]:\n{knowledge}\n"
@@ -196,8 +196,8 @@ class DiscordBotResponse:
         return full_prompt
 
     async def send_llm_request(self, *, name: str, prompt: Prompt):
-        params = self.bot_data.personality.request_params[name]
-        provider: providers.ProviderData = self.bot_data.personality.providers[name]
+        params = self.bot_data.profile.request_params[name]
+        provider: providers.ProviderData = self.bot_data.profile.providers[name]
         client: LLMClient = LLMClient.from_provider(provider)
 
         return await client.send_request(prompt=prompt, params=params) 

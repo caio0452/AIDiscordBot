@@ -4,14 +4,21 @@ import logging
 from typing import Type, TypeVar
 from dataclasses import dataclass
 from ai_apis.providers import ProviderData
+from pydantic import BaseModel
 from ai_apis.types import LLMRequestParams, Prompt
 from util.model_from_json_loader import ModelFromJSONLoader
 from pydantic._internal._model_construction import ModelMetaclass
 
 T = TypeVar('T')
 
+class FalImageGenModuleConfig(BaseModel):
+    enabled: bool
+    model_name: str
+    n_images: int
+    allow_nsfw: bool
+
 @dataclass
-class Personality:
+class Profile:
     botname: str
     recent_message_history_length: int
     has_long_term_memory: bool
@@ -20,45 +27,49 @@ class Personality:
     lang: dict[str, str]
     providers: dict[str, ProviderData]
     regex_replacements: dict[str, str]
-    
-class PersonalityLoader:
+    fal_image_gen_config: FalImageGenModuleConfig
+
+class ProfileLoader:
     def __init__(self, filename: str):
         self.filename = filename
         try:
             self.loader = ModelFromJSONLoader.from_file(filename)
         except FileNotFoundError as e:
-            logging.error(f"Personality file not found: {e}")
+            logging.error(f"Profile file not found: {e}")
             raise
         except json.JSONDecodeError as e:
-            logging.error(f"Personality file contains invalid JSON: {e}")
+            logging.error(f"Profile file contains invalid JSON: {e}")
             raise
 
-    def load_personality(self) -> Personality:
+    def load_profile(self) -> Profile:
         bot_name = self.safe_get(
-            path=["personality", "parameters", "botname"], required_type=str
+            path=["profile", "parameters", "botname"], required_type=str
         )
         recent_message_history_length = self.safe_get(
-            path=["personality", "parameters", "recent_message_history_length"], required_type=int
+            path=["profile", "parameters", "recent_message_history_length"], required_type=int
         )
         has_long_term_memory = self.safe_get(
-            path=["personality", "parameters", "has_long_term_memory"], required_type=bool
+            path=["profile", "parameters", "has_long_term_memory"], required_type=bool
         )
         lang = self.safe_get(
-            path=["personality", "lang"], required_type=dict
+            path=["profile", "lang"], required_type=dict
         )
         regex_replacements = self.safe_get(
-            path=["personality", "regex_replacements"], required_type=dict
+            path=["profile", "regex_replacements"], required_type=dict
         )
         prompts: dict[str, Prompt] = self.safe_get_dict_of_model(
-            path=["personality", "prompts"], required_type=Prompt
+            path=["profile", "prompts"], required_type=Prompt
         )
         request_params: dict[str, LLMRequestParams] = self.safe_get_dict_of_model(
-            path=["personality", "request_params"], required_type=LLMRequestParams
+            path=["profile", "request_params"], required_type=LLMRequestParams
         )
         providers: dict[str, ProviderData] = self.safe_get_dict_of_model(
-            path=["personality", "providers"], required_type=ProviderData
+            path=["profile", "providers"], required_type=ProviderData
         )
-        return Personality(
+        fal_image_gen_config: FalImageGenModuleConfig = self.safe_get(
+            path=["profile", "fal_image_gen_config"], required_type=FalImageGenModuleConfig
+        )
+        return Profile(
             botname=bot_name,
             recent_message_history_length=recent_message_history_length,
             has_long_term_memory=has_long_term_memory,
@@ -66,7 +77,8 @@ class PersonalityLoader:
             lang=lang,
             request_params=request_params,
             providers=providers,
-            regex_replacements=regex_replacements
+            regex_replacements=regex_replacements,
+            fal_image_gen_config=fal_image_gen_config
         )
 
     def _get_raw(self, *, path: list[str], required: bool) -> dict | None:
@@ -99,7 +111,7 @@ class PersonalityLoader:
             return current
         except KeyError:
             if required:
-                raise KeyError(f"Error when trying to load key '{path[-1]}', it was not found in the personality JSON. Make sure the key is present under {str(path)}")
+                raise KeyError(f"Error when trying to load key '{path[-1]}', it was not found in the profile JSON. Make sure the key is present under {str(path)}")
             return None
 
     def safe_get_dict_of_model(self, *, path: list[str], required_type: Type[T]) -> dict[str, T]:

@@ -1,5 +1,5 @@
 {
-   "personality": {
+   "profile": {
       "parameters": {
          "botname": "Paper-Chan",
          "recent_message_history_length": 10,
@@ -78,6 +78,98 @@
                   "content": "((user_query))"
                }
             ]
+         },
+         "IMAGE_NSFW_FILTER": {
+           "messages": [
+               {
+                     "role": "system",
+                     "content": "You are a query classifier. Reply with a JSON object indicating the presence of ANY mention of sexual content and the levels of violent and graphic content. The JSON must have format {\"mentions_sexual_content\": false or true, \"violent_content\": \"low\" or \"medium\" or \"high\", \"graphic_content\": \"low\" or \"medium\" or \"high\"}."
+               },
+               {
+                     "role": "user",
+                     "content": "Anime girl in bikini"
+               },
+               {
+                     "role": "assistant",
+                     "content": "{\"mentions_sexual_content\": true, \"violent_content\": \"low\", \"graphic_content\": \"medium\"}"
+               },
+               {
+                     "role": "user",
+                     "content": "A photo of a house exploding"
+               },
+               {
+                     "role": "assistant",
+                     "content": "{\"mentions_sexual_content\": false, \"violent_content\": \"medium\", \"graphic_content\": \"medium\"}"
+               },
+               {
+                     "role": "user",
+                     "content": "A photo of a woman sitting on a sofa on her house, HD, 4K, detailed"
+               },
+               {
+                     "role": "assistant",
+                     "content": "{\"mentions_sexual_content\": false, \"violent_content\": \"low\", \"graphic_content\": \"low\"}"
+               },
+               {
+                     "role": "user",
+                     "content": "drawing of sexy man"
+               },
+               {
+                     "role": "assistant",
+                     "content": "{\"mentions_sexual_content\": true, \"violent_content\": \"low\", \"graphic_content\": \"medium\"}"
+               },
+               {
+                     "role": "user",
+                     "content": "A picture without any sexual content in it"
+               },
+               {
+                     "role": "assistant",
+                     "content": "{\"mentions_sexual_content\": false, \"violent_content\": \"low\", \"graphic_content\": \"low\"}"
+               },
+               {
+                     "role": "user",
+                     "content": "No nudity allowed"
+               },
+               {
+                     "role": "assistant",
+                     "content": "{\"mentions_sexual_content\": true, \"violent_content\": \"low\", \"graphic_content\": \"low\"}"
+               },
+               {
+                     "role": "user",
+                     "content": "A person with a painful headache"
+               },
+               {
+                     "role": "assistant",
+                     "content": "{\"mentions_sexual_content\": false, \"violent_content\": \"low\", \"graphic_content\": \"low\"}"
+               },
+               {
+                     "role": "user",
+                     "content": "A terrorist blowing up people"
+               },
+               {
+                     "role": "assistant",
+                     "content": "{\"mentions_sexual_content\": false, \"violent_content\": \"high\", \"graphic_content\": \"high\"}"
+               },
+               {
+                     "role": "user",
+                     "content": "A woman [not] dressed"
+               },
+               {
+                     "role": "assistant",
+                     "content": "{\"mentions_sexual_content\": true, \"violent_content\": \"low\", \"graphic_content\": \"high\"}"
+               },
+               {
+                     "role": "user",
+                     "content": "A male individual \"without\" clothing"
+               },
+               {
+                     "role": "assistant",
+                     "content": "{\"mentions_sexual_content\": true, \"violent_content\": \"low\", \"graphic_content\": \"high\"}"
+               },
+               {
+                     "role": "user",
+                     "content": "prompt"
+               }
+            ]
          }
       },
       "request_params": {
@@ -107,6 +199,13 @@
          "<0>": "<:paperOhhh:1018366673423695872>",
          "<[-−]1>": "<:Paperpatchnotes:1022991564588449902>",
          "^REWRITTEN:": ""
+      },
+      "fal_image_gen_config": {
+         "api_key": "[FAL_AI_API_KEY]",
+         "enabled": false,
+         "model_name": "sdxl-lightning",
+         "n_images": 1,
+         "allow_nsfw": false
       },
       "lang": {
          "rate_limited": "You are being rate limited",

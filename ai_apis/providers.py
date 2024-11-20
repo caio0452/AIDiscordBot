@@ -27,5 +27,5 @@ class ProviderDataStore:
     def get_provider_by_name(self, name: str) -> ProviderData | None:
         provider = self.providers.get(name)
         if not provider and name not in self.optional_provider_names:
-            raise ValueError(f"Missing required provider named {name}. Please ensure it is set in the personality JSON.")
+            raise ValueError(f"Missing required provider named {name}. Please ensure it is set in the profile JSON.")
         return provider

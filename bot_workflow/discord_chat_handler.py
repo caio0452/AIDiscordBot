@@ -109,7 +109,7 @@ class DiscordChatHandler(commands.Cog):
     async def respond_with_llm(self, message: discord.Message, *, verbose: bool=False):
         self.rate_limiter.register_request(message.author.id)
         await self.memorize_discord_message(message)
-        reply = await message.reply(self.ai_bot.personality.lang["bot_typing"])
+        reply = await message.reply(self.ai_bot.profile.lang["bot_typing"])
         
         try:
             resp_str, verbose_log = await self.generate_response(message, verbose)
@@ -156,7 +156,7 @@ class DiscordChatHandler(commands.Cog):
             raise RuntimeError(f"Ended up with 0 chunks while trying to chunk message with content '{resp_str}'")
         
         last_message = chunks[0]
-        disclaimer = self.ai_bot.personality.lang["disclaimer"]
+        disclaimer = self.ai_bot.profile.lang["disclaimer"]
         previous_message = await reply.edit(content=f"{last_message}\n{disclaimer}")  
         if len(chunks) >= 2:
             for chunk in chunks[1:]:
