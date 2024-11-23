@@ -7,14 +7,14 @@ import httpx
 import traceback
 from discord import app_commands
 from discord.ext import commands
+from util.rate_limits import RateLimit, RateLimiter
+from bot_workflow.profile_loader import Profile
 
 class ImageGenCommand(commands.Cog):
-    def __init__(self, bot: commands.Bot) -> None:
-        self.bot = bot
+    def __init__(self, discord_bot: commands.Bot) -> None:
+        self.discord_bot = discord_bot
+        self.bot_profile = ai_bot_profile
         self.image_gen_rate_limiter = RateLimiter(RateLimit(n_messages=3, seconds=60))
-        provider = providers.get_provider_by_name("IMAGE_GEN_MODERATOR_CLIENT")
-        self.openai_client = openai.AsyncOpenAI(api_key=provider.api_key, base_url=provider.api_base)
-        self.fal_ai_key = parameters.FAL_AI_KEY
 
     async def _is_blocked_prompt(self, prompt: str) -> bool:
         blocked_words = ["nsfw", "naked", "bikini", "lingerie", "sexy", "penis", "fuck", "murder", "blood"]
@@ -22,7 +22,7 @@ class ImageGenCommand(commands.Cog):
         for word in blocked_words:
             if word in prompt:
                 return True
-    
+
         response = await self.openai_client.chat.completions.create(
             # messages = PROMPT TODO
             model="openai/gpt-4o-mini",
@@ -41,7 +41,7 @@ class ImageGenCommand(commands.Cog):
         url = "https://fal.run/fal-ai/realistic-vision"
 
         headers = {
-            "Authorization": f"Key {self.fal_ai_key}",
+            "Authorization": f"Key {self.bot_profile.fal_image_gen_config.}",
             "Content-Type": "application/json",
         }
         data = {

@@ -6,7 +6,6 @@ import traceback
 
 from typing import Tuple
 from discord.ext import commands
-from bot_workflow.knowledge import LongTermMemoryIndex
 from util.rate_limits import RateLimiter, RateLimit
 from bot_workflow.memorized_message import MemorizedMessage
 from bot_workflow.ai_bot import CustomBotData, DiscordBotResponse
@@ -15,7 +14,7 @@ BOT_NAME = "Kami-Chan"
 MAX_CHAT_CHARACTERS = 1000
 MSG_LOG_FILE_REPLY = "Verbose logs for message ID {} attached (only last 10 are stored)"
 MSG_INVALID_LOG_REQUEST = ":x: Expected a message ID before --l, not '{}'"
-MODEL_REQUEST_ORDER = ["gpt-4o-mini", "qwen/qwen-2.5-72b-instruct", "meta-llama/llama-3-70b-instruct"] # TODO: don't hardcode this
+MODEL_REQUEST_ORDER = ["gemini-1.5-pro", "gpt-4o-mini", "qwen/qwen-2.5-72b-instruct", "meta-llama/llama-3-70b-instruct"] # TODO: don't hardcode this
 
 class MessageFlag:
     BOT_MESSAGE = "BOT_MESSAGE"

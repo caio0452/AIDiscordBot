@@ -54,7 +54,8 @@ class DiscordBot:
         # await self.bot.add_cog(RewriteCommand(bot=self.bot))
         
         if bot.profile.fal_image_gen_config.enabled:
-            await self.bot.add_cog(ImageGenCommand(bot=self.bot))
+            # await self.bot.add_cog(ImageGenCommand(bot=self.bot)) - TODO: reimplement
+            pass
         else:
             print("Image generation using FAL.AI is disabled")
         pass
