@@ -4,8 +4,9 @@ import logging
 from typing import Type, TypeVar
 from dataclasses import dataclass
 from ai_apis.providers import ProviderData
-from pydantic import BaseModel
+from pydantic import BaseModel, model_validator
 from ai_apis.types import LLMRequestParams, Prompt
+from util.environment_vars import parse_api_key_in_config
 from util.model_from_json_loader import ModelFromJSONLoader
 from pydantic._internal._model_construction import ModelMetaclass
 
@@ -16,6 +17,14 @@ class FalImageGenModuleConfig(BaseModel):
     model_name: str
     n_images: int
     allow_nsfw: bool
+    api_key: str
+
+    @model_validator(mode='before')
+    @classmethod
+    def check_and_load_api_key(cls, values):
+        if 'api_key' in values:
+            values['api_key'] = parse_api_key_in_config(values['api_key'])
+        return values
 
 @dataclass
 class Profile:

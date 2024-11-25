@@ -2,8 +2,8 @@ import json
 import openai
 
 from typing import Any
-from ai_apis.providers import ProviderData
 from abc import ABC, abstractmethod
+from ai_apis.providers import ProviderData
 from ai_apis.types import LLMRequestParams, Prompt
 
 class ContentModerator(ABC):

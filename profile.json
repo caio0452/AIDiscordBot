@@ -36,6 +36,11 @@
             "provider_name": "EMBEDDINGS",
             "api_base": "https://api.openai.com/v1",
             "api_key": "[EMBEDDINGS_API_KEY]"
+         },
+         "NSFW_IMAGE_PROMPT_FILTER": {
+            "provider_name": "NSFW_IMAGE_PROMPT_FILTER",
+            "api_base": "https://api.openai.com/v1",
+            "api_key": "[NSFW_IMAGE_PROMPT_FILTER_API_KEY]"
          }
       },
       "prompts": {
@@ -79,7 +84,7 @@
                }
             ]
          },
-         "IMAGE_NSFW_FILTER": {
+         "NSFW_IMAGE_PROMPT_FILTER": {
            "messages": [
                {
                      "role": "system",

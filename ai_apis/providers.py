@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field, model_validator
-from util.environment_vars import get_environment_var
+from util.environment_vars import parse_api_key_in_config
 from typing import List
 
 class ProviderData(BaseModel):
@@ -10,13 +10,8 @@ class ProviderData(BaseModel):
     @model_validator(mode='before')
     @classmethod
     def check_and_load_api_key(cls, values):
-        api_key = values.get('api_key')
-        if api_key and api_key.startswith('[') and api_key.endswith(']'):
-            env_var_name = api_key[1:-1]
-            loaded_api_key = get_environment_var(env_var_name, required=True)
-            if not loaded_api_key:
-                raise ValueError(f"Environment variable {env_var_name} not set for API key.")
-            values['api_key'] = loaded_api_key
+        if 'api_key' in values:
+            values['api_key'] = parse_api_key_in_config(values['api_key'])
         return values
 
 class ProviderDataStore:

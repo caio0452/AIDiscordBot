@@ -34,6 +34,8 @@ class DiscordBot:
             providers=provider_list
         ) # TODO: There should be required providers
         profile = ProfileLoader("profile.json").load_profile()
+        if self.bot.user is None:
+            raise RuntimeError("Could not initialize bot: bot user is None")
         await self.bot.add_cog(DiscordChatHandler(
             discord_bot=self.bot, 
             ai_bot_data=CustomBotData(
@@ -54,8 +56,7 @@ class DiscordBot:
         # await self.bot.add_cog(RewriteCommand(bot=self.bot))
         
         if bot.profile.fal_image_gen_config.enabled:
-            # await self.bot.add_cog(ImageGenCommand(bot=self.bot)) - TODO: reimplement
-            pass
+            await self.bot.add_cog(ImageGenCommand(discord_bot=self.bot, bot_profile=self.profile, fal_config=bot.profile.fal_image_gen_config))
         else:
             print("Image generation using FAL.AI is disabled")
         pass

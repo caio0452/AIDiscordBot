@@ -1,34 +1,39 @@
 import discord
 import json
 import io
-import openai
 import requests
 import httpx
 import traceback
 from discord import app_commands
 from discord.ext import commands
 from util.rate_limits import RateLimit, RateLimiter
-from bot_workflow.profile_loader import Profile
+from ai_apis.client import LLMClient, LLMRequestParams
+from bot_workflow.profile_loader import Profile, FalImageGenModuleConfig
 
 class ImageGenCommand(commands.Cog):
-    def __init__(self, discord_bot: commands.Bot) -> None:
+    def __init__(self, discord_bot: commands.Bot, bot_profile: Profile, fal_config: FalImageGenModuleConfig) -> None:
         self.discord_bot = discord_bot
-        self.bot_profile = ai_bot_profile
+        self.fal_config = fal_config
+        self.bot_profile = bot_profile
         self.image_gen_rate_limiter = RateLimiter(RateLimit(n_messages=3, seconds=60))
 
     async def _is_blocked_prompt(self, prompt: str) -> bool:
         blocked_words = ["nsfw", "naked", "bikini", "lingerie", "sexy", "penis", "fuck", "murder", "blood"]
+        NAME = "NSFW_IMAGE_PROMPT_FILTER"
+        nsfw_filter_prompt = self.bot_profile.prompts[NAME]
+        nsfw_filter_provider = self.bot_profile.providers[NAME]
+        nsfw_filter_llm = LLMClient.from_provider(nsfw_filter_provider)
 
         for word in blocked_words:
             if word in prompt:
                 return True
 
-        response = await self.openai_client.chat.completions.create(
-            # messages = PROMPT TODO
-            model="openai/gpt-4o-mini",
-            max_tokens=64,
-            temperature=0,
-            response_format={ "type": "json_object" }
+        response = await nsfw_filter_llm.send_request(
+            prompt=nsfw_filter_prompt,
+            params=LLMRequestParams(
+                model_name="gpt-4o-mini",
+                temperature=0
+            )
         )
         response_data = json.loads(response.choices[0].message.content)
 
@@ -41,7 +46,7 @@ class ImageGenCommand(commands.Cog):
         url = "https://fal.run/fal-ai/realistic-vision"
 
         headers = {
-            "Authorization": f"Key {self.bot_profile.fal_image_gen_config.}",
+            "Authorization": f"Key {self.bot_profile.fal_image_gen_config.api_key}",
             "Content-Type": "application/json",
         }
         data = {
