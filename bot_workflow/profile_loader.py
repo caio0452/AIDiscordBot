@@ -75,7 +75,7 @@ class ProfileLoader:
         providers: dict[str, ProviderData] = self.safe_get_dict_of_model(
             path=["profile", "providers"], required_type=ProviderData
         )
-        fal_image_gen_config: FalImageGenModuleConfig = self.safe_get_dict_of_model(
+        fal_image_gen_config: FalImageGenModuleConfig = self.safe_get_model(
             path=["profile", 'fal_image_gen_config'], required_type=FalImageGenModuleConfig
         )
         return Profile(
