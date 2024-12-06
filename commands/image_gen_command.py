@@ -35,7 +35,7 @@ class ImageGenCommand(commands.Cog):
                 temperature=0
             )
         )
-        response_data = json.loads(response.choices[0].message.content)
+        response_data = json.loads(response.message.content)
 
         if response_data["mentions_sexual_content"] or response_data["violent_content"] == "high" or response_data["graphic_content"] == "high":
             return True
