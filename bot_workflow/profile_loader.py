@@ -75,8 +75,8 @@ class ProfileLoader:
         providers: dict[str, ProviderData] = self.safe_get_dict_of_model(
             path=["profile", "providers"], required_type=ProviderData
         )
-        fal_image_gen_config: FalImageGenModuleConfig = self.safe_get(
-            path=["profile", "fal_image_gen_config"], required_type=FalImageGenModuleConfig
+        fal_image_gen_config: FalImageGenModuleConfig = self.safe_get_dict_of_model(
+            path=["profile", 'fal_image_gen_config'], required_type=FalImageGenModuleConfig
         )
         return Profile(
             botname=bot_name,
@@ -187,3 +187,33 @@ class ProfileLoader:
         if not isinstance(current, required_type):
             raise TypeError(f"Expected {required_type} at path {path}, got {type(current)}")
         return current
+    
+    def safe_get_model(self, *, path: list[str], required_type: Type[T]) -> T:
+        """
+        Safely retrieves and converts a dictionary from the JSON structure into a Pydantic model.
+        
+        Retrieves data at the specified path and converts it into an instance of the specified
+        Pydantic model type.
+        
+        Args:
+            path (list[str]): A list of string keys representing the path to traverse.
+            required_type (Type[T]): The Pydantic model class that the dictionary should be
+                converted to. Must be a subclass of BaseModel.
+                
+        Returns:
+            T: An instance of required_type representing the data at the specified path.
+            
+        Raises:
+            KeyError: If the path doesn't exist in the JSON structure.
+            ValueError: If required_type is not a subclass of BaseModel.
+            JSONDecodeError: If the data cannot be converted to a JSON string.
+        """
+        current = self._get_raw(path=path, required=True)
+        if current is None:
+            raise KeyError(f"Could not get path {str(path)}")
+
+        if not isinstance(required_type, ModelMetaclass):
+            raise ValueError(f"Requested type {required_type} is not a valid Pydantic BaseModel")
+
+        json_as_str = json.dumps(current) # TODO: redundant conversion to string
+        return ModelFromJSONLoader.from_string(json_as_str).from_string(json_as_str).get_model(required_type)
