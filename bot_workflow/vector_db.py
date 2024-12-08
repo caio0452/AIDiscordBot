@@ -30,7 +30,6 @@ class VectorDatabase:
 
         if not isinstance(ret, list):
             raise RuntimeError(f"Expected database search to return list, not object {str(ret)} of type {type(ret)}")
-        print(f"Found: {ret}")
         return ret
 
     async def get_index(self, index_name: str):
