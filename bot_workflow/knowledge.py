@@ -70,29 +70,36 @@ class KnowledgeIndex:
             with open(file_path, 'r') as file:
                 text = file.read()
                 chunks = KnowledgeIndex.chunk_text(text)
-                chunk_groups = [chunks[i::max_workers] for i in range(max_workers)]
+                num_parts = 8
+                chunk_groups = [chunks[i::num_parts] for i in range(num_parts)]
 
                 tasks = [process_chunk_group(group) for group in chunk_groups]
                 await asyncio.gather(*tasks)
                 return len(chunks)
 
-        loop = asyncio.get_event_loop()
+        async def process_file_and_report(file_path):
+            try:
+                chunks_in_file = await process_file(file_path)
+                return file_path, chunks_in_file, None
+            except Exception as e:
+                return file_path, 0, e
+
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
-            futures = {executor.submit(loop.run_until_complete, process_file(file)): file for file in txt_files}
+            futures = {executor.submit(asyncio.run, process_file_and_report(file)): file for file in txt_files}
 
             total_chunks = 0
             completed_chunks = 0
-
             for future in as_completed(futures):
-                file_path = futures[future]
-                try:
-                    chunks_in_file = future.result()
+                file_path, chunks_in_file, error = future.result()
+
+                if error:
+                    print(f"Error indexing {file_path}: {error}")
+                else:
                     total_chunks += chunks_in_file
                     completed_chunks += chunks_in_file
                     print(f"Indexed {file_path}")
                     print(f"Progress: {completed_chunks}/{total_chunks} chunks indexed.")
-                except Exception as e:
-                    print(f"Error indexing {file_path}: {e}")
+
 
     async def retrieve(self, related_text):
         return await self.vector_db.search(related_text)
