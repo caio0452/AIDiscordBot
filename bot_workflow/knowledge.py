@@ -42,7 +42,7 @@ class KnowledgeIndex:
                 entry_id=None
             )
 
-    async def index_from_folder(self, path, max_workers=4):
+    async def index_from_folder(self, path, max_workers=8):
         if not os.path.exists(path):
             print(f"The knowledge folder, located in '{path}' does not exist. Skipping knowledge indexing.")
             return
@@ -55,29 +55,44 @@ class KnowledgeIndex:
             print(f"Error: {file} is not a .txt file. All knowledge must be in text files. Skipping.")
 
         if not txt_files:
-            print("No .txt files found in the folder. Skipping knowledge indexing.")
+            print(f"No files in knowledge folder: '{path}', nothing to index'")
             return
+
+        async def process_chunk_group(chunks, metadata="knowledge"):
+            for chunk in chunks:
+                await self.vector_db.index(
+                    data=chunk,
+                    metadata=metadata,
+                    entry_id=None
+                )
 
         async def process_file(file_path):
             with open(file_path, 'r') as file:
-                await self.index_text(file.read())
+                text = file.read()
+                chunks = KnowledgeIndex.chunk_text(text)
+                chunk_groups = [chunks[i::max_workers] for i in range(max_workers)]
 
+                tasks = [process_chunk_group(group) for group in chunk_groups]
+                await asyncio.gather(*tasks)
+                return len(chunks)
+
+        loop = asyncio.get_event_loop()
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
-            loop = asyncio.get_event_loop()
             futures = {executor.submit(loop.run_until_complete, process_file(file)): file for file in txt_files}
 
-            total_files = len(txt_files)
-            completed_files = 0
+            total_chunks = 0
+            completed_chunks = 0
 
             for future in as_completed(futures):
                 file_path = futures[future]
                 try:
-                    future.result()
+                    chunks_in_file = future.result()
+                    total_chunks += chunks_in_file
+                    completed_chunks += chunks_in_file
                     print(f"Indexed {file_path}")
+                    print(f"Progress: {completed_chunks}/{total_chunks} chunks indexed.")
                 except Exception as e:
                     print(f"Error indexing {file_path}: {e}")
-                completed_files += 1
-                print(f"Progress: {completed_files}/{total_files} files indexed.")
 
     async def retrieve(self, related_text):
         return await self.vector_db.search(related_text)
