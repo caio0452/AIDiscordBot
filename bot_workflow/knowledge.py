@@ -2,10 +2,13 @@ import re
 import os
 import glob
 import asyncio
+import faulthandler
 
 from bot_workflow.vector_db import VectorDatabase
 from ai_apis.providers import ProviderData
 from concurrent.futures import ThreadPoolExecutor, as_completed
+
+faulthandler.enable()
 
 # TODO: abstract this further
 class LongTermMemoryIndex:
