@@ -11,7 +11,6 @@ class VectorDatabase:
         self.vectorizer = SyncEmbeddingsClient(provider)
 
         def transform(inputs): # TODO: this is sync. Performance concern?
-            print(f"Vectorizing this: {inputs}")
             resp = self.vectorizer.vectorize(input=inputs)
             return np.array(resp, dtype=np.float32)
 
