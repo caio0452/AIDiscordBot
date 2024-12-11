@@ -3,10 +3,23 @@ import numpy as np
 
 from typing import Any
 from txtai import Embeddings
+from dataclasses import dataclass
 from ai_apis.providers import ProviderData
 from ai_apis.client import SyncEmbeddingsClient
 
 class VectorDatabase:
+    @dataclass
+    class Entry:
+        data: str
+        metadata: str
+        entry_id: int | None = None
+
+        def compute_id(self):
+            if self.entry_id is None:
+                combined = self.data + self.metadata
+                return int(hashlib.sha256(combined.encode()).hexdigest(), 16) & 0xFFFFFFFF
+            return self.entry_id
+
     def __init__(self, provider: ProviderData): 
         self.vectorizer = SyncEmbeddingsClient(provider)
 
@@ -40,15 +53,14 @@ class VectorDatabase:
         except Exception as e:
             raise RuntimeError(f"Failed to access index {index_name}") from e
 
-    async def index(self, *, data: str, metadata: str, entry_id: int | None):
-        if entry_id is None:
-            combined = data + metadata
-            id = int(hashlib.sha256(combined.encode()).hexdigest(), 16) & 0xFFFFFFFF  
-        else:
-            id = entry_id
+    async def index(self, entry: Entry):
+        id = entry.compute_id()
+        self.db_data.upsert([(id, entry.data, entry.metadata)])
 
-        self.db_data.upsert([(id, data, metadata)])
-
+    async def mass_index(self, entries: list[Entry]):
+        records = [(entry.compute_id(), entry.data, entry.metadata) for entry in entries]
+        self.db_data.upsert(records)
+        
     async def delete_ids(self, *, index_name: str, entry_ids: list[int]) -> int:
         target_index = await self.get_index(index_name)
         return target_index.remove_ids(entry_ids)

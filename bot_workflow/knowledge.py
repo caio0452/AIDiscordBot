@@ -2,13 +2,9 @@ import re
 import os
 import glob
 import asyncio
-import faulthandler
 
-from bot_workflow.vector_db import VectorDatabase
 from ai_apis.providers import ProviderData
-from concurrent.futures import ThreadPoolExecutor, as_completed
-
-faulthandler.enable()
+from bot_workflow.vector_db import VectorDatabase
 
 # TODO: abstract this further
 class LongTermMemoryIndex:
@@ -39,13 +35,17 @@ class KnowledgeIndex:
 
     async def index_text(self, text, *, metadata="knowledge"):
         for chunk in KnowledgeIndex.chunk_text(text):
-            await self.vector_db.index(
+            await self.vector_db.index(VectorDatabase.Entry(
                 data=chunk, 
                 metadata=metadata,
                 entry_id=None
-            )
+            ))
 
-    async def index_from_folder(self, path, max_workers=8):
+    async def index_texts(self, texts: list[str], *, metadata="knowledge"):
+        entries = [VectorDatabase.Entry(text, "knowledge", None) for text in texts]
+        await self.vector_db.mass_index(entries)
+
+    async def index_from_folder(self, path, max_concurrent_tasks=8): 
         if not os.path.exists(path):
             print(f"The knowledge folder, located in '{path}' does not exist. Skipping knowledge indexing.")
             return
@@ -61,48 +61,25 @@ class KnowledgeIndex:
             print(f"No files in knowledge folder: '{path}', nothing to index'")
             return
 
-        async def process_chunk_group(chunks, metadata="knowledge"):
-            for chunk in chunks:
-                await self.vector_db.index(
-                    data=chunk,
-                    metadata=metadata,
-                    entry_id=None
-                )
-
         async def process_file(file_path):
             with open(file_path, 'r') as file:
                 text = file.read()
                 chunks = KnowledgeIndex.chunk_text(text)
-                num_parts = 8
-                chunk_groups = [chunks[i::num_parts] for i in range(num_parts)]
-
-                tasks = [process_chunk_group(group) for group in chunk_groups]
-                await asyncio.gather(*tasks)
+                await self.index_texts(chunks)
                 return len(chunks)
 
-        async def process_file_and_report(file_path):
-            try:
-                chunks_in_file = await process_file(file_path)
-                return file_path, chunks_in_file, None
-            except Exception as e:
-                return file_path, 0, e
+        tasks = [process_file(file) for file in txt_files]
+        results = await asyncio.gather(*tasks, return_exceptions=True)
 
-        with ThreadPoolExecutor(max_workers=max_workers) as executor:
-            futures = {executor.submit(asyncio.run, process_file_and_report(file)): file for file in txt_files}
+        total_chunks = 0
+        for file_path, result in zip(txt_files, results):
+            if isinstance(result, Exception):
+                print(f"Error indexing {file_path}: {result}")
+            else:
+                total_chunks += result
+                print(f"Indexed {file_path}: {result} chunks")
 
-            total_chunks = 0
-            completed_chunks = 0
-            for future in as_completed(futures):
-                file_path, chunks_in_file, error = future.result()
-
-                if error:
-                    print(f"Error indexing {file_path}: {error}")
-                else:
-                    total_chunks += chunks_in_file
-                    completed_chunks += chunks_in_file
-                    print(f"Indexed {file_path}")
-                    print(f"Progress: {completed_chunks}/{total_chunks} chunks indexed.")
-
+        print(f"Total chunks indexed: {total_chunks}")
 
     async def retrieve(self, related_text):
         return await self.vector_db.search(related_text)
