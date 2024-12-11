@@ -82,7 +82,6 @@ class LLMClient:
         return cls.from_openai_client(client)
 
     async def send_request(self, *, prompt: Prompt, params: LLMRequestParams) -> openai.types.chat.chat_completion.Choice:
-
         raw_response = await self.client.chat.completions.create(
             messages=prompt.to_openai_format(),
             model=params.model_name,

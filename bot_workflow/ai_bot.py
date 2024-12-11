@@ -51,21 +51,24 @@ class DiscordBotResponse:
             self.clients[k] = LLMClient.from_provider(v)
 
     # TODO: clean this method up
-    async def create_or_fallback(self, message: discord.Message, model_names: list[str]) -> str:
+    async def create(self, message: discord.Message) -> str:
         MAIN_CLIENT_NAME = "PERSONALITY"
         full_prompt = await self.build_full_prompt(
             self.bot_data.recent_history.without_dupe_ending_user_msgs(), 
             message
         )
-        for model_name in model_names:
+        default_params = self.bot_data.profile.request_params[MAIN_CLIENT_NAME]
+        model_names_order = [default_params.model_name]
+        FALLBACKS = ["llama-3-8b"] # TODO: don't hardcode this
+        model_names_order.extend(FALLBACKS)
+
+        for name in model_names_order:
             try:
+                current_params: LLMRequestParams = default_params.model_copy()
+                current_params.model_name = name
                 response = await self.clients[MAIN_CLIENT_NAME].send_request(
                     prompt=full_prompt,
-                    params=LLMRequestParams(
-                        model_name=model_name,
-                        max_tokens=2000,
-                        temperature=0
-                    )
+                    params=current_params
                 )
                 self.logger.verbose(f"Pre-rewrite response: {response}", category="PERSONALITY RESPONSE")
                 personality_rewrite = await self.personality_rewrite(response.message.content)
@@ -75,7 +78,7 @@ class DiscordBotResponse:
                 return answer_with_replacements
             except Exception as e:
                 traceback.print_exc()
-                self.logger.verbose(f"Model {model_name} failed with error: {e}", category="MODEL FAILURE")
+                self.logger.verbose(f"Request to LLM '{name}' failed with error: {e}", category="MODEL FAILURE")
         
         raise RuntimeError("Could not generate response and all fallbacks failed")
     

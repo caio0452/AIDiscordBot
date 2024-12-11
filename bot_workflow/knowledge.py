@@ -75,7 +75,7 @@ class KnowledgeIndex:
         for file_path, result in zip(txt_files, results):
             if isinstance(result, Exception):
                 print(f"Error indexing {file_path}: {result}")
-            else:
+            elif isinstance(result, int):
                 total_chunks += result
                 print(f"Indexed {file_path}: {result} chunks")
 

@@ -1,7 +1,6 @@
 import io
 import discord
 import datetime 
-
 import traceback
 
 from typing import Tuple
@@ -14,7 +13,6 @@ BOT_NAME = "Kami-Chan"
 MAX_CHAT_CHARACTERS = 1000
 MSG_LOG_FILE_REPLY = "Verbose logs for message ID {} attached (only last 10 are stored)"
 MSG_INVALID_LOG_REQUEST = ":x: Expected a message ID before --l, not '{}'"
-MODEL_REQUEST_ORDER = ["amazon/nova-pro-v1", "gpt-4o-mini", "qwen/qwen-2.5-72b-instruct", "meta-llama/llama-3-70b-instruct"] # TODO: don't hardcode this
 
 class MessageFlag:
     BOT_MESSAGE = "BOT_MESSAGE"
@@ -23,6 +21,21 @@ class MessageFlag:
     TOO_LONG = "TOO_LONG"
     RATE_LIMITED = "RATE_LIMITED"
     PINGED_BOT = "PINGED_BOT"
+
+class ResponseLogsManager:
+    def __init__(self, log_capacity: int = 10):
+        self.log_capacity = log_capacity
+        self._last_message_id_logs: dict[int, str] = {}
+
+    def store_log(self, message_id: int, log: str):
+        print(f"Saved log for message id {message_id}")
+        self._last_message_id_logs[message_id] = log
+        if len(self._last_message_id_logs) > self.log_capacity:
+            oldest_key = next(iter(self._last_message_id_logs))
+            del self._last_message_id_logs[oldest_key]
+
+    def get_log_by_id(self, message_id: int) -> str | None:
+        return self._last_message_id_logs.get(message_id, None)
 
 class DiscordChatHandler(commands.Cog):
     def __init__(self, discord_bot: commands.Bot, ai_bot_data: CustomBotData):
@@ -35,6 +48,7 @@ class DiscordChatHandler(commands.Cog):
             RateLimit(n_messages=100, seconds=2 * 3600),
             RateLimit(n_messages=250, seconds=8 * 3600)
         )
+        self.logs = ResponseLogsManager()
         self.ai_bot = ai_bot_data
         self._last_message_id_logs: dict[int, str] = {}
 
@@ -78,32 +92,26 @@ class DiscordChatHandler(commands.Cog):
             is_verbose = (MessageFlag.VERBOSE_REQUEST in message_flags)
             await self.respond_with_llm(message, verbose=is_verbose)
 
-    def store_log(self, message_id: int, log: str):
-        print(f"Saved log for message id {message_id}")
-        self._last_message_id_logs[message_id] = log
-        if len(self._last_message_id_logs) > 10:
-            oldest_key = next(iter(self._last_message_id_logs))
-            del self._last_message_id_logs[oldest_key]
-
-    def get_log_by_id(self, message_id: int) -> str:
-        return self._last_message_id_logs.get(message_id, "(NONE FOUND)")
+    async def handle_too_long_message(self, message: discord.Message):
+        emojis = ['🇹', '🇱', '🇩', '🇷']
+        for emoji in emojis:
+            await message.add_reaction(emoji)
 
     async def handle_log_request(self, message: discord.Message):
         sanitized_msg = message.content.strip().replace("--l", "")
         try:
             message_id = int(sanitized_msg)
-            log_file = io.BytesIO(self.get_log_by_id(message_id).encode('utf-8'))
+            log_data = self.logs.get_log_by_id(message_id)
+            if log_data is None:
+                await message.reply("No log with that ID found")
+                return
+            log_file = io.BytesIO(log_data.encode('utf-8'))
             await message.reply(
                 content=MSG_LOG_FILE_REPLY.format(message_id),
                 files=[discord.File(log_file, filename="verbose_log.txt")]
             )
         except ValueError:
             await message.reply(MSG_INVALID_LOG_REQUEST.format(sanitized_msg))
-
-    async def handle_too_long_message(self, message: discord.Message):
-        emojis = ['🇹', '🇱', '🇩', '🇷']
-        for emoji in emojis:
-            await message.add_reaction(emoji)
 
     async def respond_with_llm(self, message: discord.Message, *, verbose: bool=False):
         self.rate_limiter.register_request(message.author.id)
@@ -126,13 +134,13 @@ class DiscordChatHandler(commands.Cog):
                 ),
                 id=resp_msg.id 
             )
-            self.store_log(reply.id, verbose_log)
+            self.logs.store_log(reply.id, verbose_log)
         except Exception as e:
             await self.handle_error(message, reply, e)
 
     async def generate_response(self, message: discord.Message, verbose: bool) -> Tuple[str, str]:
         resp = DiscordBotResponse(self.ai_bot, verbose)
-        resp_str = await resp.create_or_fallback(message, MODEL_REQUEST_ORDER)
+        resp_str = await resp.create(message)
         return resp_str, resp.logger.text
 
     async def attach_log(self, reply: discord.Message, resp_str: str, verbose_log: str) -> discord.Message:
