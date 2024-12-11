@@ -200,6 +200,7 @@ class DiscordBotResponse:
 
     async def send_llm_request(self, *, name: str, prompt: Prompt):
         params = self.bot_data.profile.request_params[name]
+        self.logger.verbose(f"Request parameters: {params}")
         provider: providers.ProviderData = self.bot_data.profile.providers[name]
         client: LLMClient = LLMClient.from_provider(provider)
 
