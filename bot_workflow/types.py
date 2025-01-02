@@ -2,8 +2,8 @@ from abc import ABC
 from bot_workflow.memorized_message import MemorizedMessage
 
 class MemorizedMessageHistory:
-    def __init__(self, initial_history: list[MemorizedMessage] = [], memory_length: int = 5):
-        self._memory = initial_history
+    def __init__(self, initial_history: list[MemorizedMessage]  | None = None, memory_length: int = 5):
+        self._memory= [] if initial_history is None else initial_history
         self.MEMORY_LENGTH = memory_length
 
     async def add(self, message: MemorizedMessage):
