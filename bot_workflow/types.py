@@ -3,7 +3,7 @@ from bot_workflow.memorized_message import MemorizedMessage
 
 class MemorizedMessageHistory:
     def __init__(self, initial_history: list[MemorizedMessage]  | None = None, memory_length: int = 5):
-        self._memory= [] if initial_history is None else initial_history
+        self._memory= [] if initial_history is None else [msg for msg in initial_history]
         self.MEMORY_LENGTH = memory_length
 
     async def add(self, message: MemorizedMessage):
@@ -43,4 +43,3 @@ class AIBotData(ABC):
     def __init__(self, name: str, recent_memory: MemorizedMessageHistory | None = None):
         self.name = name
         self.memory = recent_memory
-
