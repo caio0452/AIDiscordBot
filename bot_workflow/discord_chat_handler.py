@@ -115,6 +115,7 @@ class DiscordChatHandler(commands.Cog):
 
     async def respond_with_llm(self, message: discord.Message, *, verbose: bool=False):
         self.rate_limiter.register_request(message.author.id)
+        await self.memorize_discord_message(message)
         reply = await message.reply(self.ai_bot.profile.lang["bot_typing"])
         
         try:
