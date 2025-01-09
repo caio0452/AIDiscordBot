@@ -2,7 +2,7 @@ from abc import ABC
 from bot_workflow.memorized_message import MemorizedMessage
 
 class MemorizedMessageHistory:
-    def __init__(self, initial_history: list[MemorizedMessage]  | None = None, memory_length: int = 5):
+    def __init__(self, initial_history: list[MemorizedMessage]  | None = None, memory_length: int = 8):
         if initial_history is None:
             self._memory = []
         else:
