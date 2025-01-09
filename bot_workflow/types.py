@@ -3,7 +3,11 @@ from bot_workflow.memorized_message import MemorizedMessage
 
 class MemorizedMessageHistory:
     def __init__(self, initial_history: list[MemorizedMessage]  | None = None, memory_length: int = 5):
-        self._memory= [] if initial_history is None else [msg for msg in initial_history]
+        if initial_history is None:
+            self._memory = []
+        else:
+            self._memory = [msg for msg in initial_history]
+            self._memory = self._memory[-memory_length:]
         self.MEMORY_LENGTH = memory_length
 
     async def add(self, message: MemorizedMessage):
