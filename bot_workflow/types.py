@@ -57,7 +57,13 @@ class SynchronizedMessageHistory:
             await self.backing_history.add(message)
             if pending:
                 self._pending_message_ids.append(message.message_id)
-        
+
+    async def add_after(self, id: int, message: MemorizedMessage, *, pending=False):
+        async with self._lock:
+            await self.backing_history.add_after(id, message)
+            if pending:
+                self._pending_message_ids.append(message.message_id)
+
     async def mark_finalized(self, message_id: int) -> bool:
         async with self._lock:
             if message_id in self._pending_message_ids:

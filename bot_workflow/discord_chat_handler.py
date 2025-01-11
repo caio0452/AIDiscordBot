@@ -115,7 +115,7 @@ class DiscordChatHandler(commands.Cog):
 
     async def respond_with_llm(self, message: discord.Message, *, verbose: bool=False):
         self.rate_limiter.register_request(message.author.id)
-        await self.memorize_discord_message(message, pending=True)
+        await self.memorize_discord_message(message, pending=True, add_after_id=None)
         reply = await message.reply(self.ai_bot.profile.lang["bot_typing"])
         
         try:
@@ -133,6 +133,7 @@ class DiscordChatHandler(commands.Cog):
                     message_id=resp_msg.id 
                 ),
                 pending=False,
+                add_after_id=message.id
             )
             await self.ai_bot.recent_history.mark_finalized(message.id)
             self.logs.store_log(reply.id, verbose_log)
@@ -172,17 +173,25 @@ class DiscordChatHandler(commands.Cog):
 
         return previous_message
 
-    async def memorize_message(self, message: MemorizedMessage, *, pending: bool):
-        await self.ai_bot.recent_history.add(
-            message,
-            pending=pending
-        )
+    async def memorize_message(self, message: MemorizedMessage, *, pending: bool, add_after_id: None | int):
+        if add_after_id is None:
+            await self.ai_bot.recent_history.add(
+                message,
+                pending=pending
+            )
+        else:
+             await self.ai_bot.recent_history.add_after(
+                add_after_id,
+                message,
+                pending=pending
+            )
         # TODO: memorize long term
 
-    async def memorize_discord_message(self, message: discord.Message, *, pending: bool):
-        await self.ai_bot.recent_history.add(
+    async def memorize_discord_message(self, message: discord.Message, *, pending: bool, add_after_id: None | int):
+        await self.memorize_message(
             await MemorizedMessage.of_discord_message(message),
-            pending=pending
+            pending=pending,
+            add_after_id=add_after_id
         )
         # TODO: memorize long term
 
