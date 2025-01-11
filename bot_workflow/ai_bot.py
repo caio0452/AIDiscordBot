@@ -38,9 +38,9 @@ class ResponseLogger:
     def verbose(self, text: str, *, category: str | None = None):
         current_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         if category:
-            self.text += f"[{current_time}] --- {category} ---\n{text}\n"
+            self.text += f"\n[{current_time}] --- {category} ---\n{text}\n"
         else:
-            self.text += f"[{current_time}] {text}\n"
+            self.text += f"\n[{current_time}] {text}\n"
 
 def response_step(NAME):
     def decorator(func):
@@ -48,11 +48,11 @@ def response_step(NAME):
         async def wrapper(self, *args, **kwargs):
             try:
                 params = self.bot_data.profile.request_params[NAME]
-                self.logger.verbose(f"Request parameters for {NAME}: {params}", category=NAME)
+                self.logger.verbose(f"Initiating step {NAME}. {params}", category=NAME)
 
                 result = await func(self, *args, **kwargs)
 
-                self.logger.verbose(f"Response from {NAME}: {result}", category=NAME)
+                self.logger.verbose(f"Step {NAME} done, {result}", category=NAME)
                 return result
             except Exception as e:
                 self.logger.verbose(f"Error in {NAME}: {e}", category="ERROR")
@@ -94,7 +94,6 @@ class DiscordBotResponse:
                     prompt=full_prompt,
                     params=current_params
                 )
-                self.logger.verbose(f"Pre-rewrite response: {response}", category="PERSONALITY RESPONSE")
                 personality_rewrite = await self.personality_rewrite(response.message.content)
                 answer_with_replacements = personality_rewrite
                 for k, v in self.bot_data.profile.regex_replacements.items():
@@ -117,7 +116,6 @@ class DiscordBotResponse:
             name=NAME,
             prompt=prompt
         )  
-        self.logger.verbose(f"Prompt: {prompt}\nResponse: {response}", category=NAME)
         return response.message.content
 
     @response_step("USER_QUERY_REPHRASE")
@@ -232,7 +230,6 @@ class DiscordBotResponse:
 
     async def send_llm_request(self, *, name: str, prompt: Prompt):
         params = self.bot_data.profile.request_params[name]
-        self.logger.verbose(f"Request parameters: {params}")
         provider: providers.ProviderData = self.bot_data.profile.providers[name]
         client: LLMClient = LLMClient.from_provider(provider)
 

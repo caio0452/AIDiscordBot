@@ -43,7 +43,7 @@ class MemorizedMessageHistory:
         for msg in self._memory:
             id = msg.message_id
             bot_str = "" if not msg.is_bot else "(BOT)"
-            ret += f"[ID {id} | {msg.sent}] <{msg.nick}{bot_str}> {msg.text}"
+            ret += f"[ID {id} | {msg.sent}] <{msg.nick}{bot_str}> {msg.text}\n"
         return ret
 
 class SynchronizedMessageHistory:
@@ -84,7 +84,7 @@ class SynchronizedMessageHistory:
             id = msg.message_id
             pending_str = "" if not self.is_pending(id) else "(PENDING)"
             bot_str = "" if not msg.is_bot else "(BOT)"
-            ret += f"{pending_str}[ID {id} | {msg.sent}] <{msg.nick}{bot_str}> {msg.text}"
+            ret += f"{pending_str}[ID {id} | {msg.sent}] <{msg.nick}{bot_str}> {msg.text}\n"
         return ret
         
 class AIBotData(ABC):
