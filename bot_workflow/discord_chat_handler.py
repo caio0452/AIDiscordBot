@@ -115,7 +115,7 @@ class DiscordChatHandler(commands.Cog):
 
     async def respond_with_llm(self, message: discord.Message, *, verbose: bool=False):
         self.rate_limiter.register_request(message.author.id)
-        await self.memorize_discord_message(message)
+        await self.memorize_discord_message(message, pending=True)
         reply = await message.reply(self.ai_bot.profile.lang["bot_typing"])
         
         try:
@@ -132,8 +132,9 @@ class DiscordChatHandler(commands.Cog):
                     is_bot=True,
                     message_id=resp_msg.id 
                 ),
-                id=resp_msg.id 
+                pending=False,
             )
+            await self.ai_bot.recent_history.mark_finalized(message.id)
             self.logs.store_log(reply.id, verbose_log)
         except Exception as e:
             await self.handle_error(message, reply, e)
@@ -164,22 +165,24 @@ class DiscordChatHandler(commands.Cog):
         
         last_message = chunks[0]
         disclaimer = self.ai_bot.profile.lang["disclaimer"]
-        previous_message = await reply.edit(content=f"{last_message}\n{disclaimer}")  
+        previous_message = await reply.edit(content=f"{last_message}{disclaimer}")  
         if len(chunks) >= 2:
             for chunk in chunks[1:]:
                 previous_message = await reply.reply(content=chunk)
 
         return previous_message
 
-    async def memorize_message(self, message: MemorizedMessage, *, id: int):
+    async def memorize_message(self, message: MemorizedMessage, *, pending: bool):
         await self.ai_bot.recent_history.add(
-            message
+            message,
+            pending=pending
         )
         # TODO: memorize long term
 
-    async def memorize_discord_message(self, message: discord.Message):
+    async def memorize_discord_message(self, message: discord.Message, *, pending: bool):
         await self.ai_bot.recent_history.add(
-            await MemorizedMessage.of_discord_message(message)
+            await MemorizedMessage.of_discord_message(message),
+            pending=pending
         )
         # TODO: memorize long term
 
