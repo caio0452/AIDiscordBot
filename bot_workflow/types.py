@@ -83,7 +83,7 @@ class SynchronizedMessageHistory:
         for msg in self.backing_history._memory:
             id = msg.message_id
             pending_str = "" if not self.is_pending(id) else "(PENDING)"
-            bot_str = "" if not self.is_pending(id) else "(BOT)"
+            bot_str = "" if not msg.is_bot else "(BOT)"
             ret += f"{pending_str}[ID {id} | {msg.sent}] <{msg.nick}{bot_str}> {msg.text}"
         return ret
         
