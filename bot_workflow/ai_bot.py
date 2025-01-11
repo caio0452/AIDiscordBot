@@ -1,11 +1,13 @@
+from functools import wraps
 from ai_apis import providers
 from ai_apis.client import LLMClient
 from ai_apis.types import LLMRequestParams, Prompt
 from bot_workflow.profile_loader import Profile
 from bot_workflow.knowledge import KnowledgeIndex, LongTermMemoryIndex
-from bot_workflow.types import AIBotData, MemorizedMessageHistory
+from bot_workflow.types import AIBotData, MemorizedMessageHistory, SynchronizedMessageHistory
 
 import re
+import json
 import discord
 import datetime
 import traceback
@@ -19,13 +21,14 @@ class CustomBotData(AIBotData):
                  knowledge: KnowledgeIndex,
                  long_term_memory: LongTermMemoryIndex,
                  discord_bot_id: int,
+                 memory_length: int
                 ):
-        super().__init__(name, MemorizedMessageHistory())
+        super().__init__(name, MemorizedMessageHistory(memory_length=memory_length))
         self.profile = profile
         self.provider_store = provider_store
         self.discord_bot_id = discord_bot_id
         self.long_term_memory = long_term_memory # TODO: unused
-        self.recent_history = MemorizedMessageHistory()
+        self.recent_history = SynchronizedMessageHistory()
         self.knowledge = knowledge 
         self.RECENT_MEMORY_LENGTH = profile.recent_message_history_length
 
@@ -40,6 +43,25 @@ class ResponseLogger:
         else:
             self.text += f"[{current_time}] {text}\n"
 
+def response_step(NAME):
+    def decorator(func):
+        @wraps(func)
+        async def wrapper(self, *args, **kwargs):
+            try:
+                params = self.bot_data.profile.request_params[NAME]
+                self.logger.verbose(f"Request parameters for {NAME}: {params}", category=NAME)
+
+                result = await func(self, *args, **kwargs)
+
+                self.logger.verbose(f"Response from {NAME}: {result}", category=NAME)
+                return result
+            except Exception as e:
+                self.logger.verbose(f"Error in {NAME}: {e}", category="ERROR")
+                traceback.print_exc()
+                raise e 
+        return wrapper
+    return decorator
+
 class DiscordBotResponse:
     def __init__(self, bot_data: CustomBotData, verbose: bool=False):
         self.verbose = verbose
@@ -53,8 +75,11 @@ class DiscordBotResponse:
     # TODO: clean this method up
     async def create(self, message: discord.Message) -> str:
         MAIN_CLIENT_NAME = "PERSONALITY"
+        USABLE_HISTORY_LENGTH = 14
+        last_n_messages = self.bot_data.recent_history.backing_history.as_list()[-USABLE_HISTORY_LENGTH:]
+        usable_history = MemorizedMessageHistory(last_n_messages)
         full_prompt = await self.build_full_prompt(
-            self.bot_data.recent_history.without_dupe_ending_user_msgs(), 
+            usable_history, 
             message
         )
         default_params = self.bot_data.profile.request_params[MAIN_CLIENT_NAME]
@@ -82,6 +107,7 @@ class DiscordBotResponse:
         
         raise RuntimeError("Could not generate response and all fallbacks failed")
     
+    @response_step("PERSONALITY_REWRITE")
     async def personality_rewrite(self, message: str) -> str:
         NAME = "PERSONALITY_REWRITE"
         name_prompt = self.bot_data.profile.prompts[NAME]
@@ -95,12 +121,14 @@ class DiscordBotResponse:
         self.logger.verbose(f"Prompt: {prompt}\nResponse: {response}", category=NAME)
         return response.message.content
 
+    @response_step("USER_QUERY_REPHRASE")
     async def user_query_rephrase(self) -> str:
         NAME = "USER_QUERY_REPHRASE"
+        recent_history_list = self.bot_data.recent_history.backing_history.as_list()
         user_prompt_str = "\n".join(
-            [memorized_message.text for memorized_message in self.bot_data.recent_history.as_list()]
+            [memorized_message.text for memorized_message in recent_history_list]
         )
-        last_user = self.bot_data.recent_history.as_list()[-1].nick
+        last_user = recent_history_list[-1].nick
         prompt = self.bot_data.profile.prompts[NAME].replace({
             "user_query": user_prompt_str, 
             "last_user": last_user
@@ -112,6 +140,7 @@ class DiscordBotResponse:
         self.logger.verbose(f"Prompt: {prompt}\nResponse: {response}", category=NAME)
         return response.message.content
 
+    @response_step("INFO_SELECT")
     async def info_select(self, user_query: str) -> str | None:
         NAME = "INFO_SELECT"
         user_prompt_str = ""
@@ -136,33 +165,7 @@ class DiscordBotResponse:
         self.logger.verbose(f"Prompt: {prompt}\nResponse: {response}", category=NAME)
         return response.message.content
 
-    # TODO: clean this method up
-    async def describe_image_if_present(self, message) -> str | None:
-        NAME = "IMAGE_VIEW"
-        if len(message.attachments) == 1:
-            if message.channel.nsfw:
-                await message.reply(":X: I can't see attachments in NSFW channels!")
-                return None
-            attachment = message.attachments[0]
-            if attachment.content_type.startswith("image/"):
-                await message.add_reaction("👀")
-                # Todo: only last message is possibly not enough context
-                response = await self.clients[NAME].send_request(
-                    prompt=Prompt(
-                                messages=[
-                                    Prompt.user_msg(
-                                        content=f"Describe the image in a sufficient way to answer the following query: '{message.content}'" \
-                                        "If the query is empty, just describe the image. ",
-                                        image_url=attachment.url
-                                    )
-                                ]
-                            ),
-                   params=LLMRequestParams(
-                         model_name="openai/gpt-4o"
-                    )
-                )
-                return response.message.content
-
+    @response_step("PERSONALITY")
     async def build_full_prompt(self, memory_snapshot: MemorizedMessageHistory, original_msg: discord.Message) -> Prompt:
         NAME = "PERSONALITY"
         now_str = datetime.datetime.now().strftime("%B %d, %H:%M:%S")
@@ -196,7 +199,37 @@ class DiscordBotResponse:
         })
 
         self.logger.verbose(f"FULL PROMPT: {full_prompt}", category="FULL PROMPT")
+        self.logger.verbose(str(self.bot_data.recent_history), category="USABLE MEMORY DUMP")
+        self.logger.verbose(json.dumps(memory_snapshot), category="FULL MEMORY DUMP")
         return full_prompt
+
+    # TODO: clean this method up
+    async def describe_image_if_present(self, message) -> str | None:
+        NAME = "IMAGE_VIEW"
+        if len(message.attachments) == 1:
+            if message.channel.nsfw:
+                await message.reply(":X: I can't see attachments in NSFW channels!")
+                return None
+            attachment = message.attachments[0]
+            if attachment.content_type.startswith("image/"):
+                await message.add_reaction("👀")
+                # Todo: only last message is possibly not enough context
+                response = await self.clients[NAME].send_request(
+                    prompt=Prompt(
+                                messages=[
+                                    Prompt.user_msg(
+                                        content=f"Describe the image in a sufficient way to answer the following query: '{message.content}'" \
+                                        "If the query is empty, just describe the image. ",
+                                        image_url=attachment.url
+                                    )
+                                ]
+                            ),
+                   params=LLMRequestParams(
+                         model_name="openai/gpt-4o"
+                    )
+                )
+                return response.message.content
+
 
     async def send_llm_request(self, *, name: str, prompt: Prompt):
         params = self.bot_data.profile.request_params[name]

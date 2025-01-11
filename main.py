@@ -44,7 +44,8 @@ class DiscordBot:
                 provider_store=provider_store,
                 long_term_memory=self.long_term_memory,
                 knowledge=self.knowledge,
-                discord_bot_id=self.bot.user.id
+                discord_bot_id=self.bot.user.id,
+                memory_length=50
             )
         ))
 
