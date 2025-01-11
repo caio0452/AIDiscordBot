@@ -37,6 +37,14 @@ class MemorizedMessageHistory:
 
     def as_list(self) -> list[MemorizedMessage]:
         return self._memory
+    
+    def __str__(self) -> str:
+        ret = ""
+        for msg in self._memory:
+            id = msg.message_id
+            bot_str = "" if not msg.is_bot else "(BOT)"
+            ret += f"[ID {id} | {msg.sent}] <{msg.nick}{bot_str}> {msg.text}"
+        return ret
 
 class SynchronizedMessageHistory:
     def __init__(self, history: MemorizedMessageHistory = MemorizedMessageHistory()):

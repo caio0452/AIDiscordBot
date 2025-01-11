@@ -7,7 +7,6 @@ from bot_workflow.knowledge import KnowledgeIndex, LongTermMemoryIndex
 from bot_workflow.types import AIBotData, MemorizedMessageHistory, SynchronizedMessageHistory
 
 import re
-import json
 import discord
 import datetime
 import traceback
@@ -200,7 +199,7 @@ class DiscordBotResponse:
 
         self.logger.verbose(f"FULL PROMPT: {full_prompt}", category="FULL PROMPT")
         self.logger.verbose(str(self.bot_data.recent_history), category="USABLE MEMORY DUMP")
-        self.logger.verbose(json.dumps(memory_snapshot), category="FULL MEMORY DUMP")
+        self.logger.verbose(str(memory_snapshot), category="FULL MEMORY DUMP")
         return full_prompt
 
     # TODO: clean this method up
