@@ -49,28 +49,27 @@ class MemorizedMessageHistory:
 class SynchronizedMessageHistory:
     def __init__(self, history: MemorizedMessageHistory = MemorizedMessageHistory()):
         self.backing_history = history
-        self._pending_message_ids: list[int] = []
+        self._pending_message_ids: set[int] = set()
         self._lock = asyncio.Lock()
 
     async def add(self, message: MemorizedMessage, *, pending=False):
         async with self._lock:
             await self.backing_history.add(message)
             if pending:
-                self._pending_message_ids.append(message.message_id)
+                self._pending_message_ids.add(message.message_id)
 
     async def add_after(self, id: int, message: MemorizedMessage, *, pending=False):
         async with self._lock:
             await self.backing_history.add_after(id, message)
             if pending:
-                self._pending_message_ids.append(message.message_id)
+                self._pending_message_ids.add(message.message_id)
 
-    async def mark_finalized(self, message_id: int) -> bool:
+    async def mark_finalized(self, message_id: int):
         async with self._lock:
             if message_id in self._pending_message_ids:
                 self._pending_message_ids.remove(message_id)
-                return True
             else:
-                return False
+                raise ValueError(f"Cannot mark non-pending message {message_id} as finalized")
         
     def is_pending(self, message_id: int) -> bool:
         return message_id in self._pending_message_ids

@@ -75,6 +75,7 @@ class DiscordBotResponse:
     async def create(self, message: discord.Message) -> str:
         MAIN_CLIENT_NAME = "PERSONALITY"
         USABLE_HISTORY_LENGTH = 14
+        FALLBACKS = ["llama-3-8b"] # TODO: don't hardcode this
         last_n_messages = self.bot_data.recent_history.backing_history.as_list()[-USABLE_HISTORY_LENGTH:]
         usable_history = MemorizedMessageHistory(last_n_messages)
         full_prompt = await self.build_full_prompt(
@@ -83,7 +84,6 @@ class DiscordBotResponse:
         )
         default_params = self.bot_data.profile.request_params[MAIN_CLIENT_NAME]
         model_names_order = [default_params.model_name]
-        FALLBACKS = ["llama-3-8b"] # TODO: don't hardcode this
         model_names_order.extend(FALLBACKS)
 
         for name in model_names_order:
@@ -196,8 +196,8 @@ class DiscordBotResponse:
         })
 
         self.logger.verbose(f"FULL PROMPT: {full_prompt}", category="FULL PROMPT")
-        self.logger.verbose(str(self.bot_data.recent_history), category="USABLE MEMORY DUMP")
-        self.logger.verbose(str(memory_snapshot), category="FULL MEMORY DUMP")
+        self.logger.verbose(str(self.bot_data.recent_history), category="FULL MEMORY DUMP")
+        self.logger.verbose(str(memory_snapshot), category="USABLE MEMORY DUMP")
         return full_prompt
 
     # TODO: clean this method up
