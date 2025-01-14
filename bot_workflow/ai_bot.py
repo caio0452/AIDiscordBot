@@ -116,7 +116,8 @@ class DiscordBotResponse:
         response = await self.send_llm_request(
             name=NAME,
             prompt=prompt
-        )  
+        ) 
+        self.logger.verbose(f"PROMPT: {prompt}", category="PERSONALITY REWRITE") 
         return response.message.content
 
     @response_step("USER_QUERY_REPHRASE")
