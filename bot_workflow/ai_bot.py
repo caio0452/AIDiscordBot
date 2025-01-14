@@ -74,12 +74,13 @@ class DiscordBotResponse:
     # TODO: clean this method up
     async def create(self, message: discord.Message) -> str:
         MAIN_CLIENT_NAME = "PERSONALITY"
-        USABLE_HISTORY_LENGTH = 14
+        USABLE_HISTORY_LENGTH = 6
         FALLBACKS = ["llama-3-8b"] # TODO: don't hardcode this
-        last_n_messages = self.bot_data.recent_history.backing_history.as_list()[-USABLE_HISTORY_LENGTH:]
-        usable_history = MemorizedMessageHistory(last_n_messages)
+        usable_history = await self.bot_data.recent_history.get_finalized_message_history()
+        last_n_messages = [msg for msg in usable_history._memory][-USABLE_HISTORY_LENGTH:]
+        usable_messages = MemorizedMessageHistory(last_n_messages)
         full_prompt = await self.build_full_prompt(
-            usable_history, 
+            usable_messages, 
             message
         )
         default_params = self.bot_data.profile.request_params[MAIN_CLIENT_NAME]
