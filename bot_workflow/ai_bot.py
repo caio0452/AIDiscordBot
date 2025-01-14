@@ -4,7 +4,7 @@ from ai_apis.client import LLMClient
 from ai_apis.types import LLMRequestParams, Prompt
 from bot_workflow.profile_loader import Profile
 from bot_workflow.knowledge import KnowledgeIndex, LongTermMemoryIndex
-from bot_workflow.types import AIBotData, MemorizedMessageHistory, SynchronizedMessageHistory
+from bot_workflow.types import AIBotData, MemorizedMessage, MemorizedMessageHistory, SynchronizedMessageHistory
 
 import re
 import discord
@@ -78,6 +78,7 @@ class DiscordBotResponse:
         FALLBACKS = ["llama-3-8b"] # TODO: don't hardcode this
         usable_history = await self.bot_data.recent_history.get_finalized_message_history()
         last_n_messages = [msg for msg in usable_history._memory][-USABLE_HISTORY_LENGTH:]
+        last_n_messages.append(await MemorizedMessage.of_discord_message(message))
         usable_messages = MemorizedMessageHistory(last_n_messages)
         full_prompt = await self.build_full_prompt(
             usable_messages, 
