@@ -87,6 +87,8 @@ class DiscordBotResponse:
         default_params = self.bot_data.profile.request_params[MAIN_CLIENT_NAME]
         model_names_order = [default_params.model_name]
         model_names_order.extend(FALLBACKS)
+        self.logger.verbose(message.content, category="PRE-REWRITE MESSAGE")
+        exc_details = ""
 
         for name in model_names_order:
             try:
@@ -103,6 +105,7 @@ class DiscordBotResponse:
                 return answer_with_replacements
             except Exception as e:
                 traceback.print_exc()
+                exc_details += traceback.format_exc()
                 self.logger.verbose(f"Request to LLM '{name}' failed with error: {e}", category="MODEL FAILURE")
         
         raise RuntimeError("Could not generate response and all fallbacks failed")
