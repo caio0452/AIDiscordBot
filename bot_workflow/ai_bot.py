@@ -87,7 +87,6 @@ class DiscordBotResponse:
         default_params = self.bot_data.profile.request_params[MAIN_CLIENT_NAME]
         model_names_order = [default_params.model_name]
         model_names_order.extend(FALLBACKS)
-        self.logger.verbose(message.content, category="PRE-REWRITE MESSAGE")
         exc_details = ""
 
         for name in model_names_order:
@@ -98,6 +97,7 @@ class DiscordBotResponse:
                     prompt=full_prompt,
                     params=current_params
                 )
+                self.logger.verbose(response.message.content, category="PRE-REWRITE MESSAGE")
                 personality_rewrite = await self.personality_rewrite(response.message.content)
                 answer_with_replacements = personality_rewrite
                 for k, v in self.bot_data.profile.regex_replacements.items():
@@ -110,6 +110,9 @@ class DiscordBotResponse:
         
         raise RuntimeError("Could not generate response and all fallbacks failed")
     
+    def _get_prompt(self, name: str) -> Prompt:
+        return self.bot_data.profile.prompts[name].model_copy()
+
     @response_step("PERSONALITY_REWRITE")
     async def personality_rewrite(self, message: str) -> str:
         NAME = "PERSONALITY_REWRITE"
@@ -132,7 +135,7 @@ class DiscordBotResponse:
             [memorized_message.text for memorized_message in recent_history_list]
         )
         last_user = recent_history_list[-1].nick
-        prompt = self.bot_data.profile.prompts[NAME].replace({
+        prompt = self._get_prompt(NAME).replace({
             "user_query": user_prompt_str, 
             "last_user": last_user
         })
@@ -157,7 +160,7 @@ class DiscordBotResponse:
             user_prompt_str += f"INFO:n{text_content}"
 
         user_prompt_str += "QUERY: " + user_query
-        prompt = self.bot_data.profile.prompts[NAME] \
+        prompt = self._get_prompt(NAME) \
             .replace({
                 "user_query": user_prompt_str
             })
