@@ -178,7 +178,7 @@ class DiscordBotResponse:
         user_query = await self.user_query_rephrase()
         knowledge = await self.info_select(user_query)
         old_memories: str = "" # TODO: implement
-        full_prompt: Prompt = self.bot_data.profile.prompts[NAME].model_copy()
+        full_prompt: Prompt = self.bot_data.profile.prompts[NAME].model_copy(deep=True)
 
         if knowledge is not None:
             knowledge_str = f"\n[INFO FROM KNOWLEDGE DB]:\n{knowledge}\n"
