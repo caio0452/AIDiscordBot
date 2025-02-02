@@ -152,8 +152,7 @@ class LLMClassificationStep(ClassificationStep):
         if any([
             not asking_eta,
             not readable,
-            proj_name.lower() != "paper",
-            version != "1.21",    
+            proj_name.lower() != "paper" 
         ]):
             return ClassificationStep.Result(success=False, fail_reason=f"failed_llm_check, got {llm_resp}")
         else:
