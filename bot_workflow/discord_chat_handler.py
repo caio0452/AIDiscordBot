@@ -78,7 +78,7 @@ class DiscordChatHandler(commands.Cog):
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message) -> None:
-        AUTORESPONDER_CHANNEL_ID = 1335411168948256852
+        AUTORESPONDER_CHANNEL_ID = 1335415013451497522
 
         message_flags = self.get_message_flags(message)
         
