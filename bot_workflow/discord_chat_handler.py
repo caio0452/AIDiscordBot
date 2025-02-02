@@ -197,7 +197,7 @@ class DiscordChatHandler(commands.Cog):
         if result.belongs_to_class:
             await message.reply("Paper releases do not have any sort of ETA.")
         else:
-            await message.reply("Sorry, I don't know how to respond to that yet")
+            await message.add_reaction("❓")
         return
     
     async def memorize_message(self, message: MemorizedMessage, *, pending: bool, add_after_id: None | int):
