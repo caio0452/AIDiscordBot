@@ -204,7 +204,7 @@ class DiscordChatHandler(commands.Cog):
 
         verbose_content = ""
         for step_result in result.steps_results:
-            verbose_content += f"STEP: {step_result.fail_reason}\n"
+            verbose_content += f"Classification step {type(step_result)} fail reason: {step_result.fail_reason}\n"
 
         if result.belongs_to_class:
             await message.reply(f"Paper releases do not have any sort of ETA.```{verbose_content}```")
