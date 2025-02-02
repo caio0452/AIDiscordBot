@@ -6,7 +6,7 @@ import traceback
 
 from typing import Tuple
 from discord.ext import commands
-from presets.eta_classifier import EtaClassifier
+from bot_workflow.presets.eta_classifier import EtaClassifier
 from util.rate_limits import RateLimiter, RateLimit
 from bot_workflow.memorized_message import MemorizedMessage
 from bot_workflow.ai_bot import CustomBotData, DiscordBotResponse
