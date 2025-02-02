@@ -183,6 +183,13 @@ class DiscordChatHandler(commands.Cog):
         return previous_message
 
     async def run_autoresponder(self, message: discord.Message):
+        sanitized_message = message.content
+        verbose = False
+
+        if sanitized_message.endswith("--v"):
+            verbose = True
+            sanitized_message = sanitized_message.removesuffix("--v")
+        
         autoresponder_provider = self.ai_bot.provider_store.get_provider_by_name("EMBEDDINGS")
         autoresponder_client = openai.AsyncOpenAI(
             api_key=autoresponder_provider.api_key, 
@@ -193,11 +200,18 @@ class DiscordChatHandler(commands.Cog):
             model="gpt-4o-mini",
             client=autoresponder_client
         )
-        result = await classifier.classify(message.content)
+        result = await classifier.classify(sanitized_message)
+
+        verbose_content = ""
+        if verbose:
+            verbose_content += f"```{result.steps_results}\n{result.fail_reason}```"
+
         if result.belongs_to_class:
-            await message.reply("Paper releases do not have any sort of ETA.")
+            await message.reply(f"Paper releases do not have any sort of ETA.```{verbose_content}```")
         else:
             await message.add_reaction("❓")
+            if verbose:
+                await message.reply(f"```{verbose_content}```")
         return
     
     async def memorize_message(self, message: MemorizedMessage, *, pending: bool, add_after_id: None | int):
