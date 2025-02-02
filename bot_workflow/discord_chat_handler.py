@@ -82,12 +82,13 @@ class DiscordChatHandler(commands.Cog):
 
         message_flags = self.get_message_flags(message)
         
+        if MessageFlag.BOT_MESSAGE in message_flags: 
+            return
+        
         if message.channel.id == AUTORESPONDER_CHANNEL_ID:
             await self.run_autoresponder(message)
             return
-
-        if MessageFlag.BOT_MESSAGE in message_flags: 
-            return
+ 
         elif MessageFlag.RATE_LIMITED in message_flags: 
             return
         elif MessageFlag.LOG_REQUEST in message_flags:
