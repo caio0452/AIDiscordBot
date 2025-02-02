@@ -195,9 +195,10 @@ class DiscordChatHandler(commands.Cog):
             api_key=autoresponder_provider.api_key, 
             base_url=autoresponder_provider.api_base, 
             timeout=60
+
         )
         classifier = await EtaClassifier.with_openai(     
-            model="gpt-4o-mini",
+            model="gpt-4o",
             client=autoresponder_client
         )
         result = await classifier.classify(sanitized_message)
