@@ -182,7 +182,7 @@ class DiscordChatHandler(commands.Cog):
         return previous_message
 
     async def run_autoresponder(self, message: discord.Message):
-        autoresponder_provider = self.ai_bot.provider_store.get_provider_by_name("EMBEDDINGS_PROVIDER")
+        autoresponder_provider = self.ai_bot.provider_store.get_provider_by_name("EMBEDDINGS")
         autoresponder_client = openai.AsyncOpenAI(
             api_key=autoresponder_provider.api_key, 
             base_url=autoresponder_provider.api_base, 
