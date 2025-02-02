@@ -1,10 +1,12 @@
 import io
+import openai
 import discord
 import datetime 
 import traceback
 
 from typing import Tuple
 from discord.ext import commands
+from presets.eta_classifier import EtaClassifier
 from util.rate_limits import RateLimiter, RateLimit
 from bot_workflow.memorized_message import MemorizedMessage
 from bot_workflow.ai_bot import CustomBotData, DiscordBotResponse
@@ -76,8 +78,14 @@ class DiscordChatHandler(commands.Cog):
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message) -> None:
+        AUTORESPONDER_CHANNEL_ID = 1335411168948256852
+
         message_flags = self.get_message_flags(message)
         
+        if message.channel.id == AUTORESPONDER_CHANNEL_ID:
+            await self.run_autoresponder(message)
+            return
+
         if MessageFlag.BOT_MESSAGE in message_flags: 
             return
         elif MessageFlag.RATE_LIMITED in message_flags: 
@@ -173,6 +181,24 @@ class DiscordChatHandler(commands.Cog):
 
         return previous_message
 
+    async def run_autoresponder(self, message: discord.Message):
+        autoresponder_provider = self.ai_bot.provider_store.get_provider_by_name("DEFAULT")
+        autoresponder_client = openai.AsyncOpenAI(
+            api_key=autoresponder_provider.api_key, 
+            base_url=autoresponder_provider.api_base, 
+            timeout=60
+        )
+        classifier = await EtaClassifier.with_openai(     
+            model="gpt-4o-mini",
+            client=autoresponder_client
+        )
+        result = await classifier.classify(message.content)
+        if result.belongs_to_class:
+            await message.reply("Paper releases do not have any sort of ETA.")
+        else:
+            await message.reply("Sorry, I don't know how to respond to that yet")
+        return
+    
     async def memorize_message(self, message: MemorizedMessage, *, pending: bool, add_after_id: None | int):
         if add_after_id is None:
             await self.ai_bot.recent_history.add(
