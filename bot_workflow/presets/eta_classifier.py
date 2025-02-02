@@ -88,7 +88,7 @@ class EtaClassifier(QueryClassifier):
 
     @classmethod
     async def with_openai(cls, *, client: AsyncOpenAI, model: str = "gpt-4o") -> "EtaClassifier":
-        REFERENCE_ETA_PHRASE = "Is there any ETA / estimate / progress on when 1.21 will release / come out?"
+        REFERENCE_ETA_PHRASE = "Is there any ETA / estimate / progress on when Paper 1.21 will release or update? When will Paper update?"
         emb_resp = await client.embeddings.create(
             model="text-embedding-3-large", 
             input=REFERENCE_ETA_PHRASE
@@ -97,7 +97,7 @@ class EtaClassifier(QueryClassifier):
 
         return cls(
             check_steps=[
-                KeywordCheckStep(must_have_all_keywords=["paper", "1.21"], must_have_any_keywords=[]),
+                KeywordCheckStep(must_have_all_keywords=[], must_have_any_keywords=["paper", "1.21"]),
                 SimilarityCheckStep(client=client, reference_embedding=ref_emb),
                 LLMClassificationStep(client=client, classification_prompt=ETA_CLASSIFICATION_PROMPT, model=model)
             ]

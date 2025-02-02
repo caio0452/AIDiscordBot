@@ -203,8 +203,8 @@ class DiscordChatHandler(commands.Cog):
         result = await classifier.classify(sanitized_message)
 
         verbose_content = ""
-        if verbose:
-            verbose_content += f"```{result.steps_results}\n{result.fail_reason}```"
+        for step_result in result.steps_results:
+            verbose_content += f"STEP: {step_result.fail_reason}\n"
 
         if result.belongs_to_class:
             await message.reply(f"Paper releases do not have any sort of ETA.```{verbose_content}```")
