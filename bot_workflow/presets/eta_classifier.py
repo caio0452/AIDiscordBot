@@ -1,4 +1,4 @@
-from classifier import QueryClassifier, ClassificationStep, SimilarityCheckStep, KeywordCheckStep
+from bot_workflow.presets.classifier import QueryClassifier, ClassificationStep, SimilarityCheckStep, KeywordCheckStep
 from openai import AsyncOpenAI
 from typing import Any
 import json
