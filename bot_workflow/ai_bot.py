@@ -83,7 +83,7 @@ class DiscordBotResponse:
         )
         default_params = self.bot_data.profile.request_params[MAIN_CLIENT_NAME]
         model_names_order = [default_params.model_name]
-        model_names_order.extend(FALLBACKS)
+        model_names_order.extend(self.bot_data.profile.llm_fallbacks)
         exc_details = ""
 
         for name in model_names_order:
