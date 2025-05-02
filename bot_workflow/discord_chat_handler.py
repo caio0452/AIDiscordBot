@@ -8,7 +8,7 @@ from response_logs import ResponseLogsManager
 from util.rate_limits import RateLimiter, RateLimit
 from bot_workflow.memorized_message import MemorizedMessage
 from bot_workflow.ai_bot import CustomBotData, DiscordBotResponse
-from discord_message_parser import DiscordMessageParser, DenialReason, SpecialFunctionFlags
+from bot_workflow.discord_message_parser import DiscordMessageParser, DenialReason, SpecialFunctionFlags
 
 MSG_LOG_FILE_REPLY = "Verbose logs for message ID {} attached (only last 10 are stored)"
 MSG_INVALID_LOG_REQUEST = ":x: Expected a message ID before --l, not '{}'"
