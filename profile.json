@@ -4,7 +4,8 @@
          "botname": "Paper-Chan",
          "recent_message_history_length": 10,
          "has_long_term_memory": true,
-         "max_input_chars": 1000
+         "max_input_chars": 1000,
+         "llm_fallbacks": ["meta-llama/llama-3.3-70b-instruct", "meta-llama/llama-4-maverick", "deepseek/deepseek-chat-v3-0324"]
       },
       "providers": {
          "PERSONALITY_REWRITE": {

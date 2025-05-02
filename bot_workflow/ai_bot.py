@@ -73,7 +73,6 @@ class DiscordBotResponse:
     async def create(self, message: discord.Message) -> str:
         MAIN_CLIENT_NAME = "PERSONALITY"
         USABLE_HISTORY_LENGTH = 14
-        FALLBACKS = ["llama-3-8b"] # TODO: don't hardcode this
         usable_history = await self.bot_data.recent_history.get_finalized_message_history()
         last_n_messages = [msg for msg in usable_history._memory][-USABLE_HISTORY_LENGTH:]
         last_n_messages.append(await MemorizedMessage.of_discord_message(message))

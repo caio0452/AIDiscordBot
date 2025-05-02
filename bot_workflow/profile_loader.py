@@ -37,6 +37,7 @@ class Profile:
     providers: dict[str, ProviderData]
     regex_replacements: dict[str, str]
     fal_image_gen_config: FalImageGenModuleConfig
+    llm_fallbacks: list[str]
 
 class ProfileLoader:
     def __init__(self, filename: str):
@@ -59,6 +60,9 @@ class ProfileLoader:
         )
         has_long_term_memory = self.safe_get(
             path=["profile", "parameters", "has_long_term_memory"], required_type=bool
+        )
+        llm_fallbacks = self.safe_get(
+            path=["profile", "parameters", "llm_fallbacks"], required_type=list[str]
         )
         lang = self.safe_get(
             path=["profile", "lang"], required_type=dict
@@ -87,7 +91,8 @@ class ProfileLoader:
             request_params=request_params,
             providers=providers,
             regex_replacements=regex_replacements,
-            fal_image_gen_config=fal_image_gen_config
+            fal_image_gen_config=fal_image_gen_config,
+            llm_fallbacks=llm_fallbacks
         )
 
     def _get_raw(self, *, path: list[str], required: bool) -> dict | None:
