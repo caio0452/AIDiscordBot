@@ -62,7 +62,7 @@ class ProfileLoader:
             path=["profile", "parameters", "has_long_term_memory"], required_type=bool
         )
         llm_fallbacks = self.safe_get(
-            path=["profile", "parameters", "llm_fallbacks"], required_type=list[str]
+            path=["profile", "parameters", "llm_fallbacks"], required_type=list
         )
         lang = self.safe_get(
             path=["profile", "lang"], required_type=dict
