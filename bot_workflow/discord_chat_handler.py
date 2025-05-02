@@ -1,43 +1,20 @@
 import io
-import openai
 import discord
 import datetime 
 import traceback
 
 from typing import Tuple
 from discord.ext import commands
-from bot_workflow.presets.eta_classifier import EtaClassifier
+from response_logs import ResponseLogsManager
 from util.rate_limits import RateLimiter, RateLimit
 from bot_workflow.memorized_message import MemorizedMessage
 from bot_workflow.ai_bot import CustomBotData, DiscordBotResponse
+from discord_message_parser import DiscordMessageParser, DenialReason, SpecialFunctionFlags
 
 BOT_NAME = "Kami-Chan"
 MAX_CHAT_CHARACTERS = 1000
 MSG_LOG_FILE_REPLY = "Verbose logs for message ID {} attached (only last 10 are stored)"
 MSG_INVALID_LOG_REQUEST = ":x: Expected a message ID before --l, not '{}'"
-
-class MessageFlag:
-    BOT_MESSAGE = "BOT_MESSAGE"
-    LOG_REQUEST = "LOG_REQUEST"
-    VERBOSE_REQUEST = "VERBOSE_REQUEST" 
-    TOO_LONG = "TOO_LONG"
-    RATE_LIMITED = "RATE_LIMITED"
-    PINGED_BOT = "PINGED_BOT"
-
-class ResponseLogsManager:
-    def __init__(self, log_capacity: int = 10):
-        self.log_capacity = log_capacity
-        self._last_message_id_logs: dict[int, str] = {}
-
-    def store_log(self, message_id: int, log: str):
-        print(f"Saved log for message id {message_id}")
-        self._last_message_id_logs[message_id] = log
-        if len(self._last_message_id_logs) > self.log_capacity:
-            oldest_key = next(iter(self._last_message_id_logs))
-            del self._last_message_id_logs[oldest_key]
-
-    def get_log_by_id(self, message_id: int) -> str | None:
-        return self._last_message_id_logs.get(message_id, None)
 
 class DiscordChatHandler(commands.Cog):
     def __init__(self, discord_bot: commands.Bot, ai_bot_data: CustomBotData):
@@ -51,60 +28,30 @@ class DiscordChatHandler(commands.Cog):
             RateLimit(n_messages=250, seconds=8 * 3600)
         )
         self.logs = ResponseLogsManager()
+        self.message_parser = DiscordMessageParser(self.bot)
         self.ai_bot = ai_bot_data
         self._last_message_id_logs: dict[int, str] = {}
 
-    def get_message_flags(self, message: discord.Message) -> list[MessageFlag]:
-        flags = [] 
-        if message.author.bot:
-            flags.append(MessageFlag.BOT_MESSAGE)
-
-        if message.content.endswith("--l"):
-            flags.append(MessageFlag.LOG_REQUEST)
-
-        if message.content.endswith("--v"):
-            flags.append(MessageFlag.VERBOSE_REQUEST)
-        
-        if len(message.content) > MAX_CHAT_CHARACTERS:
-            flags.append(MessageFlag.TOO_LONG)
-        
-        if self.rate_limiter.is_rate_limited(message.author.id):
-            flags.append(MessageFlag.RATE_LIMITED)
-        
-        if self.bot.user in message.mentions:
-            flags.append(MessageFlag.PINGED_BOT)
-
-        return flags
-
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message) -> None:
-        AUTORESPONDER_CHANNEL_ID = 1335415013451497522
-
-        message_flags = self.get_message_flags(message)
-        
-        if MessageFlag.BOT_MESSAGE in message_flags: 
+        if message.author.bot: 
             return
         
-        if message.channel.id == AUTORESPONDER_CHANNEL_ID:
-            await self.run_autoresponder(message)
+        ctx = self.message_parser.parse_message(message)
+        if ctx.denial_reason == DenialReason.DID_NOT_PING:
             return
- 
-        elif MessageFlag.RATE_LIMITED in message_flags: 
+        if ctx.denial_reason == DenialReason.RATE_LIMITED:
+            await message.reply("You are rate limited, please wait")
             return
-        elif MessageFlag.LOG_REQUEST in message_flags:
+        if ctx.denial_reason == DenialReason.TOO_LONG:
+            for emoji in ['🇹', '🇱', '🇩', '🇷']:
+                await message.add_reaction(emoji)
+        if SpecialFunctionFlags.VIEW_MESSAGE_LOGS in ctx.called_functions:
             await self.handle_log_request(message)
-        if MessageFlag.PINGED_BOT not in message_flags: # Handle logs even when bot is not pinged
             return
-        elif MessageFlag.TOO_LONG in message_flags:
-            await self.handle_too_long_message(message)
-        elif MessageFlag.PINGED_BOT in message_flags:
-            is_verbose = (MessageFlag.VERBOSE_REQUEST in message_flags)
-            await self.respond_with_llm(message, verbose=is_verbose)
-
-    async def handle_too_long_message(self, message: discord.Message):
-        emojis = ['🇹', '🇱', '🇩', '🇷']
-        for emoji in emojis:
-            await message.add_reaction(emoji)
+        
+        verbose = SpecialFunctionFlags.REQUEST_VERBOSE_REPLY in ctx.called_functions
+        await self.respond_with_llm(message, verbose=verbose)
 
     async def handle_log_request(self, message: discord.Message):
         sanitized_msg = message.content.strip().replace("--l", "")
@@ -182,39 +129,6 @@ class DiscordChatHandler(commands.Cog):
 
         return previous_message
 
-    async def run_autoresponder(self, message: discord.Message):
-        sanitized_message = message.content
-        verbose = False
-
-        if sanitized_message.endswith("--v"):
-            verbose = True
-            sanitized_message = sanitized_message.removesuffix("--v")
-        
-        autoresponder_provider = self.ai_bot.provider_store.get_provider_by_name("EMBEDDINGS")
-        autoresponder_client = openai.AsyncOpenAI(
-            api_key=autoresponder_provider.api_key, 
-            base_url=autoresponder_provider.api_base, 
-            timeout=60
-
-        )
-        classifier = await EtaClassifier.with_openai(     
-            model="gpt-4o",
-            client=autoresponder_client
-        )
-        result = await classifier.classify(sanitized_message)
-
-        verbose_content = ""
-        for step_result in result.steps_results:
-            verbose_content += f"Classification step {type(step_result)} fail reason: {step_result.fail_reason}\n"
-
-        if result.belongs_to_class:
-            await message.reply(f"Paper releases do not have any sort of ETA.```{verbose_content}```")
-        else:
-            await message.add_reaction("❓")
-            if verbose:
-                await message.reply(f"```{verbose_content}```")
-        return
-    
     async def memorize_message(self, message: MemorizedMessage, *, pending: bool, add_after_id: None | int):
         if add_after_id is None:
             await self.ai_bot.recent_history.add(
