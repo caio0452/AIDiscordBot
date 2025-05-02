@@ -4,8 +4,8 @@ import traceback
 
 from typing import Tuple
 from discord.ext import commands
-from response_logs import ResponseLogsManager
 from util.rate_limits import RateLimiter, RateLimit
+from bot_workflow.response_logs import ResponseLogsManager
 from bot_workflow.memorized_message import MemorizedMessage
 from bot_workflow.ai_bot import CustomBotData, DiscordBotResponse
 from bot_workflow.discord_message_parser import DiscordMessageParser, DenialReason, SpecialFunctionFlags
