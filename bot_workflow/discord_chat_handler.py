@@ -1,6 +1,5 @@
 import io
 import discord
-import datetime 
 import traceback
 
 from typing import Tuple
@@ -11,15 +10,12 @@ from bot_workflow.memorized_message import MemorizedMessage
 from bot_workflow.ai_bot import CustomBotData, DiscordBotResponse
 from discord_message_parser import DiscordMessageParser, DenialReason, SpecialFunctionFlags
 
-BOT_NAME = "Kami-Chan"
-MAX_CHAT_CHARACTERS = 1000
 MSG_LOG_FILE_REPLY = "Verbose logs for message ID {} attached (only last 10 are stored)"
 MSG_INVALID_LOG_REQUEST = ":x: Expected a message ID before --l, not '{}'"
 
 class DiscordChatHandler(commands.Cog):
     def __init__(self, discord_bot: commands.Bot, ai_bot_data: CustomBotData):
         self.bot: commands.Bot = discord_bot
-        self.RECENT_MEMORY_LENGTH = 5
         self.rate_limiter = RateLimiter(
             RateLimit(n_messages=3, seconds=10),
             RateLimit(n_messages=10, seconds=60),
@@ -30,7 +26,6 @@ class DiscordChatHandler(commands.Cog):
         self.logs = ResponseLogsManager()
         self.message_parser = DiscordMessageParser(self.bot)
         self.ai_bot = ai_bot_data
-        self._last_message_id_logs: dict[int, str] = {}
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message) -> None:
@@ -70,7 +65,6 @@ class DiscordChatHandler(commands.Cog):
             await message.reply(MSG_INVALID_LOG_REQUEST.format(sanitized_msg))
 
     async def respond_with_llm(self, message: discord.Message, *, verbose: bool=False):
-        self.rate_limiter.register_request(message.author.id)
         await self.memorize_discord_message(message, pending=True, add_after_id=None)
         reply = await message.reply(self.ai_bot.profile.lang["bot_typing"])
         
@@ -129,7 +123,7 @@ class DiscordChatHandler(commands.Cog):
 
         return previous_message
 
-    async def memorize_message(self, message: MemorizedMessage, *, pending: bool, add_after_id: None | int):
+    async def memorize_message(self, message: MemorizedMessage, *, pending: bool, add_after_id: None | int) -> None:
         if add_after_id is None:
             await self.ai_bot.recent_history.add(
                 message,
@@ -141,31 +135,20 @@ class DiscordChatHandler(commands.Cog):
                 message,
                 pending=pending
             )
-        # TODO: memorize long term
-
-    async def memorize_discord_message(self, message: discord.Message, *, pending: bool, add_after_id: None | int):
+        self.ai_bot.long_term_memory.memorize(message)
+        
+    async def memorize_discord_message(self, message: discord.Message, *, pending: bool, add_after_id: None | int) -> None:
+        to_memorize = await MemorizedMessage.of_discord_message(message)
         await self.memorize_message(
-            await MemorizedMessage.of_discord_message(message),
+            to_memorize,
             pending=pending,
             add_after_id=add_after_id
         )
-        # TODO: memorize long term
-
-    async def memorize_raw_message(self, *, text: str, nick: str, sent: datetime.datetime, is_bot: bool, message_id: int):
-        await self.ai_bot.recent_history.add(
-            MemorizedMessage(
-                text=text,
-                nick=nick,
-                sent=sent,
-                is_bot=is_bot,
-                message_id=message_id
-            )
-        )
-        # TODO: memorize long term
+        self.ai_bot.long_term_memory.memorize(to_memorize)
 
     async def handle_error(self, message: discord.Message, reply: discord.Message, error: Exception):
         # TODO: implement message forgetting
         # await self.forget_message(message)
         # await self.forget_message(reply)
         traceback.print_exc()
-        await reply.edit(content=f"There was an error: ```{str(error)}```") # TODO: send custom message if possible
+        await reply.edit(content=f"There was an error: ```{str(error)}```") # TODO: send lang message if possible

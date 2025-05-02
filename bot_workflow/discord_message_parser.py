@@ -16,6 +16,7 @@ class SpecialFunctionFlags(Enum):
 @dataclass
 class UserMessageContext:
     raw_content: str
+    sanitized_content: str
     denied: bool
     denial_reason: DenialReason | None
     called_functions: list[SpecialFunctionFlags]
@@ -34,6 +35,7 @@ class DiscordMessageParser:
 
     def parse_message(self, message: discord.Message) -> UserMessageContext:
         raw_content = message.content
+        sanitized_content = raw_content
         denied = False
         denial_reason = None
         called_functions: list[SpecialFunctionFlags] = []
@@ -50,11 +52,14 @@ class DiscordMessageParser:
         if not denied:
             if raw_content.endswith("--l"):
                 called_functions.append(SpecialFunctionFlags.VIEW_MESSAGE_LOGS)
+                sanitized_content = sanitized_content.removesuffix("--l")
 
             if raw_content.endswith("--v"):
                 called_functions.append(SpecialFunctionFlags.REQUEST_VERBOSE_REPLY)
+                sanitized_content = sanitized_content.removesuffix("--v")
 
         return UserMessageContext(
+            sanitized_content=sanitized_content,
             raw_content=raw_content,
             denied=denied,
             denial_reason=denial_reason,

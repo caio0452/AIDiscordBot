@@ -26,7 +26,7 @@ class CustomBotData(AIBotData):
         self.profile = profile
         self.provider_store = provider_store
         self.discord_bot_id = discord_bot_id
-        self.long_term_memory = long_term_memory # TODO: unused
+        self.long_term_memory = long_term_memory
         self.recent_history = SynchronizedMessageHistory()
         self.knowledge = knowledge 
         self.RECENT_MEMORY_LENGTH = profile.recent_message_history_length
@@ -49,9 +49,7 @@ def response_step(NAME):
             try:
                 params = self.bot_data.profile.request_params[NAME]
                 self.logger.verbose(f"Initiating step {NAME}. {params}", category=NAME)
-
                 result = await func(self, *args, **kwargs)
-
                 self.logger.verbose(f"Step {NAME} done, {result}", category=NAME)
                 return result
             except Exception as e:
@@ -177,7 +175,7 @@ class DiscordBotResponse:
         now_str = datetime.datetime.now().strftime("%B %d, %H:%M:%S")
         user_query = await self.user_query_rephrase()
         knowledge = await self.info_select(user_query)
-        old_memories: str = "" # TODO: implement
+        old_memories: str = "" 
         full_prompt: Prompt = self.bot_data.profile.prompts[NAME].model_copy(deep=True)
 
         if knowledge is not None:
@@ -192,6 +190,10 @@ class DiscordBotResponse:
                 full_prompt.append(Prompt.assistant_msg(memorized_message.text))
             else:
                 full_prompt.append(Prompt.user_msg(memorized_message.text))
+
+        for msg in await self.bot_data.long_term_memory.get_closest_messages(user_query):
+            print(msg) # TODO: debug - remove
+            old_memories += str(msg) # TODO: establish a type for this
 
         img_desc = await self.describe_image_if_present(original_msg)
         if img_desc:

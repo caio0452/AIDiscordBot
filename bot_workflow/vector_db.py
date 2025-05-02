@@ -53,7 +53,7 @@ class VectorDatabase:
         except Exception as e:
             raise RuntimeError(f"Failed to access index {index_name}") from e
 
-    async def index(self, entry: Entry):
+    def index(self, entry: Entry):
         id = entry.compute_id()
         self.db_data.upsert([(id, entry.data, entry.metadata)])
 

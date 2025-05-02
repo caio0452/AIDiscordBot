@@ -5,11 +5,17 @@ import asyncio
 
 from ai_apis.providers import ProviderData
 from bot_workflow.vector_db import VectorDatabase
+from memorized_message import MemorizedMessage
 
-# TODO: abstract this further
 class LongTermMemoryIndex:
     def __init__(self, provider: ProviderData): 
         self.vector_db: VectorDatabase = VectorDatabase(provider)
+
+    def memorize(self, message: MemorizedMessage):
+        self.vector_db.index(VectorDatabase.Entry(message.text, str(message), message.message_id))
+
+    async def get_closest_messages(self, reference: str, *, n=5) -> list:
+        return await self.vector_db.search(reference, n)
 
 class KnowledgeIndex:
     def __init__(self, provider): 
@@ -35,7 +41,7 @@ class KnowledgeIndex:
 
     async def index_text(self, text, *, metadata="knowledge"):
         for chunk in KnowledgeIndex.chunk_text(text):
-            await self.vector_db.index(VectorDatabase.Entry(
+            self.vector_db.index(VectorDatabase.Entry(
                 data=chunk, 
                 metadata=metadata,
                 entry_id=None
