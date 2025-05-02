@@ -25,6 +25,7 @@ class DiscordMessageParser:
     def __init__(self, bot: commands.Bot):
         self.MAX_CHARACTERS = 1024
         self.rate_limiter = RateLimiter()
+        self.bot = bot
         self.message = RateLimiter(
             RateLimit(n_messages=3, seconds=10),
             RateLimit(n_messages=10, seconds=60),
@@ -41,6 +42,11 @@ class DiscordMessageParser:
         called_functions: list[SpecialFunctionFlags] = []
 
         self.rate_limiter.register_request(message.author.id)
+
+        if self.bot.user not in message.mentions:
+            denied = True
+            denial_reason = DenialReason.DID_NOT_PING
+
         if self.rate_limiter.is_rate_limited(message.author.id):
             denied = True
             denial_reason = DenialReason.RATE_LIMITED
