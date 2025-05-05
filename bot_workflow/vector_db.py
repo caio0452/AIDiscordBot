@@ -11,56 +11,75 @@ class VectorDatabase:
     @dataclass
     class Entry:
         data: str
-        metadata: str
+        metadata: dict[str, Any]
         entry_id: int | None = None
 
-        def compute_id(self):
+        def __post_init__(self):
             if self.entry_id is None:
-                combined = self.data + self.metadata
-                return int(hashlib.sha256(combined.encode()).hexdigest(), 16) & 0xFFFFFFFF
-            return self.entry_id
+                combined = self.data + str(self.metadata)
+                self.entry_id = int(hashlib.sha256(combined.encode()).hexdigest(), 16) & 0x7FFFFFFF
 
-    def __init__(self, provider: ProviderData): 
+        def as_txtai_object(self):
+            return (self.entry_id, {"text": self.data, "metadata": self.metadata}, None)
+        
+    def __init__(self, provider: ProviderData):
         self.vectorizer = SyncEmbeddingsClient(provider)
 
-        def transform(inputs): # TODO: this is sync. Performance concern?
+        def external_transform(inputs): 
+            # TODO: this is sync. Is that a concern?
             resp = self.vectorizer.vectorize(input=inputs)
             return np.array(resp, dtype=np.float32)
 
         self.db_data = Embeddings(
             config={
-                "transform": transform, 
-                "backend": "numpy", 
+                "transform": external_transform,
+                "backend": "faiss", 
                 "content": True,
+                "indexes": {
+                    "knowledge": {},
+                    "memories": {}
+                }
             }
         )
 
-        self.db_data.index(["Hello, world"]) # Better way to init this?
-
-    async def search(self, data: str, limit: int=5) -> list[Any]:
-        ret = self.db_data.search(data, limit=limit)
-
+    async def search(self, data: str, limit: int=5, index_name: str | None = None) -> list[Any]:
+        if index_name is None:
+            ret = self.db_data.search(data, limit=limit)
+        else:
+            target_index = await self.get_index(index_name)
+            ret = target_index.search(data, limit=limit)
         if not isinstance(ret, list):
-            raise RuntimeError(f"Expected database search to return list, not object {str(ret)} of type {type(ret)}")
+            raise ValueError("Search returned unknown non-list item: ", ret)
         return ret
 
     async def get_index(self, index_name: str):
         indexes = self.db_data.indexes
         if indexes is None:
-            raise RuntimeError("There are no indexes to search")
-        try:
-            return indexes[index_name]
-        except Exception as e:
-            raise RuntimeError(f"Failed to access index {index_name}") from e
-
-    def index(self, entry: Entry):
-        id = entry.compute_id()
-        self.db_data.upsert([(id, entry.data, entry.metadata)])
-
-    async def mass_index(self, entries: list[Entry]):
-        records = [(entry.compute_id(), entry.data, entry.metadata) for entry in entries]
-        self.db_data.upsert(records)
+            raise RuntimeError("Vector database has no subindexes")
         
+        try:
+            return indexes.get(index_name) # Use get for safer access
+        except KeyError:
+             raise RuntimeError(f"Subindex '{index_name}' not found.")
+        except Exception as e:
+            raise RuntimeError(f"Error while accessign subindex: '{index_name}'") from e
+
+    async def index(self, index_name: str, entry: Entry):
+        await self.mass_index(index_name=index_name, entries=[entry])
+
+    async def mass_index(self, index_name: str, entries: list[Entry]):
+        target_index = await self.get_index(index_name)
+        items_to_index = [entry.to_index_format() for entry in entries]
+        
+        try:
+            target_index.index(items_to_index)
+        except Exception as e:
+            raise RuntimeError(f"Failed to index data into subindex '{index_name}'") from e
+
     async def delete_ids(self, *, index_name: str, entry_ids: list[int]) -> int:
         target_index = await self.get_index(index_name)
-        return target_index.remove_ids(entry_ids)
+        try:
+             deleted_ids = target_index.delete(entry_ids)
+             return len(deleted_ids)
+        except Exception as e:
+            raise RuntimeError(f"Failed to delete ids {entry_ids} from subindex '{index_name}'") from e

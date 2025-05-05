@@ -11,8 +11,14 @@ class LongTermMemoryIndex:
     def __init__(self, provider: ProviderData): 
         self.vector_db: VectorDatabase = VectorDatabase(provider)
 
-    def memorize(self, message: MemorizedMessage):
-        self.vector_db.index(VectorDatabase.Entry(message.text, str(message), message.message_id))
+    async def memorize(self, message: MemorizedMessage):
+        await self.vector_db.index("memory", 
+            VectorDatabase.Entry(
+                message.text, 
+                {"type": "memory"}, 
+                message.message_id
+            )
+        )
 
     async def get_closest_messages(self, reference: str, *, n=5) -> list:
         return await self.vector_db.search(reference, n)
@@ -39,13 +45,15 @@ class KnowledgeIndex:
             start += chunk_size
         return chunks
 
-    async def index_text(self, text, *, metadata="knowledge"):
+    async def index_text(self, text, *, metadata={"type": "knowledge"}):
         for chunk in KnowledgeIndex.chunk_text(text):
-            self.vector_db.index(VectorDatabase.Entry(
-                data=chunk, 
-                metadata=metadata,
-                entry_id=None
-            ))
+            await self.vector_db.index(
+                "knowledge",
+                VectorDatabase.Entry(
+                    data=chunk, 
+                    metadata=metadata,
+                    entry_id=None
+                ))
 
     async def index_texts(self, texts: list[str], *, metadata="knowledge"):
         entries = [VectorDatabase.Entry(text, "knowledge", None) for text in texts]
