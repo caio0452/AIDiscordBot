@@ -19,7 +19,7 @@ class VectorDatabase:
                 combined = self.data + str(self.metadata)
                 self.entry_id = int(hashlib.sha256(combined.encode()).hexdigest(), 16) & 0x7FFFFFFF
 
-        def as_txtai_object(self):
+        def as_txtai_object(self) -> tuple:
             return (self.entry_id, {"text": self.data, "metadata": self.metadata}, None)
         
     def __init__(self, provider: ProviderData):
@@ -42,17 +42,17 @@ class VectorDatabase:
             }
         )
 
-    async def search(self, data: str, limit: int=5, index_name: str | None = None) -> list[Any]:
+    def search(self, data: str, limit: int=5, index_name: str | None = None) -> list[Any]:
         if index_name is None:
             ret = self.db_data.search(data, limit=limit)
         else:
-            target_index = await self.get_index(index_name)
+            target_index = self.get_index(index_name)
             ret = target_index.search(data, limit=limit)
         if not isinstance(ret, list):
             raise ValueError("Search returned unknown non-list item: ", ret)
         return ret
 
-    async def get_index(self, index_name: str):
+    def get_index(self, index_name: str):
         indexes = self.db_data.indexes
         if indexes is None:
             raise RuntimeError("Vector database has no subindexes")
@@ -64,20 +64,20 @@ class VectorDatabase:
         except Exception as e:
             raise RuntimeError(f"Error while accessign subindex: '{index_name}'") from e
 
-    async def index(self, index_name: str, entry: Entry):
-        await self.mass_index(index_name=index_name, entries=[entry])
+    def index(self, index_name: str, entry: Entry):
+        self.mass_index(index_name=index_name, entries=[entry])
 
-    async def mass_index(self, index_name: str, entries: list[Entry]):
-        target_index = await self.get_index(index_name)
-        items_to_index = [entry.to_index_format() for entry in entries]
+    def mass_index(self, index_name: str, entries: list[Entry]):
+        target_index = self.get_index(index_name)
+        items_to_index = [entry.as_txtai_object() for entry in entries]
         
         try:
             target_index.index(items_to_index)
         except Exception as e:
             raise RuntimeError(f"Failed to index data into subindex '{index_name}'") from e
 
-    async def delete_ids(self, *, index_name: str, entry_ids: list[int]) -> int:
-        target_index = await self.get_index(index_name)
+    def delete_ids(self, *, index_name: str, entry_ids: list[int]) -> int:
+        target_index = self.get_index(index_name)
         try:
              deleted_ids = target_index.delete(entry_ids)
              return len(deleted_ids)

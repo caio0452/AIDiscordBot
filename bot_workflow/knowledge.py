@@ -11,8 +11,8 @@ class LongTermMemoryIndex:
     def __init__(self, provider: ProviderData): 
         self.vector_db: VectorDatabase = VectorDatabase(provider)
 
-    async def memorize(self, message: MemorizedMessage):
-        await self.vector_db.index("memory", 
+    def memorize(self, message: MemorizedMessage):
+        self.vector_db.index("memory", 
             VectorDatabase.Entry(
                 message.text, 
                 {"type": "memory"}, 
@@ -20,8 +20,8 @@ class LongTermMemoryIndex:
             )
         )
 
-    async def get_closest_messages(self, reference: str, *, n=5) -> list:
-        return await self.vector_db.search(reference, n)
+    def get_closest_messages(self, reference: str, *, n=5) -> list:
+        return self.vector_db.search(reference, n)
 
 class KnowledgeIndex:
     def __init__(self, provider): 
@@ -47,7 +47,7 @@ class KnowledgeIndex:
 
     async def index_text(self, text, *, metadata={"type": "knowledge"}):
         for chunk in KnowledgeIndex.chunk_text(text):
-            await self.vector_db.index(
+            self.vector_db.index(
                 "knowledge",
                 VectorDatabase.Entry(
                     data=chunk, 
@@ -55,9 +55,9 @@ class KnowledgeIndex:
                     entry_id=None
                 ))
 
-    async def index_texts(self, texts: list[str], *, metadata="knowledge"):
-        entries = [VectorDatabase.Entry(text, "knowledge", None) for text in texts]
-        await self.vector_db.mass_index(entries)
+    async def index_texts(self, texts: list[str], *, metadata: dict = {"type": "knowledge"}):
+        entries = [VectorDatabase.Entry(text, metadata, None) for text in texts]
+        self.vector_db.mass_index("knowledge", entries)
 
     async def index_from_folder(self, path, max_concurrent_tasks=8): 
         if not os.path.exists(path):
@@ -95,5 +95,5 @@ class KnowledgeIndex:
 
         print(f"Total chunks indexed: {total_chunks}")
 
-    async def retrieve(self, related_text):
-        return await self.vector_db.search(related_text)
+    def retrieve(self, related_text):
+        return self.vector_db.search(related_text)
