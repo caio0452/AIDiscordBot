@@ -41,6 +41,7 @@ class DiscordChatHandler(commands.Cog):
         if ctx.denial_reason == DenialReason.TOO_LONG:
             for emoji in ['🇹', '🇱', '🇩', '🇷']:
                 await message.add_reaction(emoji)
+            return
         if SpecialFunctionFlags.VIEW_MESSAGE_LOGS in ctx.called_functions:
             await self.handle_log_request(message)
             return
