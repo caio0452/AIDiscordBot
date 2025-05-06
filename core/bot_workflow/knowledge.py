@@ -61,18 +61,26 @@ class KnowledgeIndex:
 
     async def chunk_and_index(self, text: str, *, metadata={"type": "knowledge"}) -> int:
         chunks = KnowledgeIndex.chunk_text(text)
+        if not chunks: 
+            return 0
+            
+        entries = []
         for chunk in chunks:
             hash_obj = hashlib.sha256(text.encode('utf-8'))
             hash_int = int.from_bytes(hash_obj.digest()[:8], byteorder='big', signed=False)
-            await self._db_conn.index(
-                VectorDatabaseConnection.Indexes.KNOWLEDGE,
+            entries.append(
                 VectorDatabaseConnection.DBEntry(
                     hash_int,
                     metadata,
-                    chunk, 
+                    chunk,
                 )
             )
-        return len(chunks)
+        
+        await self._db_conn.index(
+            VectorDatabaseConnection.Indexes.KNOWLEDGE,
+            entries
+        )
+        return len(entries)
 
     async def index_from_folder(self, path, max_concurrent_tasks=8): 
         if not os.path.exists(path):
