@@ -1,3 +1,4 @@
+import os
 import io
 import discord
 import traceback
@@ -23,6 +24,13 @@ class DiscordChatHandler(commands.Cog):
             RateLimit(n_messages=100, seconds=2 * 3600),
             RateLimit(n_messages=250, seconds=8 * 3600)
         )
+
+        MEMORIES_PATH = "../knowledge/memories/memories.tar.gz" # TODO: standardize this
+        if os.path.exists(MEMORIES_PATH):
+            self.ai_bot.long_term_memory.vector_db.load(MEMORIES_PATH)
+        else:
+            print(f"No memories found in path '{MEMORIES_PATH}', skipping...")
+
         self.logs = ResponseLogsManager()
         self.message_parser = DiscordMessageParser(self.bot)
         self.ai_bot = ai_bot_data
@@ -137,6 +145,7 @@ class DiscordChatHandler(commands.Cog):
                 pending=pending
             )
         self.ai_bot.long_term_memory.memorize(message)
+        self.ai_bot.long_term_memory.vector_db.save()
         
     async def memorize_discord_message(self, message: discord.Message, *, pending: bool, add_after_id: None | int) -> None:
         to_memorize = await MemorizedMessage.of_discord_message(message)

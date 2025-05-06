@@ -1,16 +1,13 @@
 import discord
 
-from util import bot_config
+from core.util import bot_config
 from discord.ext import commands
-from bot_workflow.ai_bot import CustomBotData
-from ai_apis.providers import ProviderDataStore
-from bot_workflow.profile_loader import ProfileLoader
-from bot_workflow.knowledge import KnowledgeIndex, LongTermMemoryIndex
-from bot_workflow.discord_chat_handler import DiscordChatHandler
+from core.bot_workflow.ai_bot import CustomBotData
+from core.ai_apis.providers import ProviderDataStore
+from core.bot_workflow.profile_loader import ProfileLoader
+from core.bot_workflow.knowledge import KnowledgeIndex, LongTermMemoryIndex
+from core.bot_workflow.discord_chat_handler import DiscordChatHandler
 
-# from commands.rewrite import RewriteCommand
-# from commands.translate import TranslateCommand
-# from commands.search_command import SearchCommand
 from commands.sync_command_tree import SyncCommand
 from commands.image_gen_command import ImageGenCommand
 
@@ -52,7 +49,7 @@ class DiscordBot:
     async def setup_commands(self):
         # await self.bot.add_cog(SearchCommand(bot=self.bot,conn=conn))
         # await self.bot.add_cog(FindClosePreset(presets_manager=await preset_queries.manager(OAICompatibleProviderData(embeddings_client)), bot=self.bot))
-        await self.bot.add_cog(SyncCommand(bot=self.bot, allowed_user_id=688858519486857252))
+        await self.bot.add_cog(SyncCommand(bot=self.bot))
         # await self.bot.add_cog(TranslateCommand(bot=self.bot))
         # await self.bot.add_cog(RewriteCommand(bot=self.bot))
         

@@ -83,3 +83,9 @@ class VectorDatabase:
              return len(deleted_ids)
         except Exception as e:
             raise RuntimeError(f"Failed to delete ids {entry_ids} from subindex '{index_name}'") from e
+        
+    def save(self):
+        self.db_data.save("../memories/memories.tar.gz")
+
+    def load(self, path: str):
+        self.db_data.load(path)
