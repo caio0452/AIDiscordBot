@@ -3,11 +3,11 @@ import logging
 
 from typing import Type, TypeVar
 from dataclasses import dataclass
-from ai_apis.providers import ProviderData
+from core.ai_apis.providers import ProviderData
 from pydantic import BaseModel, model_validator
-from ai_apis.types import LLMRequestParams, Prompt
-from util.environment_vars import parse_api_key_in_config
-from util.model_from_json_loader import ModelFromJSONLoader
+from core.ai_apis.types import LLMRequestParams, Prompt
+from core.util.environment_vars import parse_api_key_in_config
+from core.util.model_from_json_loader import ModelFromJSONLoader
 from pydantic._internal._model_construction import ModelMetaclass
 
 T = TypeVar('T')
