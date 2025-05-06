@@ -26,14 +26,16 @@ class VectorDatabaseConnection:
 
     async def index(self, index: Indexes, data: DBEntry | list[DBEntry]):
         if isinstance(data, list):
+            texts = [entry.text for entry in data]
+            vectors = await self.vectorizer.vectorize(texts)
             to_index = [
                 {
                     "id": entry.id, 
                     "metadata": entry.metadata, 
-                    "vector": await self.vectorizer.vectorize(entry.text), 
+                    "vector": vectors[i],  # Use corresponding vector
                     "text": entry.text
                 }
-                for entry in data
+                for i, entry in enumerate(data)
             ]
             await self._async_client.insert(index.value, to_index)
         else:
