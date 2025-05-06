@@ -4,8 +4,8 @@ import numpy as np
 from typing import Any
 from txtai import Embeddings
 from dataclasses import dataclass
-from ai_apis.providers import ProviderData
-from ai_apis.client import SyncEmbeddingsClient
+from core.ai_apis.providers import ProviderData
+from core.ai_apis.client import SyncEmbeddingsClient
 
 class VectorDatabase:
     @dataclass

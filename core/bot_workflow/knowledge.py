@@ -3,9 +3,9 @@ import os
 import glob
 import asyncio
 
-from ai_apis.providers import ProviderData
-from bot_workflow.vector_db import VectorDatabase
-from bot_workflow.memorized_message import MemorizedMessage
+from core.ai_apis.providers import ProviderData
+from core.bot_workflow.vector_db import VectorDatabase
+from core.bot_workflow.memorized_message import MemorizedMessage
 
 class LongTermMemoryIndex:
     def __init__(self, provider: ProviderData): 
