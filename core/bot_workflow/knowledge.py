@@ -39,7 +39,7 @@ class KnowledgeIndex:
     async def from_provider(provider: ProviderData) -> "KnowledgeIndex":
         vector_db: VectorDatabase = VectorDatabase(provider)
         db_conn = await vector_db.connect()
-        return LongTermMemoryIndex(db_conn)
+        return KnowledgeIndex(db_conn)
     
     @staticmethod
     def chunk_text(text, chunk_size=2000, overlap=400):
