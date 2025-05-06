@@ -9,7 +9,7 @@ from core.ai_apis.providers import ProviderData
 from core.ai_apis.client import SyncEmbeddingsClient
 
 class VectorDatabase:
-    MEMORIES_PATH = "../memories/"
+    MEMORIES_PATH = "../../memories/"
 
     @dataclass
     class Entry:
