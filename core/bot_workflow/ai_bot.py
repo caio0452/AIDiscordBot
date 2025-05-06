@@ -1,10 +1,10 @@
 from functools import wraps
-from ai_apis import providers
-from ai_apis.client import LLMClient
-from ai_apis.types import LLMRequestParams, Prompt
-from bot_workflow.profile_loader import Profile
-from bot_workflow.knowledge import KnowledgeIndex, LongTermMemoryIndex
-from bot_workflow.types import AIBotData, MemorizedMessage, MemorizedMessageHistory, SynchronizedMessageHistory
+from core.ai_apis import providers
+from core.ai_apis.client import LLMClient
+from core.ai_apis.types import LLMRequestParams, Prompt
+from core.bot_workflow.profile_loader import Profile
+from core.bot_workflow.knowledge import KnowledgeIndex, LongTermMemoryIndex
+from core.bot_workflow.types import AIBotData, MemorizedMessage, MemorizedMessageHistory, SynchronizedMessageHistory
 
 import re
 import discord
