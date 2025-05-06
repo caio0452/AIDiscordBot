@@ -6,9 +6,9 @@ import httpx
 import traceback
 from discord import app_commands
 from discord.ext import commands
-from util.rate_limits import RateLimit, RateLimiter
-from ai_apis.client import LLMClient, LLMRequestParams
-from bot_workflow.profile_loader import Profile, FalImageGenModuleConfig
+from core.util.rate_limits import RateLimit, RateLimiter
+from core.ai_apis.client import LLMClient, LLMRequestParams
+from core.bot_workflow.profile_loader import Profile, FalImageGenModuleConfig
 
 class ImageGenCommand(commands.Cog):
     def __init__(self, discord_bot: commands.Bot, bot_profile: Profile, fal_config: FalImageGenModuleConfig) -> None:
