@@ -1,3 +1,4 @@
+import os
 import hashlib
 import numpy as np
 
@@ -8,6 +9,8 @@ from core.ai_apis.providers import ProviderData
 from core.ai_apis.client import SyncEmbeddingsClient
 
 class VectorDatabase:
+    MEMORIES_PATH = "../memories/"
+
     @dataclass
     class Entry:
         data: str
@@ -23,6 +26,7 @@ class VectorDatabase:
             return (self.entry_id, {"text": self.data, "metadata": self.metadata}, None)
         
     def __init__(self, provider: ProviderData):
+        SUBINDEXES = ["knowledge", "memories"]
         self.vectorizer = SyncEmbeddingsClient(provider)
 
         def external_transform(inputs): 
@@ -30,40 +34,53 @@ class VectorDatabase:
             resp = self.vectorizer.vectorize(input=inputs)
             return np.array(resp, dtype=np.float32)
 
-        self.db_data = Embeddings(
-            config={
-                "transform": external_transform,
-                "backend": "faiss", 
-                "content": True,
-                "indexes": {
-                    "knowledge": {},
-                    "memories": {}
-                }
-            }
-        )
-        self.db_data.initindex(False)
+        self._db_data: dict[str, Embeddings]
+        memory_files = [
+            file for file in os.listdir(VectorDatabase.MEMORIES_PATH) 
+            if file.endswith('.tar.gz')
+        ]
 
+        for file in memory_files:
+            index_name = file.removesuffix(".tar.gz")
+            self._db_data[index_name] = Embeddings(
+                config={
+                    "transform": external_transform,
+                    "backend": "faiss", 
+                    "content": True
+                }
+            )
+            self._db_data[index_name].load(VectorDatabase.MEMORIES_PATH + file)
+
+        for subindex in SUBINDEXES:
+            already_loaded_from_file = subindex in self._db_data
+            if already_loaded_from_file:
+                continue
+            self._db_data[subindex] = Embeddings(
+                config={
+                    "transform": external_transform,
+                    "backend": "faiss", 
+                    "content": True
+                }
+            )
+            self._db_data[subindex].initindex(False)
+
+    def all_indexes(self) -> list[Embeddings]:
+        return list(self._db_data.values())
+    
+    def get_index(self, index_name: str) -> Embeddings:
+        return self._db_data[index_name]
+        
     def search(self, data: str, limit: int=5, index_name: str | None = None) -> list[Any]:
+        ret: list[Any] = []
         if index_name is None:
-            ret = self.db_data.search(data, limit=limit)
+            for index in self.all_indexes():
+                ret.append(index.search(data, limit=limit))
         else:
             target_index = self.get_index(index_name)
-            ret = target_index.search(data, limit=limit)
+            return target_index.search(data)
         if not isinstance(ret, list):
             raise ValueError("Search returned unknown non-list item: ", ret)
         return ret
-
-    def get_index(self, index_name: str):
-        indexes = self.db_data.indexes
-        if indexes is None:
-            raise RuntimeError("Vector database has no subindexes")
-        
-        try:
-            return indexes.get(index_name)
-        except KeyError:
-             raise RuntimeError(f"Subindex '{index_name}' not found.")
-        except Exception as e:
-            raise RuntimeError(f"Error while accessing subindex: '{index_name}'") from e
 
     def index(self, index_name: str, entry: Entry):
         self.mass_index(index_name=index_name, entries=[entry])
@@ -86,7 +103,5 @@ class VectorDatabase:
             raise RuntimeError(f"Failed to delete ids {entry_ids} from subindex '{index_name}'") from e
         
     def save(self):
-        self.db_data.save("../memories/memories.tar.gz")
-
-    def load(self, path: str):
-        self.db_data.load(path)
+        for index_name, index in self._db_data.items():
+            index.save(f"{VectorDatabase.MEMORIES_PATH}{index_name}.tar.gz")
