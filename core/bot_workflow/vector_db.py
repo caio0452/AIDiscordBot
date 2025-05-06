@@ -45,7 +45,7 @@ class VectorDatabase:
             self._db_data[index_name] = Embeddings(
                 config={
                     "transform": external_transform,
-                    "backend": "faiss", 
+                    "backend": "numpyu", 
                     "content": True
                 }
             )
@@ -58,7 +58,7 @@ class VectorDatabase:
             self._db_data[subindex] = Embeddings(
                 config={
                     "transform": external_transform,
-                    "backend": "faiss", 
+                    "backend": "numpy", 
                     "content": True
                 }
             )
