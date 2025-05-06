@@ -1,4 +1,5 @@
 import os
+import numpy
 import hashlib
 
 from enum import Enum
@@ -16,7 +17,7 @@ class VectorDatabaseConnection:
         
     @dataclass
     class DBEntry:
-        id: int
+        id: numpy.int64
         metadata: dict
         text: str
 

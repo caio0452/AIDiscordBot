@@ -1,6 +1,7 @@
 import re
 import os
 import glob
+import numpy
 import asyncio
 import hashlib
 
@@ -67,7 +68,7 @@ class KnowledgeIndex:
         entries = []
         for chunk in chunks:
             hash_obj = hashlib.sha256(text.encode('utf-8'))
-            hash_int = int.from_bytes(hash_obj.digest()[:8], byteorder='big', signed=False)
+            hash_int = numpy.int64(int.from_bytes(hash_obj.digest()[:8], byteorder='big', signed=False))
             entries.append(
                 VectorDatabaseConnection.DBEntry(
                     hash_int,
