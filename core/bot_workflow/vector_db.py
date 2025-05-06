@@ -76,7 +76,7 @@ class VectorDatabase:
         self.sync_client = MilvusClient(os.path.join(VectorDatabase.BRAIN_PATH, "brain_content.db"))
 
     async def connect(self) -> VectorDatabaseConnection:
-        async def prepare_collection(name: str):
+        async def make_schema(name: str):
             schema = self.sync_client.create_schema(
                 auto_id=False,
                 description="Brain schema",
@@ -85,6 +85,9 @@ class VectorDatabase:
             schema.add_field("vector", DataType.FLOAT_VECTOR, dim=3072)
             schema.add_field("metadata", DataType.JSON)
             schema.add_field("text", DataType.VARCHAR, max_length=8192)
+            return schema
+
+        async def create_collection_index(name: str):
             index_params = MilvusClient.prepare_index_params()
             index_params.add_index(
                 field_name="vector",
@@ -96,14 +99,14 @@ class VectorDatabase:
                 collection_name=name,
                 index_params=index_params
             )
-            return schema
-
 
         if not self.sync_client.has_collection("knowledge"):
-            knowledge_schema = await prepare_collection("knowledge")
+            knowledge_schema = await make_schema("knowledge")
             await self.async_client.create_collection(collection_name="knowledge", schema=knowledge_schema)
+            await create_collection_index("knowledge")
         if not self.sync_client.has_collection("memories"):
-            memories_schema = await prepare_collection("memories")
+            memories_schema = await make_schema("memories")
             await self.async_client.create_collection(collection_name="memories", schema=memories_schema)
+            await create_collection_index("memories")
         
         return VectorDatabaseConnection(self.async_client, self.sync_client, self.vectorizer)
