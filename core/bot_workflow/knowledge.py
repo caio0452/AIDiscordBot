@@ -12,7 +12,7 @@ class LongTermMemoryIndex:
         self.vector_db: VectorDatabase = VectorDatabase(provider)
 
     def memorize(self, message: MemorizedMessage):
-        self.vector_db.index("memory", 
+        self.vector_db.index("memories", 
             VectorDatabase.Entry(
                 message.text, 
                 {"type": "memory"}, 
