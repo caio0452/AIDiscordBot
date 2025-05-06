@@ -51,7 +51,7 @@ class VectorDatabaseConnection:
     async def search(self, index: Indexes, text: str, limit=5) -> list:
         return await self._async_client.search(
             collection_name=index.value,
-            output_fields=["id", "metadata", "text"],
+            output_fields=["id", "metadata", "vector", "text"],
             data=[await self.vectorizer.vectorize(text)],
             limit=limit
         )
@@ -76,7 +76,7 @@ class VectorDatabase:
         self.sync_client = MilvusClient(os.path.join(VectorDatabase.BRAIN_PATH, "brain_content.db"))
 
     async def connect(self) -> VectorDatabaseConnection:
-        def make_schema(name: str):
+        async def prepare_collection(name: str):
             schema = self.sync_client.create_schema(
                 auto_id=False,
                 description="Brain schema",
@@ -85,13 +85,25 @@ class VectorDatabase:
             schema.add_field("vector", DataType.FLOAT_VECTOR, dim=3072)
             schema.add_field("metadata", DataType.JSON)
             schema.add_field("text", DataType.VARCHAR, max_length=8192)
+            index_params = MilvusClient.prepare_index_params()
+            index_params.add_index(
+                field_name="vector",
+                metric_type="COSINE",
+                index_type="IVF_FLAT",
+                index_name="vector_index"
+            )
+            await self.async_client.create_index(
+                collection_name=name,
+                index_params=index_params
+            )
             return schema
 
+
         if not self.sync_client.has_collection("knowledge"):
-            knowledge_schema = make_schema("knowledge")
+            knowledge_schema = await prepare_collection("knowledge")
             await self.async_client.create_collection(collection_name="knowledge", schema=knowledge_schema)
         if not self.sync_client.has_collection("memories"):
-            memories_schema = make_schema("memories")
+            memories_schema = await prepare_collection("memories")
             await self.async_client.create_collection(collection_name="memories", schema=memories_schema)
         
         return VectorDatabaseConnection(self.async_client, self.sync_client, self.vectorizer)
