@@ -65,7 +65,7 @@ class KnowledgeIndex:
             await self._db_conn.index(
                 VectorDatabaseConnection.Indexes.KNOWLEDGE,
                 VectorDatabaseConnection.DBEntry(
-                    int(hashlib.sha256(text.encode('utf-8')).hexdigest(), 64),
+                    int(hashlib.sha256(text.encode('utf-8')).hexdigest(), 10),
                     metadata,
                     chunk, 
                 )
