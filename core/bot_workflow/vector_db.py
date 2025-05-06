@@ -82,7 +82,7 @@ class VectorDatabase:
                 description="Brain schema",
             )
             schema.add_field("id", DataType.INT64, is_primary=True)
-            schema.add_field("vector", DataType.FLOAT_VECTOR, dim=1536)
+            schema.add_field("vector", DataType.FLOAT_VECTOR, dim=3072)
             schema.add_field("metadata", DataType.JSON)
             schema.add_field("text", DataType.VARCHAR, max_length=8192)
             return schema
