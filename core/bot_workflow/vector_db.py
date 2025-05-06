@@ -52,7 +52,7 @@ class VectorDatabaseConnection:
         return await self._async_client.search(
             collection_name=index.value,
             output_fields=["id", "metadata", "vector", "text"],
-            data=await self.vectorizer.vectorize(text),
+            data=[await self.vectorizer.vectorize(text)],
             limit=limit
         )
 
