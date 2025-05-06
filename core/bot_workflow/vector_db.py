@@ -41,6 +41,7 @@ class VectorDatabase:
                 }
             }
         )
+        self.db_data.initindex(False)
 
     def search(self, data: str, limit: int=5, index_name: str | None = None) -> list[Any]:
         if index_name is None:
@@ -58,7 +59,7 @@ class VectorDatabase:
             raise RuntimeError("Vector database has no subindexes")
         
         try:
-            return indexes.get(index_name) # Use get for safer access
+            return indexes.get(index_name)
         except KeyError:
              raise RuntimeError(f"Subindex '{index_name}' not found.")
         except Exception as e:
