@@ -5,11 +5,11 @@ import traceback
 
 from typing import Tuple
 from discord.ext import commands
-from util.rate_limits import RateLimiter, RateLimit
-from bot_workflow.response_logs import ResponseLogsManager
-from bot_workflow.memorized_message import MemorizedMessage
-from bot_workflow.ai_bot import CustomBotData, DiscordBotResponse
-from bot_workflow.discord_message_parser import DiscordMessageParser, DenialReason, SpecialFunctionFlags
+from core.util.rate_limits import RateLimiter, RateLimit
+from core.bot_workflow.response_logs import ResponseLogsManager
+from core.bot_workflow.memorized_message import MemorizedMessage
+from core.bot_workflow.ai_bot import CustomBotData, DiscordBotResponse
+from core.bot_workflow.discord_message_parser import DiscordMessageParser, DenialReason, SpecialFunctionFlags
 
 MSG_LOG_FILE_REPLY = "Verbose logs for message ID {} attached (only last 10 are stored)"
 MSG_INVALID_LOG_REQUEST = ":x: Expected a message ID before --l, not '{}'"
