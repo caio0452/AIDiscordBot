@@ -45,20 +45,20 @@ class EmbeddingsClient:
 
 class SyncEmbeddingsClient:
     def __init__(self, provider: ProviderData):
-        self.client = openai.OpenAI(
+        self.openai_client = openai.OpenAI(
             api_key=provider.api_key, 
             base_url=provider.api_base
         )
 
     def vectorize(self, input: str | list[str], model="text-embedding-3-large") -> list[float] | list[list[float]]:
         if isinstance(input, str):
-            response = self.client.embeddings.create(
+            response = self.openai_client.embeddings.create(
                 input=input,
                 model=model
             )
             return response.data[0].embedding
         elif isinstance(input, list):
-            response = self.client.embeddings.create(
+            response = self.openai_client.embeddings.create(
                 input=input,
                 model=model
             )

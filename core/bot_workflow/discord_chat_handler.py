@@ -137,8 +137,7 @@ class DiscordChatHandler(commands.Cog):
                 message,
                 pending=pending
             )
-        self.ai_bot.long_term_memory.memorize(message)
-        self.ai_bot.long_term_memory.vector_db.save()
+        await self.ai_bot.long_term_memory.memorize(message)
         
     async def memorize_discord_message(self, message: discord.Message, *, pending: bool, add_after_id: None | int) -> None:
         to_memorize = await MemorizedMessage.of_discord_message(message)
@@ -147,7 +146,7 @@ class DiscordChatHandler(commands.Cog):
             pending=pending,
             add_after_id=add_after_id
         )
-        self.ai_bot.long_term_memory.memorize(to_memorize)
+        await self.ai_bot.long_term_memory.memorize(to_memorize)
 
     async def handle_error(self, message: discord.Message, reply: discord.Message, error: Exception):
         # TODO: implement message forgetting

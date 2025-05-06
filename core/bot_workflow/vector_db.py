@@ -1,15 +1,60 @@
 import os
 import hashlib
-import numpy as np
 
+from enum import Enum
 from typing import Any
-from txtai import Embeddings
 from dataclasses import dataclass
 from core.ai_apis.providers import ProviderData
-from core.ai_apis.client import SyncEmbeddingsClient
+from core.ai_apis.client import EmbeddingsClient
+from pymilvus import MilvusClient, AsyncMilvusClient, DataType
+
+class VectorDatabaseConnection:
+    def __init__(self, _async_client: AsyncMilvusClient, _sync_client: MilvusClient, vectorizer: EmbeddingsClient):
+        self._sync_client = _sync_client
+        self._async_client = _async_client
+        self.vectorizer = vectorizer
+        
+    @dataclass
+    class DBEntry:
+        id: int
+        metadata: dict
+        text: str
+
+    class Indexes(Enum):
+        KNOWLEDGE = "knowledge"
+        MEMORIES = "memories"
+
+    async def index(self, index: Indexes, data: DBEntry | list[DBEntry]):
+        if isinstance(data, list):
+            to_index = [
+                {
+                    "id": entry.id, 
+                    "metadata": entry.metadata, 
+                    "vector": await self.vectorizer.vectorize(entry.text), 
+                    "text": entry.text
+                }
+                for entry in data
+            ]
+            await self._async_client.insert(index.value, to_index)
+        else:
+            to_index = {
+                "id": data.id, 
+                "metadata": data.metadata, 
+                "vector": await self.vectorizer.vectorize(data.text), 
+                "text": data.text
+            }
+            await self._async_client.insert(index.value, to_index)
+
+    async def search(self, index: Indexes, text: str, limit=5) -> list:
+        return await self._async_client.search(
+            collection_name=index.value,
+            output_fields=["id", "metadata", "vector", "text"],
+            data=await self.vectorizer.vectorize(text),
+            limit=limit
+        )
 
 class VectorDatabase:
-    MEMORIES_PATH = os.path.join(os.getcwd(), 'memories')
+    BRAIN_PATH = os.path.join(os.getcwd(), 'brain_content')
 
     @dataclass
     class Entry:
@@ -21,87 +66,29 @@ class VectorDatabase:
             if self.entry_id is None:
                 combined = self.data + str(self.metadata)
                 self.entry_id = int(hashlib.sha256(combined.encode()).hexdigest(), 16) & 0x7FFFFFFF
-
-        def as_txtai_object(self) -> tuple:
-            return (self.entry_id, {"text": self.data, "metadata": self.metadata}, None)
         
     def __init__(self, provider: ProviderData):
-        SUBINDEXES = ["knowledge", "memories"]
-        self.vectorizer = SyncEmbeddingsClient(provider)
+        self.vectorizer = EmbeddingsClient(provider)
+        self.async_client = AsyncMilvusClient(os.path.join(VectorDatabase.BRAIN_PATH, "brain_content.db"))
+        self.sync_client = MilvusClient(os.path.join(VectorDatabase.BRAIN_PATH, "brain_content.db"))
 
-        def external_transform(inputs): 
-            # TODO: this is sync. Is that a concern?
-            resp = self.vectorizer.vectorize(input=inputs)
-            return np.array(resp, dtype=np.float32)
-
-        self._db_data: dict[str, Embeddings] = {}
-        memory_files = [
-            file for file in os.listdir(VectorDatabase.MEMORIES_PATH) 
-            if file.endswith('.tar.gz')
-        ]
-
-        for file in memory_files:
-            index_name = file.removesuffix(".tar.gz")
-            self._db_data[index_name] = Embeddings(
-                config={
-                    "transform": external_transform,
-                    "backend": "numpyu", 
-                    "content": True
-                }
+    async def connect(self) -> VectorDatabaseConnection:
+        def make_schema(name: str):
+            schema = self.sync_client.create_schema(
+                auto_id=False,
+                description="Brain schema",
             )
-            self._db_data[index_name].load(VectorDatabase.MEMORIES_PATH + file)
+            schema.add_field("id", DataType.INT64, is_primary=True)
+            schema.add_field("vector", DataType.FLOAT_VECTOR, dim=1536)
+            schema.add_field("metadata", DataType.JSON)
+            schema.add_field("text", DataType.VARCHAR, max_length=8192)
+            return schema
 
-        for subindex in SUBINDEXES:
-            already_loaded_from_file = subindex in self._db_data
-            if already_loaded_from_file:
-                continue
-            self._db_data[subindex] = Embeddings(
-                config={
-                    "transform": external_transform,
-                    "backend": "numpy", 
-                    "content": True
-                }
-            )
-            self._db_data[subindex].initindex(False)
-
-    def all_indexes(self) -> list[Embeddings]:
-        return list(self._db_data.values())
-    
-    def get_index(self, index_name: str) -> Embeddings:
-        return self._db_data[index_name]
+        if not self.sync_client.has_collection("knowledge"):
+            knowledge_schema = make_schema("knowledge")
+            await self.async_client.create_collection(collection_name="knowledge", schema=knowledge_schema)
+        if not self.sync_client.has_collection("memories"):
+            memories_schema = make_schema("memories")
+            await self.async_client.create_collection(collection_name="memories", schema=memories_schema)
         
-    def search(self, data: str, limit: int=5, index_name: str | None = None) -> list[Any]:
-        ret: list[Any] = []
-        if index_name is None:
-            for index in self.all_indexes():
-                ret.append(index.search(data, limit=limit))
-        else:
-            target_index = self.get_index(index_name)
-            return target_index.search(data)
-        if not isinstance(ret, list):
-            raise ValueError("Search returned unknown non-list item: ", ret)
-        return ret
-
-    def index(self, index_name: str, entry: Entry):
-        self.mass_index(index_name=index_name, entries=[entry])
-
-    def mass_index(self, index_name: str, entries: list[Entry]):
-        target_index = self.get_index(index_name)
-        items_to_index = [entry.as_txtai_object() for entry in entries]
-        
-        try:
-            target_index.index(items_to_index)
-        except Exception as e:
-            raise RuntimeError(f"Failed to index data into subindex '{index_name}'") from e
-
-    def delete_ids(self, *, index_name: str, entry_ids: list[int]) -> int:
-        target_index = self.get_index(index_name)
-        try:
-             deleted_ids = target_index.delete(entry_ids)
-             return len(deleted_ids)
-        except Exception as e:
-            raise RuntimeError(f"Failed to delete ids {entry_ids} from subindex '{index_name}'") from e
-        
-    def save(self):
-        for index_name, index in self._db_data.items():
-            index.save(f"{VectorDatabase.MEMORIES_PATH}{index_name}.tar.gz")
+        return VectorDatabaseConnection(self.async_client, self.sync_client, self.vectorizer)

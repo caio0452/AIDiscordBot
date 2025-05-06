@@ -147,7 +147,7 @@ class DiscordBotResponse:
     async def info_select(self, user_query: str) -> str | None:
         NAME = "INFO_SELECT"
         user_prompt_str = ""
-        knowledge_list = self.bot_data.knowledge.retrieve(user_query)
+        knowledge_list = await self.bot_data.knowledge.retrieve(user_query)
 
         if len(knowledge_list) == 0:
             return None
@@ -190,7 +190,7 @@ class DiscordBotResponse:
             else:
                 full_prompt.append(Prompt.user_msg(memorized_message.text))
 
-        for msg in self.bot_data.long_term_memory.get_closest_messages(user_query):
+        for msg in await self.bot_data.long_term_memory.get_closest_messages(user_query):
             print(msg) # TODO: debug - remove
             old_memories += str(msg) # TODO: establish a type for this
 

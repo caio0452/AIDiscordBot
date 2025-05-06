@@ -1,12 +1,13 @@
 import discord
 
-from core.util import bot_config
 from discord.ext import commands
+
+from core.util import bot_config
 from core.bot_workflow.ai_bot import CustomBotData
 from core.ai_apis.providers import ProviderDataStore
 from core.bot_workflow.profile_loader import ProfileLoader
-from core.bot_workflow.knowledge import KnowledgeIndex, LongTermMemoryIndex
 from core.bot_workflow.discord_chat_handler import DiscordChatHandler
+from core.bot_workflow.knowledge import KnowledgeIndex, LongTermMemoryIndex
 
 from commands.sync_command_tree import SyncCommand
 from commands.image_gen_command import ImageGenCommand
@@ -17,15 +18,16 @@ class DiscordBot:
         intents.message_content = True
         self.bot = commands.Bot(command_prefix='paper!', intents=intents)
         self.profile = ProfileLoader("profile.json").load_profile()
-        embeddings_provider = self.profile.providers["EMBEDDINGS"]
-        self.knowledge = KnowledgeIndex(embeddings_provider)
-        self.long_term_memory = LongTermMemoryIndex(embeddings_provider)
         self.bot.event(self.on_ready)
 
     def run(self):
         self.bot.run(bot_config.BOT_TOKEN)
 
     async def setup_chatbot(self):
+        embeddings_provider = self.profile.providers["EMBEDDINGS"]
+        self.knowledge = await KnowledgeIndex.from_provider(embeddings_provider)
+        self.long_term_memory = await LongTermMemoryIndex.from_provider(embeddings_provider)
+    
         provider_list = [self.profile.providers[k] for k, v in self.profile.providers.items()]
         provider_store = ProviderDataStore(
             providers=provider_list

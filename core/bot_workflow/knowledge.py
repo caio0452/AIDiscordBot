@@ -2,31 +2,45 @@ import re
 import os
 import glob
 import asyncio
+import hashlib
 
 from core.ai_apis.providers import ProviderData
-from core.bot_workflow.vector_db import VectorDatabase
+from core.bot_workflow.vector_db import VectorDatabase, VectorDatabaseConnection
 from core.bot_workflow.memorized_message import MemorizedMessage
 
 class LongTermMemoryIndex:
-    def __init__(self, provider: ProviderData): 
-        self.vector_db: VectorDatabase = VectorDatabase(provider)
+    def __init__(self, _db_conn: VectorDatabaseConnection): 
+        self._db_conn: VectorDatabaseConnection = None
 
-    def memorize(self, message: MemorizedMessage):
-        self.vector_db.index("memories", 
-            VectorDatabase.Entry(
+    @staticmethod
+    async def from_provider(provider: ProviderData) -> "LongTermMemoryIndex":
+        vector_db: VectorDatabase = VectorDatabase(provider)
+        db_conn = await vector_db.connect()
+        return LongTermMemoryIndex(db_conn)
+
+    async def memorize(self, message: MemorizedMessage):
+        await self._db_conn.index(
+            VectorDatabaseConnection.Indexes.KNOWLEDGE,
+            VectorDatabaseConnection.DBEntry(
+                message.message_id,
+                 {"type": "memory"},
                 message.text, 
-                {"type": "memory"}, 
-                message.message_id
             )
         )
 
-    def get_closest_messages(self, reference: str, *, n=5) -> list:
-        return self.vector_db.search(reference, n)
+    async def get_closest_messages(self, reference: str, *, n=5) -> list:
+        return await self._db_conn.search(VectorDatabaseConnection.Indexes.MEMORIES, reference, n)
 
 class KnowledgeIndex:
-    def __init__(self, provider): 
-        self.vector_db = VectorDatabase(provider)
+    def __init__(self, _db_conn: VectorDatabaseConnection): 
+        self._db_conn: VectorDatabaseConnection = None
 
+    @staticmethod
+    async def from_provider(provider: ProviderData) -> "KnowledgeIndex":
+        vector_db: VectorDatabase = VectorDatabase(provider)
+        db_conn = await vector_db.connect()
+        return LongTermMemoryIndex(db_conn)
+    
     @staticmethod
     def chunk_text(text, chunk_size=2000, overlap=400):
         chunks = []
@@ -45,19 +59,18 @@ class KnowledgeIndex:
             start += chunk_size
         return chunks
 
-    async def index_text(self, text, *, metadata={"type": "knowledge"}):
-        for chunk in KnowledgeIndex.chunk_text(text):
-            self.vector_db.index(
-                "knowledge",
-                VectorDatabase.Entry(
-                    data=chunk, 
-                    metadata=metadata,
-                    entry_id=None
-                ))
-
-    async def index_texts(self, texts: list[str], *, metadata: dict = {"type": "knowledge"}):
-        entries = [VectorDatabase.Entry(text, metadata, None) for text in texts]
-        self.vector_db.mass_index("knowledge", entries)
+    async def chunk_and_index(self, text: str, *, metadata={"type": "knowledge"}) -> int:
+        chunks = KnowledgeIndex.chunk_text(text)
+        for chunk in chunks:
+            await self._db_conn.index(
+                VectorDatabaseConnection.Indexes.KNOWLEDGE,
+                VectorDatabaseConnection.DBEntry(
+                    int(hashlib.sha256(text.encode('utf-8')).hexdigest(), 64),
+                    metadata,
+                    chunk, 
+                )
+            )
+        return len(chunks)
 
     async def index_from_folder(self, path, max_concurrent_tasks=8): 
         if not os.path.exists(path):
@@ -78,9 +91,8 @@ class KnowledgeIndex:
         async def process_file(file_path):
             with open(file_path, 'r') as file:
                 text = file.read()
-                chunks = KnowledgeIndex.chunk_text(text)
-                await self.index_texts(chunks)
-                return len(chunks)
+                n_chunks = await self.chunk_and_index(text)
+                return n_chunks
 
         tasks = [process_file(file) for file in txt_files]
         results = await asyncio.gather(*tasks, return_exceptions=True)
@@ -95,5 +107,9 @@ class KnowledgeIndex:
 
         print(f"Total chunks indexed: {total_chunks}")
 
-    def retrieve(self, related_text):
-        return self.vector_db.search(related_text)
+    def retrieve(self, related_text: str, n=5):
+        return self._db_conn.search(
+            VectorDatabaseConnection.Indexes.KNOWLEDGE, 
+            related_text, 
+            n
+        )
