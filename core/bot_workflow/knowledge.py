@@ -10,7 +10,7 @@ from core.bot_workflow.memorized_message import MemorizedMessage
 
 class LongTermMemoryIndex:
     def __init__(self, _db_conn: VectorDatabaseConnection): 
-        self._db_conn: VectorDatabaseConnection = None
+        self._db_conn = _db_conn
 
     @staticmethod
     async def from_provider(provider: ProviderData) -> "LongTermMemoryIndex":
@@ -33,7 +33,7 @@ class LongTermMemoryIndex:
 
 class KnowledgeIndex:
     def __init__(self, _db_conn: VectorDatabaseConnection): 
-        self._db_conn: VectorDatabaseConnection = None
+        self._db_conn = _db_conn
 
     @staticmethod
     async def from_provider(provider: ProviderData) -> "KnowledgeIndex":
