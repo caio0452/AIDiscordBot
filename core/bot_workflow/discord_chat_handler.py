@@ -153,4 +153,4 @@ class DiscordChatHandler(commands.Cog):
         # await self.forget_message(message)
         # await self.forget_message(reply)
         traceback.print_exc()
-        await reply.edit(content=f"There was an error: ```{str(error)}```") # TODO: send lang message if possible
+        await reply.edit(content=f"There was an error: ```{str(error)[:1000]}```") # TODO: send lang message if possible
