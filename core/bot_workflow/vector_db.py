@@ -34,7 +34,7 @@ class VectorDatabase:
             resp = self.vectorizer.vectorize(input=inputs)
             return np.array(resp, dtype=np.float32)
 
-        self._db_data: dict[str, Embeddings]
+        self._db_data: dict[str, Embeddings] = {}
         memory_files = [
             file for file in os.listdir(VectorDatabase.MEMORIES_PATH) 
             if file.endswith('.tar.gz')
