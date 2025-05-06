@@ -63,7 +63,7 @@ class VectorDatabase:
         except KeyError:
              raise RuntimeError(f"Subindex '{index_name}' not found.")
         except Exception as e:
-            raise RuntimeError(f"Error while accessign subindex: '{index_name}'") from e
+            raise RuntimeError(f"Error while accessing subindex: '{index_name}'") from e
 
     def index(self, index_name: str, entry: Entry):
         self.mass_index(index_name=index_name, entries=[entry])
