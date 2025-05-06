@@ -62,10 +62,12 @@ class KnowledgeIndex:
     async def chunk_and_index(self, text: str, *, metadata={"type": "knowledge"}) -> int:
         chunks = KnowledgeIndex.chunk_text(text)
         for chunk in chunks:
+            hash_obj = hashlib.sha256(text.encode('utf-8'))
+            hash_int = int.from_bytes(hash_obj.digest()[:8], byteorder='big', signed=False)
             await self._db_conn.index(
                 VectorDatabaseConnection.Indexes.KNOWLEDGE,
                 VectorDatabaseConnection.DBEntry(
-                    int(hashlib.sha256(text.encode('utf-8')).hexdigest(), 10),
+                    hash_int,
                     metadata,
                     chunk, 
                 )
