@@ -147,14 +147,15 @@ class DiscordBotResponse:
     async def info_select(self, user_query: str) -> str | None:
         NAME = "INFO_SELECT"
         user_prompt_str = ""
-        knowledge_list = await self.bot_data.knowledge.retrieve(user_query)
+        hits_list = await self.bot_data.knowledge.retrieve(user_query)
 
-        if len(knowledge_list) == 0:
+        if len(hits_list) == 0:
             return None
 
-        for knowledge in knowledge_list:
-            text_content: str = knowledge["entity"]["text"]
-            user_prompt_str += f"INFO:n{text_content}"
+        for hits in hits_list:
+            for hit in hits:
+                text_content: str = hit[0]["text"]
+                user_prompt_str += f"INFO:\n{text_content}"
 
         user_prompt_str += "QUERY: " + user_query
         prompt = self._get_prompt(NAME) \
