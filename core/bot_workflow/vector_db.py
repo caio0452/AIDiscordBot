@@ -33,7 +33,7 @@ class VectorDatabaseConnection:
                 {
                     "id": entry.id, 
                     "metadata": entry.metadata, 
-                    "vector": vectors[i],  # Use corresponding vector
+                    "vector": vectors[i], 
                     "text": entry.text
                 }
                 for i, entry in enumerate(data)
@@ -48,10 +48,10 @@ class VectorDatabaseConnection:
             }
             await self._async_client.insert(index.value, to_index)
 
-    async def search(self, index: Indexes, text: str, limit=5) -> list:
+    async def search(self, index: Indexes, text: str, limit=5) -> list[list[dict]]:
         return await self._async_client.search(
             collection_name=index.value,
-            output_fields=["id", "metadata", "vector", "text"],
+            output_fields=["id", "metadata", "text"],
             data=[await self.vectorizer.vectorize(text)],
             limit=limit
         )
