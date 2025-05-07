@@ -48,7 +48,7 @@ class VectorDatabaseConnection:
             }
             await self._async_client.insert(index.value, to_index)
 
-    async def search(self, index: Indexes, text: str, limit=5) -> list[list[dict]]:
+    async def search(self, index: Indexes, text: str, limit=5) -> list[dict]:
         return await self._async_client.search(
             collection_name=index.value,
             output_fields=["id", "metadata", "text"],

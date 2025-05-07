@@ -153,7 +153,7 @@ class DiscordBotResponse:
             return None
 
         for knowledge in knowledge_list:
-            text_content: str = knowledge["text"]
+            text_content: str = knowledge["entity"]["text"]
             user_prompt_str += f"INFO:n{text_content}"
 
         user_prompt_str += "QUERY: " + user_query
