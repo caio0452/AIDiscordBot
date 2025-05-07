@@ -146,7 +146,7 @@ class DiscordBotResponse:
     @response_step("INFO_SELECT")
     async def info_select(self, user_query: str) -> str | None:
         NAME = "INFO_SELECT"
-        user_prompt_str = ""
+        available_info = ""
         hits_list = await self.bot_data.knowledge.retrieve(user_query)
 
         if len(hits_list) == 0:
@@ -154,13 +154,12 @@ class DiscordBotResponse:
 
         for hits in hits_list:
             for hit in hits:
-                text_content: str = hit["text"]
-                user_prompt_str += f"INFO:\n{text_content}"
+                available_info += hit["text"] + "\n"
 
-        user_prompt_str += "QUERY: " + user_query
         prompt = self._get_prompt(NAME) \
             .replace({
-                "user_query": user_prompt_str
+                "user_query": user_query,
+                "available_info": available_info
             })
         response = await self.send_llm_request(
             name=NAME,
@@ -184,7 +183,7 @@ class DiscordBotResponse:
         else:
             knowledge_str = ""
             self.logger.verbose("The knowledge database has nothing relevant", category="INFO FROM KNOWLEDGE DB")
-
+        
         for memorized_message in memory_snapshot.as_list():
             if memorized_message.is_bot:
                 full_prompt.append(Prompt.assistant_msg(memorized_message.text))
@@ -192,7 +191,6 @@ class DiscordBotResponse:
                 full_prompt.append(Prompt.user_msg(memorized_message.text))
 
         for msg in await self.bot_data.long_term_memory.get_closest_messages(user_query):
-            print(msg) # TODO: debug - remove
             old_memories += str(msg) # TODO: establish a type for this
 
         img_desc = await self.describe_image_if_present(original_msg)
