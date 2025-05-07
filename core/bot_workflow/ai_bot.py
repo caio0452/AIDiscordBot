@@ -154,7 +154,7 @@ class DiscordBotResponse:
 
         for hits in hits_list:
             for hit in hits:
-                text_content: str = hit[0]["text"]
+                text_content: str = hit["text"]
                 user_prompt_str += f"INFO:\n{text_content}"
 
         user_prompt_str += "QUERY: " + user_query
