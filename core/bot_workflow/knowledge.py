@@ -21,7 +21,7 @@ class LongTermMemoryIndex:
 
     async def memorize(self, message: MemorizedMessage):
         await self._db_conn.index(
-            VectorDatabaseConnection.Indexes.KNOWLEDGE,
+            VectorDatabaseConnection.Indexes.MEMORIES,
             VectorDatabaseConnection.DBEntry(
                 message.message_id,
                  {"type": "memory"},
