@@ -1,5 +1,5 @@
-from abc import ABC
 import asyncio
+from abc import ABC
 from core.bot_workflow.memorized_message import MemorizedMessage
 
 class MemorizedMessageHistory:

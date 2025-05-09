@@ -6,8 +6,8 @@ import asyncio
 import hashlib
 
 from core.ai_apis.providers import ProviderData
-from core.bot_workflow.vector_db import VectorDatabase, VectorDatabaseConnection
 from core.bot_workflow.memorized_message import MemorizedMessage
+from core.bot_workflow.vector_db import VectorDatabase, VectorDatabaseConnection
 
 class LongTermMemoryIndex:
     def __init__(self, _db_conn: VectorDatabaseConnection): 
@@ -23,7 +23,7 @@ class LongTermMemoryIndex:
         await self._db_conn.index(
             VectorDatabaseConnection.Indexes.MEMORIES,
             VectorDatabaseConnection.DBEntry(
-                message.message_id,
+                numpy.int64(message.message_id),
                  {"type": "memory"},
                 message.text, 
             )

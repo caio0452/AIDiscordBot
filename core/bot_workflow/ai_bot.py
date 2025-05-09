@@ -1,37 +1,15 @@
-from core.ai_apis import providers
-from core.bot_workflow.response_logs import ResponseLogger
 from core.ai_apis.client import LLMClient
-from core.bot_workflow.profile_loader import Profile
 from core.ai_apis.types import LLMRequestParams, Prompt
-from core.bot_workflow.knowledge import KnowledgeIndex, LongTermMemoryIndex
+from core.bot_workflow.response_logs import ResponseLogger
+from core.bot_workflow.custom_bot_data import CustomBotData
+from core.bot_workflow.types import MemorizedMessage, MemorizedMessageHistory
 from core.bot_workflow.response_steps import PersonalityRewriteStep, RelevantInfoSelectStep, UserQueryRephraseStep
-from core.bot_workflow.types import AIBotData, MemorizedMessage, MemorizedMessageHistory, SynchronizedMessageHistory
 
 import re
 import discord
 import datetime
 import traceback
 
-class CustomBotData(AIBotData):
-    def __init__(self,
-                 *,
-                 name: str,
-                 profile: Profile,
-                 provider_store: providers.ProviderDataStore,
-                 knowledge: KnowledgeIndex,
-                 long_term_memory: LongTermMemoryIndex,
-                 discord_bot_id: int,
-                 memory_length: int
-                ):
-        super().__init__(name, MemorizedMessageHistory(memory_length=memory_length))
-        self.profile = profile
-        self.provider_store = provider_store
-        self.discord_bot_id = discord_bot_id
-        self.long_term_memory = long_term_memory
-        self.recent_history = SynchronizedMessageHistory()
-        self.knowledge = knowledge 
-        self.RECENT_MEMORY_LENGTH = profile.recent_message_history_length
-    
 class DiscordBotResponse:
     def __init__(self, bot_data: CustomBotData, verbose: bool=False):
         self.verbose = verbose
