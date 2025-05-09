@@ -2,9 +2,9 @@ import discord
 
 from discord.ext import commands
 
-from core.util import bot_config
 from core.bot_workflow.ai_bot import CustomBotData
 from core.ai_apis.providers import ProviderDataStore
+from core.util.environment_vars import get_environment_var
 from core.bot_workflow.profile_loader import ProfileLoader
 from core.bot_workflow.discord_chat_handler import DiscordChatHandler
 from core.bot_workflow.knowledge import KnowledgeIndex, LongTermMemoryIndex
@@ -21,7 +21,8 @@ class DiscordBot:
         self.bot.event(self.on_ready)
 
     def run(self):
-        self.bot.run(bot_config.BOT_TOKEN)
+        bot_token = get_environment_var('AI_BOT_TOKEN', required=True)
+        self.bot.run(bot_token)
 
     async def setup_chatbot(self):
         embeddings_provider = self.profile.providers["EMBEDDINGS"]

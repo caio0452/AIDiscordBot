@@ -6,7 +6,7 @@ from pydantic import BaseModel, Field
 
 OpenAIMessage = dict[str, list | str | dict]
 
-class Prompt(BaseModel):
+class Prompt(BaseModel, frozen=True):
     messages: list[OpenAIMessage] = Field(...)
 
     @staticmethod
@@ -14,7 +14,7 @@ class Prompt(BaseModel):
         return {"role": "system", "content": content}
 
     def append(self, message: OpenAIMessage):
-        self.messages.append(message)
+        return Prompt(messages=self.messages + [message])
 
     @staticmethod
     def user_msg(content: str, image_url: str | None = None) -> OpenAIMessage:
@@ -66,12 +66,12 @@ class Prompt(BaseModel):
                 modified_message = replace_all_in_dict(modified_message, formatted_placeholder, replacement)
             modified_messages.append(modified_message)
 
-        return self.__class__(messages=modified_messages)
+        return Prompt(messages=modified_messages)
 
     def to_openai_format(self) -> list[OpenAIMessage]:
         return self.messages
 
-class LLMRequestParams(BaseModel):
+class LLMRequestParams(BaseModel, frozen=True):
     model_name: str
     temperature: float = 0.5
     max_tokens: int = 300

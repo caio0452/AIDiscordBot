@@ -8,7 +8,6 @@ from pydantic import BaseModel, model_validator
 from core.ai_apis.types import LLMRequestParams, Prompt
 from core.util.environment_vars import parse_api_key_in_config
 from core.util.model_from_json_loader import ModelFromJSONLoader
-from pydantic._internal._model_construction import ModelMetaclass
 
 T = TypeVar('T')
 
@@ -31,13 +30,23 @@ class Profile:
     botname: str
     recent_message_history_length: int
     has_long_term_memory: bool
-    prompts: dict[str, Prompt]
+    _prompts: dict[str, Prompt]
     request_params: dict[str, LLMRequestParams]
     lang: dict[str, str]
     providers: dict[str, ProviderData]
     regex_replacements: dict[str, str]
     fal_image_gen_config: FalImageGenModuleConfig
     llm_fallbacks: list[str]
+    enable_personality_rewrite: bool
+    enable_knowledge_retrieval: bool
+    enable_long_term_memory: bool
+    enable_image_viewing: bool
+
+    def get_prompt(self, name: str) -> Prompt:
+        if name in self._prompts:
+            return self._prompts[name].model_copy(deep=True) # TODO: is a deep copy necessary?
+        else:
+            raise ValueError(f"Request prompt '{name}' does not exist")
 
 class ProfileLoader:
     def __init__(self, filename: str):
@@ -52,47 +61,64 @@ class ProfileLoader:
             raise
 
     def load_profile(self) -> Profile:
-        bot_name = self.safe_get(
+        bot_name = self.get_simple_type(
             path=["profile", "parameters", "botname"], required_type=str
         )
-        recent_message_history_length = self.safe_get(
+        recent_message_history_length = self.get_simple_type(
             path=["profile", "parameters", "recent_message_history_length"], required_type=int
         )
-        has_long_term_memory = self.safe_get(
+        has_long_term_memory = self.get_simple_type(
             path=["profile", "parameters", "has_long_term_memory"], required_type=bool
         )
-        llm_fallbacks = self.safe_get(
+        llm_fallbacks = self.get_simple_type(
             path=["profile", "parameters", "llm_fallbacks"], required_type=list
         )
-        lang = self.safe_get(
+        lang = self.get_simple_type(
             path=["profile", "lang"], required_type=dict
         )
-        regex_replacements = self.safe_get(
+        regex_replacements = self.get_simple_type(
             path=["profile", "regex_replacements"], required_type=dict
         )
-        prompts: dict[str, Prompt] = self.safe_get_dict_of_model(
+        prompts: dict[str, Prompt] = self.get_dict_of_model(
             path=["profile", "prompts"], required_type=Prompt
         )
-        request_params: dict[str, LLMRequestParams] = self.safe_get_dict_of_model(
+        request_params: dict[str, LLMRequestParams] = self.get_dict_of_model(
             path=["profile", "request_params"], required_type=LLMRequestParams
         )
-        providers: dict[str, ProviderData] = self.safe_get_dict_of_model(
+        providers: dict[str, ProviderData] = self.get_dict_of_model(
             path=["profile", "providers"], required_type=ProviderData
         )
-        fal_image_gen_config: FalImageGenModuleConfig = self.safe_get_model(
-            path=["profile", 'fal_image_gen_config'], required_type=FalImageGenModuleConfig
+        fal_image_gen_config: FalImageGenModuleConfig = self.get_model(
+            path=["profile", "fal_image_gen_config"], required_type=FalImageGenModuleConfig
         )
+        enable_personality_rewrite: bool = self.get_simple_type(
+            path=["profile", "enable_personality_rewrite"], required_type=bool
+        )
+        enable_knowledge_retrieval: bool = self.get_simple_type(
+            path=["profile", "enable_knowledge_retrieval"], required_type=bool
+        )
+        enable_long_term_memory: bool = self.get_simple_type(
+            path=["profile", "enable_long_term_memory"], required_type=bool
+        )
+        enable_image_viewing: bool = self.get_simple_type(
+            path=["profile", "enable_image_viewing"], required_type=bool
+        )
+
         return Profile(
             botname=bot_name,
             recent_message_history_length=recent_message_history_length,
             has_long_term_memory=has_long_term_memory,
-            prompts=prompts,
+            _prompts=prompts,
             lang=lang,
             request_params=request_params,
             providers=providers,
             regex_replacements=regex_replacements,
             fal_image_gen_config=fal_image_gen_config,
-            llm_fallbacks=llm_fallbacks
+            llm_fallbacks=llm_fallbacks,
+            enable_personality_rewrite=enable_personality_rewrite,
+            enable_knowledge_retrieval=enable_knowledge_retrieval,
+            enable_long_term_memory=enable_long_term_memory,
+            enable_image_viewing=enable_image_viewing
         )
 
     def _get_raw(self, *, path: list[str], required: bool) -> dict | None:
@@ -128,7 +154,7 @@ class ProfileLoader:
                 raise KeyError(f"Error when trying to load key '{path[-1]}', it was not found in the profile JSON. Make sure the key is present under {str(path)}")
             return None
 
-    def safe_get_dict_of_model(self, *, path: list[str], required_type: Type[T]) -> dict[str, T]:
+    def get_dict_of_model(self, *, path: list[str], required_type: Type[T]) -> dict[str, T]:
         """
         Safely retrieves and converts a dictionary from the JSON structure into a dictionary of Pydantic models.
         
@@ -156,13 +182,13 @@ class ProfileLoader:
         if current is None:
             raise KeyError(f"Could not get path {str(path)}")
 
-        if not isinstance(required_type, ModelMetaclass):
+        if not issubclass(required_type, BaseModel):
             raise ValueError(f"Requested type {required_type} is not a valid Pydantic BaseModel")
 
         json_as_str = json.dumps(current) # TODO: redundant conversion to string
         return ModelFromJSONLoader.from_string(json_as_str).get_dict(required_type)
 
-    def safe_get(self, *, path: list[str], required_type: Type[T]) -> T:
+    def get_simple_type(self, *, path: list[str], required_type: Type[T]) -> T:
         """
         Safely retrieves and type-checks a value from the JSON structure.
         
@@ -193,7 +219,7 @@ class ProfileLoader:
             raise TypeError(f"Expected {required_type} at path {path}, got {type(current)}")
         return current
     
-    def safe_get_model(self, *, path: list[str], required_type: Type[T]) -> T:
+    def get_model(self, *, path: list[str], required_type: Type[T]) -> T:
         """
         Safely retrieves and converts a dictionary from the JSON structure into a Pydantic model.
         
@@ -217,7 +243,7 @@ class ProfileLoader:
         if current is None:
             raise KeyError(f"Could not get path {str(path)}")
 
-        if not isinstance(required_type, ModelMetaclass):
+        if not issubclass(required_type, BaseModel):
             raise ValueError(f"Requested type {required_type} is not a valid Pydantic BaseModel")
 
         json_as_str = json.dumps(current) # TODO: redundant conversion to string

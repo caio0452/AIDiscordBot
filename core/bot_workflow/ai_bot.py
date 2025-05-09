@@ -1,9 +1,10 @@
-from functools import wraps
 from core.ai_apis import providers
+from response_logs import ResponseLogger
 from core.ai_apis.client import LLMClient
-from core.ai_apis.types import LLMRequestParams, Prompt
 from core.bot_workflow.profile_loader import Profile
+from core.ai_apis.types import LLMRequestParams, Prompt
 from core.bot_workflow.knowledge import KnowledgeIndex, LongTermMemoryIndex
+from response_steps import PersonalityRewriteStep, RelevantInfoSelectStep, UserQueryRephraseStep
 from core.bot_workflow.types import AIBotData, MemorizedMessage, MemorizedMessageHistory, SynchronizedMessageHistory
 
 import re
@@ -30,35 +31,7 @@ class CustomBotData(AIBotData):
         self.recent_history = SynchronizedMessageHistory()
         self.knowledge = knowledge 
         self.RECENT_MEMORY_LENGTH = profile.recent_message_history_length
-
-class ResponseLogger:
-    def __init__(self):
-        self.text = ""
-
-    def verbose(self, text: str, *, category: str | None = None):
-        current_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        if category:
-            self.text += f"\n[{current_time}] --- {category} ---\n{text}\n"
-        else:
-            self.text += f"\n[{current_time}] {text}\n"
-
-def response_step(NAME):
-    def decorator(func):
-        @wraps(func)
-        async def wrapper(self, *args, **kwargs):
-            try:
-                params = self.bot_data.profile.request_params[NAME]
-                self.logger.verbose(f"Initiating step {NAME}. {params}", category=NAME)
-                result = await func(self, *args, **kwargs)
-                self.logger.verbose(f"Step {NAME} done, {result}", category=NAME)
-                return result
-            except Exception as e:
-                self.logger.verbose(f"Error in {NAME}: {e}", category="ERROR")
-                traceback.print_exc()
-                raise e 
-        return wrapper
-    return decorator
-
+    
 class DiscordBotResponse:
     def __init__(self, bot_data: CustomBotData, verbose: bool=False):
         self.verbose = verbose
@@ -66,40 +39,30 @@ class DiscordBotResponse:
         self.logger: ResponseLogger = ResponseLogger()
         self.clients: dict[str, LLMClient] = {}
 
-        for k, v in bot_data.provider_store.providers.items():
-            self.clients[k] = LLMClient.from_provider(v)
+        for provider_name, provider_data in bot_data.provider_store.providers.items():
+            self.clients[provider_name] = LLMClient.from_provider(provider_data)
 
-    # TODO: clean this method up
     async def create(self, message: discord.Message) -> str:
+        full_prompt = await self._build_full_prompt(message)
         MAIN_CLIENT_NAME = "PERSONALITY"
-        USABLE_HISTORY_LENGTH = 14
-        usable_history = await self.bot_data.recent_history.get_finalized_message_history()
-        last_n_messages = [msg for msg in usable_history._memory][-USABLE_HISTORY_LENGTH:]
-        last_n_messages.append(await MemorizedMessage.of_discord_message(message))
-        usable_messages = MemorizedMessageHistory(last_n_messages)
-        full_prompt = await self.build_full_prompt(
-            usable_messages, 
-            message
-        )
         default_params = self.bot_data.profile.request_params[MAIN_CLIENT_NAME]
-        model_names_order = [default_params.model_name]
-        model_names_order.extend(self.bot_data.profile.llm_fallbacks)
+        model_names_order = [default_params.model_name] + self.bot_data.profile.llm_fallbacks
         exc_details = ""
 
         for name in model_names_order:
             try:
-                current_params: LLMRequestParams = default_params.model_copy()
-                current_params.model_name = name
-                response = await self.clients[MAIN_CLIENT_NAME].send_request(
-                    prompt=full_prompt,
-                    params=current_params
+               modified_params = default_params.model_copy(deep=True)
+               modified_params = LLMRequestParams(
+                   model_name=name,
+                   temperature=default_params.temperature,
+                   max_tokens=default_params.max_tokens,
+                   logit_bias=default_params.logit_bias
+               )
+               return await self._respond_in_character(
+                   prompt=full_prompt, 
+                   params=modified_params,
+                   message=message.content
                 )
-                self.logger.verbose(response.message.content, category="PRE-REWRITE MESSAGE")
-                personality_rewrite = await self.personality_rewrite(response.message.content)
-                answer_with_replacements = personality_rewrite
-                for k, v in self.bot_data.profile.regex_replacements.items():
-                    answer_with_replacements = re.sub(k, v, answer_with_replacements)
-                return answer_with_replacements
             except Exception as e:
                 traceback.print_exc()
                 exc_details += traceback.format_exc()
@@ -107,93 +70,62 @@ class DiscordBotResponse:
         
         raise RuntimeError("Could not generate response and all fallbacks failed")
     
-    def _get_prompt(self, name: str) -> Prompt:
-        return self.bot_data.profile.prompts[name].model_copy()
-
-    @response_step("PERSONALITY_REWRITE")
-    async def personality_rewrite(self, message: str) -> str:
-        NAME = "PERSONALITY_REWRITE"
-        name_prompt = self.bot_data.profile.prompts[NAME]
-        prompt = name_prompt.replace({
-            "message": message
-        })
-        response = await self.send_llm_request(
-            name=NAME,
-            prompt=prompt
-        ) 
-        self.logger.verbose(f"PROMPT: {prompt}", category="PERSONALITY REWRITE") 
-        return response.message.content
-
-    @response_step("USER_QUERY_REPHRASE")
-    async def user_query_rephrase(self) -> str:
-        NAME = "USER_QUERY_REPHRASE"
-        recent_history_list = self.bot_data.recent_history.backing_history.as_list()
-        user_prompt_str = "\n".join(
-            [memorized_message.text for memorized_message in recent_history_list]
+    async def _respond_in_character(self, *, prompt: Prompt, params: LLMRequestParams, message: str):
+        MAIN_CLIENT_NAME = "PERSONALITY"
+        response = await self.clients[MAIN_CLIENT_NAME].send_request(
+            prompt=prompt,
+            params=params
         )
-        last_user = recent_history_list[-1].nick
-        prompt = self._get_prompt(NAME).replace({
-            "user_query": user_prompt_str, 
-            "last_user": last_user
-        })
-        response = await self.send_llm_request(
-            name=NAME,
-            prompt=prompt
-        )
-        self.logger.verbose(f"Prompt: {prompt}\nResponse: {response}", category=NAME)
-        return response.message.content
+        self.logger.verbose(response.message.content, category="PRE-REWRITE MESSAGE")
+        personality_rewriter = PersonalityRewriteStep()
+        personality_rewrite = await personality_rewriter.execute(self.bot_data, message) 
+        if personality_rewrite is None:
+            raise RuntimeError("Personality rewrite step returned empty response")
+        for target, replacement in self.bot_data.profile.regex_replacements.items():
+            personality_rewrite = re.sub(target, replacement, personality_rewrite)
+        return personality_rewrite
+    
+    async def _get_usable_message_history_before(self, message: discord.Message) -> MemorizedMessageHistory:
+        USABLE_HISTORY_LENGTH = 14
+        usable_history = await self.bot_data.recent_history.get_finalized_message_history()
+        last_n_messages = [msg for msg in usable_history._memory][-USABLE_HISTORY_LENGTH:]
+        last_n_messages.append(await MemorizedMessage.of_discord_message(message))
+        return MemorizedMessageHistory(last_n_messages)
 
-    @response_step("INFO_SELECT")
-    async def info_select(self, user_query: str) -> str | None:
-        NAME = "INFO_SELECT"
-        available_info = ""
-        hits_list = await self.bot_data.knowledge.retrieve(user_query)
-
-        if len(hits_list) == 0:
-            return None
-
-        for hits in hits_list:
-            for hit in hits:
-                available_info += hit["text"] + "\n"
-
-        prompt = self._get_prompt(NAME) \
-            .replace({
-                "user_query": user_query,
-                "available_info": available_info
-            })
-        response = await self.send_llm_request(
-            name=NAME,
-            prompt=prompt
-        )
-        self.logger.verbose(f"Prompt: {prompt}\nResponse: {response}", category=NAME)
-        return response.message.content
-
-    @response_step("PERSONALITY")
-    async def build_full_prompt(self, memory_snapshot: MemorizedMessageHistory, original_msg: discord.Message) -> Prompt:
+    async def _build_full_prompt(self, original_msg: discord.Message) -> Prompt:
         NAME = "PERSONALITY"
+        memory_snapshot = await self._get_usable_message_history_before(original_msg)
         now_str = datetime.datetime.now().strftime("%B %d, %H:%M:%S")
-        user_query = await self.user_query_rephrase()
-        knowledge = await self.info_select(user_query)
         old_memories: str = "" 
-        full_prompt: Prompt = self.bot_data.profile.prompts[NAME].model_copy(deep=True)
+        knowledge = None
+        knowledge_str = ""
+        user_query = original_msg.content
+        full_prompt: Prompt = self.bot_data.profile.get_prompt(NAME)
 
-        if knowledge is not None:
-            knowledge_str = f"\n[INFO FROM KNOWLEDGE DB]:\n{knowledge}\n"
-            self.logger.verbose(knowledge, category="INFO FROM KNOWLEDGE DB")
-        else:
-            knowledge_str = ""
-            self.logger.verbose("The knowledge database has nothing relevant", category="INFO FROM KNOWLEDGE DB")
-        
         for memorized_message in memory_snapshot.as_list():
             if memorized_message.is_bot:
                 full_prompt.append(Prompt.assistant_msg(memorized_message.text))
             else:
                 full_prompt.append(Prompt.user_msg(memorized_message.text))
 
-        for msg in await self.bot_data.long_term_memory.get_closest_messages(user_query):
-            old_memories += str(msg) # TODO: establish a type for this
+        if self.bot_data.profile.enable_knowledge_retrieval:
+            rephrase = await UserQueryRephraseStep().execute(self.bot_data, original_msg.content)
+            if rephrase is None:
+                raise RuntimeError("Rephraser step returned empty response")
+            
+            info_selector = RelevantInfoSelectStep(rephrase)
+            knowledge = await info_selector.execute(self.bot_data, original_msg.content)
+            if knowledge is None:
+                raise RuntimeError("Knowledge retrieval step returned empty response")
+            
+            for msg in await self.bot_data.long_term_memory.get_closest_messages(rephrase):
+                old_memories += str(msg) # TODO: establish a type for this
 
-        img_desc = await self.describe_image_if_present(original_msg)
+            user_query = rephrase
+            knowledge_str = f"\n[INFO FROM KNOWLEDGE DB]:\n{knowledge}\n"
+            self.logger.verbose(knowledge, category="INFO FROM KNOWLEDGE DB")
+        
+        img_desc = await self._describe_image_if_present(original_msg, user_query)
         if img_desc:
             full_prompt.append(Prompt.user_msg(img_desc))
 
@@ -209,37 +141,33 @@ class DiscordBotResponse:
         self.logger.verbose(str(memory_snapshot), category="USABLE MEMORY DUMP")
         return full_prompt
 
-    # TODO: clean this method up
-    async def describe_image_if_present(self, message) -> str | None:
+    async def _describe_image_if_present(self, message: discord.Message, user_query: str) -> str | None:
         NAME = "IMAGE_VIEW"
-        if len(message.attachments) == 1:
-            if message.channel.nsfw:
-                await message.reply(":X: I can't see attachments in NSFW channels!")
-                return None
-            attachment = message.attachments[0]
-            if attachment.content_type.startswith("image/"):
-                await message.add_reaction("👀")
-                # Todo: only last message is possibly not enough context
-                response = await self.clients[NAME].send_request(
-                    prompt=Prompt(
-                                messages=[
-                                    Prompt.user_msg(
-                                        content=f"Describe the image in a sufficient way to answer the following query: '{message.content}'" \
-                                        "If the query is empty, just describe the image. ",
-                                        image_url=attachment.url
-                                    )
-                                ]
-                            ),
-                   params=LLMRequestParams(
-                         model_name="openai/gpt-4o"
-                    )
-                )
-                return response.message.content
 
+        if len(message.attachments) == 0:
+            return None
+        if len(message.attachments) > 1:
+            for emoji in ["❌", "1️⃣", "🖼️"]:
+                await message.add_reaction(emoji)
+            return None
+        if isinstance(message.channel, discord.TextChannel) and message.channel.nsfw:
+            await message.reply(":x: I can't see attachments in NSFW channels!")
 
-    async def send_llm_request(self, *, name: str, prompt: Prompt):
-        params = self.bot_data.profile.request_params[name]
-        provider: providers.ProviderData = self.bot_data.profile.providers[name]
-        client: LLMClient = LLMClient.from_provider(provider)
-
-        return await client.send_request(prompt=prompt, params=params) 
+        attachment = message.attachments[0]
+        if not (attachment.content_type and attachment.content_type.startswith("image/")):
+            return None
+        
+        await message.add_reaction("👀")
+        response = await self.clients[NAME].send_request(
+            prompt=Prompt(
+                    messages=[
+                        Prompt.user_msg(
+                            content=f"Describe the image in detail, including a sufficient answer to the following query: '{message.content}'" \
+                            "If the query is empty, just describe the image. ",
+                            image_url=attachment.url
+                        )
+                    ]
+                ),
+            params=LLMRequestParams(model_name="openai/gpt-4o")
+        )
+        return response.message.content
