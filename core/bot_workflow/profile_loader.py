@@ -29,7 +29,7 @@ class FalImageGenModuleConfig(BaseModel):
 class Profile:
     botname: str
     recent_message_history_length: int
-    has_long_term_memory: bool
+    enable_long_term_memory: bool
     _prompts: dict[str, Prompt]
     request_params: dict[str, LLMRequestParams]
     lang: dict[str, str]
@@ -107,7 +107,7 @@ class ProfileLoader:
         return Profile(
             botname=bot_name,
             recent_message_history_length=recent_message_history_length,
-            has_long_term_memory=has_long_term_memory,
+            enable_long_term_memory=enable_long_term_memory, # TODO: not yet implemented
             _prompts=prompts,
             lang=lang,
             request_params=request_params,
@@ -117,7 +117,6 @@ class ProfileLoader:
             llm_fallbacks=llm_fallbacks,
             enable_personality_rewrite=enable_personality_rewrite,
             enable_knowledge_retrieval=enable_knowledge_retrieval,
-            enable_long_term_memory=enable_long_term_memory,
             enable_image_viewing=enable_image_viewing
         )
 
