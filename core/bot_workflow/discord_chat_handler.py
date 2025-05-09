@@ -24,7 +24,6 @@ class DiscordChatHandler(commands.Cog):
             RateLimit(n_messages=100, seconds=2 * 3600),
             RateLimit(n_messages=250, seconds=8 * 3600)
         )
-        self.logs = ResponseLogsManager()
         self.message_parser = DiscordMessageParser(self.bot)
         self.ai_bot = ai_bot_data
 
@@ -54,7 +53,7 @@ class DiscordChatHandler(commands.Cog):
         sanitized_msg = message.content.strip().replace("--l", "")
         try:
             message_id = int(sanitized_msg)
-            log_data = self.logs.get_log_by_id(message_id)
+            log_data = ResponseLogsManager.instance().get_log_by_id(message_id)
             if log_data is None:
                 await message.reply("No log with that ID found")
                 return
@@ -88,7 +87,7 @@ class DiscordChatHandler(commands.Cog):
                 add_after_id=message.id
             )
             await self.ai_bot.recent_history.mark_finalized(message.id)
-            self.logs.store_log(reply.id, verbose_log)
+            ResponseLogsManager.instance().store_log(reply.id, verbose_log)
         except Exception as e:
             await self.handle_error(message, reply, e)
 
