@@ -1,8 +1,8 @@
 import time
 
-from ai_apis import providers
+from core.ai_apis import providers
 from abc import ABC, abstractmethod
-from ai_bot import Prompt, LLMClient, CustomBotData
+from core.bot_workflow.ai_bot import Prompt, LLMClient, CustomBotData
 from core.bot_workflow.response_logs import ResponseLogger
 
 class ResponseStep(ABC):
