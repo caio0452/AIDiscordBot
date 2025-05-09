@@ -92,16 +92,16 @@ class ProfileLoader:
             path=["profile", "fal_image_gen_config"], required_type=FalImageGenModuleConfig
         )
         enable_personality_rewrite: bool = self.get_simple_type(
-            path=["profile", "enable_personality_rewrite"], required_type=bool
+            path=["profile", "parameters", "enable_personality_rewrite"], required_type=bool
         )
         enable_knowledge_retrieval: bool = self.get_simple_type(
-            path=["profile", "enable_knowledge_retrieval"], required_type=bool
+            path=["profile", "parameters", "enable_knowledge_retrieval"], required_type=bool
         )
         enable_long_term_memory: bool = self.get_simple_type(
-            path=["profile", "enable_long_term_memory"], required_type=bool
+            path=["profile", "parameters", "enable_long_term_memory"], required_type=bool
         )
         enable_image_viewing: bool = self.get_simple_type(
-            path=["profile", "enable_image_viewing"], required_type=bool
+            path=["profile", "parameters", "enable_image_viewing"], required_type=bool
         )
 
         return Profile(
