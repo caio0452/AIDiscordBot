@@ -67,8 +67,8 @@ class ProfileLoader:
         recent_message_history_length = self.get_simple_type(
             path=["profile", "parameters", "recent_message_history_length"], required_type=int
         )
-        has_long_term_memory = self.get_simple_type(
-            path=["profile", "parameters", "has_long_term_memory"], required_type=bool
+        enable_long_term_memory = self.get_simple_type(
+            path=["profile", "parameters", "enable_long_term_memory"], required_type=bool
         )
         llm_fallbacks = self.get_simple_type(
             path=["profile", "parameters", "llm_fallbacks"], required_type=list
