@@ -33,5 +33,3 @@ class ResponseLogsManager:
 
     def get_log_by_id(self, message_id: int) -> str | None:
         return self._last_message_id_logs.get(message_id, None)
-    
-MANAGER = ResponseLogsManager()
