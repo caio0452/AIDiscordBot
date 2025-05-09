@@ -1,10 +1,10 @@
 from core.ai_apis import providers
-from response_logs import ResponseLogger
+from core.bot_workflow.response_logs import ResponseLogger
 from core.ai_apis.client import LLMClient
 from core.bot_workflow.profile_loader import Profile
 from core.ai_apis.types import LLMRequestParams, Prompt
 from core.bot_workflow.knowledge import KnowledgeIndex, LongTermMemoryIndex
-from response_steps import PersonalityRewriteStep, RelevantInfoSelectStep, UserQueryRephraseStep
+from core.bot_workflow.response_steps import PersonalityRewriteStep, RelevantInfoSelectStep, UserQueryRephraseStep
 from core.bot_workflow.types import AIBotData, MemorizedMessage, MemorizedMessageHistory, SynchronizedMessageHistory
 
 import re
