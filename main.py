@@ -31,7 +31,9 @@ class DiscordBot:
         self.knowledge = await KnowledgeIndex.from_provider(embeddings_provider)
         if self.profile.options.enable_long_term_memory:
             self.long_term_memory: LongTermMemoryIndex | None = await LongTermMemoryIndex.from_provider(embeddings_provider)
-    
+        else:
+            self.long_term_memory = None
+            
         provider_list = [self.profile.providers[k] for k, v in self.profile.providers.items()]
         provider_store = ProviderDataStore(
             providers=provider_list
