@@ -21,5 +21,5 @@ class CustomBotData(AIBotData):
         self.long_term_memory = long_term_memory
         self.recent_history = SynchronizedMessageHistory()
         self.knowledge = knowledge 
-        self.RECENT_MEMORY_LENGTH = profile.recent_message_history_length
+        self.RECENT_MEMORY_LENGTH = profile.options.recent_message_history_length
     

@@ -3,9 +3,9 @@ import discord
 from discord.ext import commands
 
 from core.bot_workflow.ai_bot import CustomBotData
+from core.bot_workflow.profile_loader import Profile
 from core.ai_apis.providers import ProviderDataStore
 from core.util.environment_vars import get_environment_var
-from core.bot_workflow.profile_loader import ProfileLoader
 from core.bot_workflow.discord_chat_handler import DiscordChatHandler
 from core.bot_workflow.knowledge import KnowledgeIndex, LongTermMemoryIndex
 
@@ -17,7 +17,7 @@ class DiscordBot:
         intents = discord.Intents.default()
         intents.message_content = True
         self.bot = commands.Bot(command_prefix='paper!', intents=intents)
-        self.profile = ProfileLoader("profile.json").load_profile()
+        self.profile = Profile.from_file("profile.json")
         self.bot.event(self.on_ready)
 
     def run(self):
@@ -33,14 +33,13 @@ class DiscordBot:
         provider_store = ProviderDataStore(
             providers=provider_list
         ) # TODO: There should be required providers
-        profile = ProfileLoader("profile.json").load_profile()
         if self.bot.user is None:
             raise RuntimeError("Could not initialize bot: bot user is None")
         await self.bot.add_cog(DiscordChatHandler(
             discord_bot=self.bot, 
             ai_bot_data=CustomBotData(
-                name=profile.botname, 
-                profile=profile, 
+                name=self.profile.options.botname, 
+                profile=self.profile, 
                 provider_store=provider_store,
                 long_term_memory=self.long_term_memory,
                 knowledge=self.knowledge,
