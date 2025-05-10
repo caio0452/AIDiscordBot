@@ -1,4 +1,5 @@
 import datetime
+import logging
 
 class ResponseLogger:
     def __init__(self):
@@ -12,20 +13,21 @@ class ResponseLogger:
             self.text += f"\n[{current_time}] {text}\n"
 
 class ResponseLogsManager:
+    _instance = None
+
     def __init__(self):
         raise RuntimeError('Call instance() instead')
 
     @classmethod
     def instance(cls):
         if cls._instance is None:
-            print('Creating new instance')
             cls._instance = cls.__new__(cls)
             cls.log_capacity = 10
             cls._last_message_id_logs: dict[int, str] = {}
         return cls._instance
     
     def store_log(self, message_id: int, log: str):
-        print(f"Saved log for message id {message_id}")
+        logging.info(f"Saved log for message id {message_id}")
         self._last_message_id_logs[message_id] = log
         if len(self._last_message_id_logs) > self.log_capacity:
             oldest_key = next(iter(self._last_message_id_logs))
