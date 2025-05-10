@@ -1,7 +1,7 @@
 import discord
+import core.util.logging_setup as logs
 
 from discord.ext import commands
-
 from core.bot_workflow.ai_bot import CustomBotData
 from core.bot_workflow.profile_loader import Profile
 from core.ai_apis.providers import ProviderDataStore
@@ -12,11 +12,13 @@ from core.bot_workflow.knowledge import KnowledgeIndex, LongTermMemoryIndex
 from commands.sync_command_tree import SyncCommand
 from commands.image_gen_command import ImageGenCommand
 
+logs.setup()
+
 class DiscordBot:
     def __init__(self):
         intents = discord.Intents.default()
         intents.message_content = True
-        self.bot = commands.Bot(command_prefix='paper!', intents=intents)
+        self.bot = commands.Bot(command_prefix='r!', intents=intents)
         self.profile = Profile.from_file("profile.json")
         self.bot.event(self.on_ready)
 
@@ -27,7 +29,8 @@ class DiscordBot:
     async def setup_chatbot(self):
         embeddings_provider = self.profile.providers["EMBEDDINGS"]
         self.knowledge = await KnowledgeIndex.from_provider(embeddings_provider)
-        self.long_term_memory = await LongTermMemoryIndex.from_provider(embeddings_provider)
+        if self.profile.options.enable_long_term_memory:
+            self.long_term_memory: LongTermMemoryIndex | None = await LongTermMemoryIndex.from_provider(embeddings_provider)
     
         provider_list = [self.profile.providers[k] for k, v in self.profile.providers.items()]
         provider_store = ProviderDataStore(

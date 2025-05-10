@@ -24,7 +24,7 @@ class DiscordBotResponse:
         full_prompt = await self._build_full_prompt(message)
         MAIN_CLIENT_NAME = "PERSONALITY"
         default_params = self.bot_data.profile.request_params[MAIN_CLIENT_NAME]
-        model_names_order = [default_params.model_name] + self.bot_data.profile.llm_fallbacks
+        model_names_order = [default_params.model_name] + self.bot_data.profile.options.llm_fallbacks
         exc_details = ""
 
         for name in model_names_order:
@@ -86,18 +86,19 @@ class DiscordBotResponse:
             else:
                 full_prompt.append(Prompt.user_msg(memorized_message.text))
 
-        if self.bot_data.profile.enable_knowledge_retrieval:
+        if self.bot_data.profile.options.enable_knowledge_retrieval:
             rephrase = await UserQueryRephraseStep().execute(self.bot_data, original_msg.content)
             if rephrase is None:
                 raise RuntimeError("Rephraser step returned empty response")
             
-            info_selector = RelevantInfoSelectStep(rephrase)
+            info_selector = RelevantInfoSelectStep(user_query=rephrase)
             knowledge = await info_selector.execute(self.bot_data, original_msg.content)
             if knowledge is None:
                 raise RuntimeError("Knowledge retrieval step returned empty response")
             
-            for msg in await self.bot_data.long_term_memory.get_closest_messages(rephrase):
-                old_memories += str(msg) # TODO: establish a type for this
+            if self.bot_data.long_term_memory is not None:
+                for msg in await self.bot_data.long_term_memory.get_closest_messages(rephrase):
+                    old_memories += str(msg) # TODO: establish a type for this
 
             user_query = rephrase
             knowledge_str = f"\n[INFO FROM KNOWLEDGE DB]:\n{knowledge}\n"

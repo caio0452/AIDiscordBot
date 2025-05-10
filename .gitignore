@@ -4,3 +4,4 @@ __pycache__/
 knowledge/*
 app.log
 pyrightconfig.json
+.env

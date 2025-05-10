@@ -10,7 +10,7 @@ class CustomBotData(AIBotData):
                  profile: Profile,
                  provider_store: providers.ProviderDataStore,
                  knowledge: KnowledgeIndex,
-                 long_term_memory: LongTermMemoryIndex,
+                 long_term_memory: LongTermMemoryIndex | None,
                  discord_bot_id: int,
                  memory_length: int
                 ):

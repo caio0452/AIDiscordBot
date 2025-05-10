@@ -65,7 +65,7 @@ class UserQueryRephraseStep(ResponseStep):
         return response.message.content
     
 class RelevantInfoSelectStep(ResponseStep):
-    def __init__(self, user_query: str):
+    def __init__(self, *, user_query: str):
         super().__init__()
         self.user_query = user_query
 

@@ -62,15 +62,14 @@ class Profile(BaseModel):
             return cls.model_validate(data)
         except ValidationError as ex:
             for error in ex.errors():
+                field = ".".join([str(field_repr) for field_repr in error['loc']])
                 logging.error(
-                    f"Failed to parse field {error['loc']}: {error['msg']}.\n"
-                    f"({error['type']})"
+                    f"Failed to parse field {field}: {error['msg']}. (error code: {error['type']})"
                 )
         raise RuntimeError(f"Failed to parse {filename}")
 
     def save_to_file(self, output_path: str):
         profile_dict = self.model_dump(mode='json', by_alias=True) 
-
         with open(output_path, 'w', encoding='utf-8') as f:
             json.dump(profile_dict, f, indent=2)
         logging.info(f"Profile saved to {output_path}")
