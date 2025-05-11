@@ -83,9 +83,9 @@ class DiscordBotResponse:
 
         for memorized_message in memory_snapshot.as_list():
             if memorized_message.is_bot:
-                full_prompt.append(Prompt.assistant_msg(memorized_message.text))
+                full_prompt = full_prompt.plus(Prompt.assistant_msg(memorized_message.text))
             else:
-                full_prompt.append(Prompt.user_msg(memorized_message.text))
+                full_prompt = full_prompt.plus(Prompt.user_msg(memorized_message.text))
 
         if self.bot_data.profile.options.enable_knowledge_retrieval:
             rephrase = await UserQueryRephraseStep().execute(self.bot_data, original_msg.content)
@@ -109,8 +109,8 @@ class DiscordBotResponse:
         
         img_desc = await self._describe_image_if_present(original_msg, user_query)
         if img_desc:
-            full_prompt.append(Prompt.user_msg(img_desc))
-
+            full_prompt = full_prompt.plus(Prompt.user_msg(img_desc))
+            
         full_prompt = full_prompt.replace({
             "now": now_str,
             "nick": original_msg.author.display_name,

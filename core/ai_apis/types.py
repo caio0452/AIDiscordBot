@@ -13,7 +13,7 @@ class Prompt(BaseModel, frozen=True):
     def system_msg(content: str) -> dict[str, str]:
         return {"role": "system", "content": content}
 
-    def append(self, message: OpenAIMessage):
+    def plus(self, message: OpenAIMessage):
         return Prompt(messages=self.messages + [message])
 
     @staticmethod
