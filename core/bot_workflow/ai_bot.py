@@ -50,13 +50,14 @@ class DiscordBotResponse:
     
     async def _respond_in_character(self, *, prompt: Prompt, params: LLMRequestParams, message: str):
         MAIN_CLIENT_NAME = "PERSONALITY"
-        response = await self.clients[MAIN_CLIENT_NAME].send_request(
+        in_character_response = await self.clients[MAIN_CLIENT_NAME].send_request(
             prompt=prompt,
             params=params
         )
-        self.logger.verbose(response.message.content, category="PRE-REWRITE MESSAGE")
+        in_character_text = in_character_response.message.content
+        self.logger.verbose(in_character_text, category="PRE-REWRITE MESSAGE")
         personality_rewriter = PersonalityRewriteStep()
-        personality_rewrite = await personality_rewriter.execute(self.bot_data, message) 
+        personality_rewrite = await personality_rewriter.execute(self.bot_data, in_character_text) 
         if personality_rewrite is None:
             raise RuntimeError("Personality rewrite step returned empty response")
         for target, replacement in self.bot_data.profile.regex_replacements.items():
