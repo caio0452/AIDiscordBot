@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import datetime
 import discord
 
@@ -9,7 +9,7 @@ class MessageSnapshot:
     is_bot: bool
     message_id: int
     sent: datetime.datetime
-    attachment_urls: list[str] = []
+    attachment_urls: list[str] = field(default_factory=list)
 
     def __str__(self):
         formatted_time = datetime.datetime.strftime(self.sent, "%Y-%m-%d %H:%M:%S")
