@@ -153,11 +153,11 @@ class AIDiscordBotResponder:
         # Rewrite in-character
         if self.bot_data.profile.options.enable_personality_rewrite:
             personality_rewrite = await self._personality_rewrite(llm_response)
-            llm_response = personality_rewrite
+            llm_response = personality_rewrite.removeprefix("REWRITTEN: ")
         
         # Replace undesirable text
         for target, replacement in self.bot_data.profile.regex_replacements.items():
-            personality_rewrite = re.sub(target, replacement, llm_response)
+            llm_response = re.sub(target, replacement, llm_response)
 
         return AIDiscordBotResponder.Response(
             text=llm_response, 
