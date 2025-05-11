@@ -147,7 +147,7 @@ class AIDiscordBotResponder:
             except Exception as e:
                 self.verbose_logger.verbose(f"Request to LLM '{name}' failed with error: {e}", category="MODEL FAILURE")
                 logging.exception(e)
-        if llm_response is None or llm_response.:
+        if llm_response is None:
             raise RuntimeError("Cannot generate response and all fallbacks failed")
         
         # Rewrite in-character
