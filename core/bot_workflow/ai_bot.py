@@ -120,11 +120,11 @@ class AIDiscordBotResponder:
         main_client_params = self.bot_data.profile.request_params[MAIN_CLIENT_NAME]
         model_names_order = [main_client_params.model_name] + self.bot_data.profile.options.llm_fallbacks
         full_prompt = await self._build_full_prompt(
-                memory_snapshot=memory_snapshot,
-                user_nick=self.initial_message.author.display_name,
-                attachment_description=attachment_description,
-                relevant_info=knowledge,
-                old_memories=old_memories
+            memory_snapshot=memory_snapshot,
+            user_nick=self.initial_message.author.display_name,
+            attachment_description=attachment_description,
+            relevant_info=knowledge,
+            old_memories=old_memories
         )
 
         # Formulate responses w/ full prompt
@@ -138,15 +138,16 @@ class AIDiscordBotResponder:
                 logit_bias=main_client_params.logit_bias
             )
             try:
-                llm_response = await self.clients[MAIN_CLIENT_NAME].send_request(
+                raw_response = await self.clients[MAIN_CLIENT_NAME].send_request(
                     prompt=full_prompt,
                     params=modified_params
                 )
+                llm_response = raw_response.message.content
                 break
             except Exception as e:
                 self.verbose_logger.verbose(f"Request to LLM '{name}' failed with error: {e}", category="MODEL FAILURE")
                 logging.exception(e)
-        if llm_response is None:
+        if llm_response is None or llm_response.:
             raise RuntimeError("Cannot generate response and all fallbacks failed")
         
         # Rewrite in-character
