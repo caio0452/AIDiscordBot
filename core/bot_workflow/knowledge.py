@@ -4,6 +4,7 @@ import glob
 import numpy
 import asyncio
 import hashlib
+import logging
 
 from core.ai_apis.providers import ProviderData
 from core.bot_workflow.message_snapshot import MessageSnapshot
@@ -85,7 +86,7 @@ class KnowledgeIndex:
 
     async def index_from_folder(self, path, max_concurrent_tasks=8): 
         if not os.path.exists(path):
-            print(f"The knowledge folder, located in '{path}' does not exist. Skipping knowledge indexing.")
+            logging.info(f"The knowledge folder, located in '{path}' does not exist. Skipping knowledge indexing.")
             return
 
         all_files = glob.glob(f"{path}/*")
@@ -93,10 +94,10 @@ class KnowledgeIndex:
         non_txt_files = [file for file in all_files if not file.endswith('.txt')]
 
         for file in non_txt_files:
-            print(f"Error: {file} is not a .txt file. All knowledge must be in text files. Skipping.")
+            logging.info(f"Error: {file} is not a .txt file. All knowledge must be in text files. Skipping.")
 
         if not txt_files:
-            print(f"No files in knowledge folder: '{path}', nothing to index'")
+            logging.info(f"No files in knowledge folder: '{path}', nothing to index'")
             return
 
         async def process_file(file_path):
@@ -111,12 +112,12 @@ class KnowledgeIndex:
         total_chunks = 0
         for file_path, result in zip(txt_files, results):
             if isinstance(result, Exception):
-                print(f"Error indexing {file_path}: {result}")
+                logging.info(f"Error indexing {file_path}: {result}")
             elif isinstance(result, int):
                 total_chunks += result
-                print(f"Indexed {file_path}: {result} chunks")
+                logging.info(f"Indexed {file_path}: {result} chunks")
 
-        print(f"Total chunks indexed: {total_chunks}")
+        logging.info(f"Total chunks indexed: {total_chunks}")
 
     def retrieve(self, related_text: str, n=5):
         return self._db_conn.search(

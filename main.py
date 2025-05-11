@@ -1,4 +1,5 @@
 import discord
+import logging
 import core.util.logging_setup as logs
 
 from discord.ext import commands
@@ -33,7 +34,7 @@ class DiscordBot:
             self.long_term_memory: LongTermMemoryIndex | None = await LongTermMemoryIndex.from_provider(embeddings_provider)
         else:
             self.long_term_memory = None
-            
+
         provider_list = [self.profile.providers[k] for k, v in self.profile.providers.items()]
         provider_store = ProviderDataStore(
             providers=provider_list
@@ -63,17 +64,17 @@ class DiscordBot:
         if bot.profile.fal_image_gen_config.enabled:
             await self.bot.add_cog(ImageGenCommand(discord_bot=self.bot, bot_profile=self.profile, fal_config=bot.profile.fal_image_gen_config))
         else:
-            print("Image generation using FAL.AI is disabled")
+            logging.info("Image generation using FAL.AI is disabled")
         pass
 
     async def on_ready(self):
-        print("Setting up commands...")
+        logging.info("Setting up commands...")
         await self.setup_commands()
-        print("Creating chatbot...")
+        logging.info("Creating chatbot...")
         await self.setup_chatbot()
-        print("Indexing knowledge...")
+        logging.info("Indexing knowledge...")
         await self.knowledge.index_from_folder("knowledge")
-        print(f'Logged in as {self.bot.user}')
+        logging.info(f'Logged in as {self.bot.user}')
 
 bot = DiscordBot()
 bot.run()
