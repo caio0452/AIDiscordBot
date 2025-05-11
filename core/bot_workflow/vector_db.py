@@ -57,8 +57,6 @@ class VectorDatabaseConnection:
         )
 
 class VectorDatabase:
-    BRAIN_PATH = os.path.join(os.getcwd(), 'brain_content')
-
     @dataclass
     class Entry:
         data: str
@@ -70,10 +68,10 @@ class VectorDatabase:
                 combined = self.data + str(self.metadata)
                 self.entry_id = int(hashlib.sha256(combined.encode()).hexdigest(), 16) & 0x7FFFFFFF
         
-    def __init__(self, provider: ProviderData):
+    def __init__(self, provider: ProviderData, path: str):
         self.vectorizer = EmbeddingsClient(provider)
-        self.async_client = AsyncMilvusClient(os.path.join(VectorDatabase.BRAIN_PATH, "brain_content.db"))
-        self.sync_client = MilvusClient(os.path.join(VectorDatabase.BRAIN_PATH, "brain_content.db"))
+        self.async_client = AsyncMilvusClient(path)
+        self.sync_client = MilvusClient(path)
 
     async def connect(self) -> VectorDatabaseConnection:
         async def make_schema(name: str):

@@ -16,7 +16,8 @@ class LongTermMemoryIndex:
 
     @staticmethod
     async def from_provider(provider: ProviderData) -> "LongTermMemoryIndex":
-        vector_db: VectorDatabase = VectorDatabase(provider)
+        memories_db_path = os.path.join(os.getcwd(), 'brain_content', 'memories', 'memories.db')
+        vector_db: VectorDatabase = VectorDatabase(provider, memories_db_path)
         db_conn = await vector_db.connect()
         return LongTermMemoryIndex(db_conn)
 
@@ -39,7 +40,8 @@ class KnowledgeIndex:
 
     @staticmethod
     async def from_provider(provider: ProviderData) -> "KnowledgeIndex":
-        vector_db: VectorDatabase = VectorDatabase(provider)
+        knowledge_db_path = os.path.join(os.getcwd(), 'brain_content', 'knowledge', 'knowledge.db')
+        vector_db: VectorDatabase = VectorDatabase(provider, knowledge_db_path)
         db_conn = await vector_db.connect()
         return KnowledgeIndex(db_conn)
     
