@@ -1,9 +1,9 @@
 import asyncio
 from abc import ABC
-from core.bot_workflow.memorized_message import MemorizedMessage
+from core.bot_workflow.message_snapshot import MessageSnapshot
 
-class MemorizedMessageHistory:
-    def __init__(self, initial_history: list[MemorizedMessage]  | None = None, memory_length: int = 14):
+class MessageSnapshotHistory:
+    def __init__(self, initial_history: list[MessageSnapshot]  | None = None, memory_length: int = 14):
         if initial_history is None:
             self._memory = []
         else:
@@ -11,12 +11,12 @@ class MemorizedMessageHistory:
             self._memory = self._memory[-memory_length:]
         self.MEMORY_LENGTH = memory_length
 
-    async def add(self, message: MemorizedMessage):
+    async def add(self, message: MessageSnapshot):
         self._memory.append(message)
         if len(self._memory) > self.MEMORY_LENGTH:
             self._memory.pop(0)
 
-    async def add_after(self, id: int, new_message: MemorizedMessage) -> bool:
+    async def add_after(self, id: int, new_message: MessageSnapshot) -> bool:
         for index, msg in enumerate(self._memory):
             if msg.message_id == id:
                 self._memory.insert(index + 1, new_message)
@@ -25,17 +25,17 @@ class MemorizedMessageHistory:
                 return True
         return False 
     
-    async def remove(self, message: MemorizedMessage):
+    async def remove(self, message: MessageSnapshot):
         self._memory = [mem_msg for mem_msg in self._memory if mem_msg.message_id != message.message_id]
 
     def clone(self):
-        new_instance = MemorizedMessageHistory(
+        new_instance = MessageSnapshotHistory(
             initial_history=[m for m in self._memory], 
             memory_length=self.MEMORY_LENGTH
         )
         return new_instance
 
-    def as_list(self) -> list[MemorizedMessage]:
+    def as_list(self) -> list[MessageSnapshot]:
         return self._memory
     
     def __str__(self) -> str:
@@ -47,18 +47,18 @@ class MemorizedMessageHistory:
         return ret
 
 class SynchronizedMessageHistory:
-    def __init__(self, history: MemorizedMessageHistory = MemorizedMessageHistory()):
+    def __init__(self, history: MessageSnapshotHistory = MessageSnapshotHistory()):
         self.backing_history = history
         self._pending_message_ids: set[int] = set()
         self._lock = asyncio.Lock()
 
-    async def add(self, message: MemorizedMessage, *, pending=False):
+    async def add(self, message: MessageSnapshot, *, pending=False):
         async with self._lock:
             await self.backing_history.add(message)
             if pending:
                 self._pending_message_ids.add(message.message_id)
 
-    async def add_after(self, id: int, message: MemorizedMessage, *, pending=False):
+    async def add_after(self, id: int, message: MessageSnapshot, *, pending=False):
         async with self._lock:
             await self.backing_history.add_after(id, message)
             if pending:
@@ -74,14 +74,14 @@ class SynchronizedMessageHistory:
     def is_pending(self, message_id: int) -> bool:
         return message_id in self._pending_message_ids
 
-    async def get_finalized_message_history(self) -> MemorizedMessageHistory:
+    async def get_finalized_message_history(self) -> MessageSnapshotHistory:
         ret_msgs = []
 
         async with self._lock:
             for msg in self.backing_history._memory:
                 if not self.is_pending(msg.message_id):
                     ret_msgs.append(msg)
-            return MemorizedMessageHistory(ret_msgs)
+            return MessageSnapshotHistory(ret_msgs)
         
     def __str__(self) -> str:
         ret = ""
@@ -93,6 +93,6 @@ class SynchronizedMessageHistory:
         return ret
         
 class AIBotData(ABC):
-    def __init__(self, name: str, recent_memory: MemorizedMessageHistory | None = None):
+    def __init__(self, name: str, recent_memory: MessageSnapshotHistory | None = None):
         self.name = name
         self.memory = recent_memory

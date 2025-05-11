@@ -2,7 +2,7 @@ from core.ai_apis.client import LLMClient
 from core.ai_apis.types import LLMRequestParams, Prompt
 from core.bot_workflow.response_logs import ResponseLogger
 from core.bot_workflow.custom_bot_data import CustomBotData
-from core.bot_workflow.types import MemorizedMessage, MemorizedMessageHistory
+from core.bot_workflow.types import MessageSnapshot, MessageSnapshotHistory
 from core.bot_workflow.response_steps import PersonalityRewriteStep, RelevantInfoSelectStep, UserQueryRephraseStep
 
 import re
@@ -63,12 +63,12 @@ class DiscordBotResponse:
             personality_rewrite = re.sub(target, replacement, personality_rewrite)
         return personality_rewrite
     
-    async def _get_usable_message_history_before(self, message: discord.Message) -> MemorizedMessageHistory:
+    async def _get_usable_message_history_before(self, message: discord.Message) -> MessageSnapshotHistory:
         USABLE_HISTORY_LENGTH = 14
         usable_history = await self.bot_data.recent_history.get_finalized_message_history()
         last_n_messages = [msg for msg in usable_history._memory][-USABLE_HISTORY_LENGTH:]
-        last_n_messages.append(await MemorizedMessage.of_discord_message(message))
-        return MemorizedMessageHistory(last_n_messages)
+        last_n_messages.append(await MessageSnapshot.of_discord_message(message))
+        return MessageSnapshotHistory(last_n_messages)
 
     async def _build_full_prompt(self, original_msg: discord.Message) -> Prompt:
         NAME = "PERSONALITY"

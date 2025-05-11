@@ -1,7 +1,7 @@
 from core.ai_apis import providers
 from core.bot_workflow.profile_loader import Profile
 from core.bot_workflow.knowledge import KnowledgeIndex, LongTermMemoryIndex
-from core.bot_workflow.types import MemorizedMessageHistory, SynchronizedMessageHistory, AIBotData
+from core.bot_workflow.types import MessageSnapshotHistory, SynchronizedMessageHistory, AIBotData
 
 class CustomBotData(AIBotData):
     def __init__(self,
@@ -14,7 +14,7 @@ class CustomBotData(AIBotData):
                  discord_bot_id: int,
                  memory_length: int
                 ):
-        super().__init__(name, MemorizedMessageHistory(memory_length=memory_length))
+        super().__init__(name, MessageSnapshotHistory(memory_length=memory_length))
         self.profile = profile
         self.provider_store = provider_store
         self.discord_bot_id = discord_bot_id

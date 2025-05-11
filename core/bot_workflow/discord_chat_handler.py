@@ -7,7 +7,7 @@ from typing import Tuple
 from discord.ext import commands
 from core.util.rate_limits import RateLimiter, RateLimit
 from core.bot_workflow.response_logs import ResponseLogsManager
-from core.bot_workflow.memorized_message import MemorizedMessage
+from core.bot_workflow.message_snapshot import MessageSnapshot
 from core.bot_workflow.ai_bot import CustomBotData, DiscordBotResponse
 from core.bot_workflow.discord_message_parser import DiscordMessageParser, DenialReason, SpecialFunctionFlags
 
@@ -76,7 +76,7 @@ class DiscordChatHandler(commands.Cog):
                 reply = await self.attach_log(reply, resp_str, verbose_log)
             resp_msg: discord.Message = await self.send_discord_response(reply, resp_str)
             await self.memorize_message(
-                MemorizedMessage(
+                MessageSnapshot(
                     text=resp_str,  
                     nick=resp_msg.author.name,
                     sent=resp_msg.created_at,
@@ -124,7 +124,7 @@ class DiscordChatHandler(commands.Cog):
 
         return previous_message
 
-    async def memorize_message(self, message: MemorizedMessage, *, pending: bool, add_after_id: None | int) -> None:
+    async def memorize_message(self, message: MessageSnapshot, *, pending: bool, add_after_id: None | int) -> None:
         if add_after_id is None:
             await self.ai_bot.recent_history.add(
                 message,
@@ -140,7 +140,7 @@ class DiscordChatHandler(commands.Cog):
             await self.ai_bot.long_term_memory.memorize(message)
         
     async def memorize_discord_message(self, message: discord.Message, *, pending: bool, add_after_id: None | int) -> None:
-        to_memorize = await MemorizedMessage.of_discord_message(message)
+        to_memorize = await MessageSnapshot.of_discord_message(message)
         await self.memorize_message(
             to_memorize,
             pending=pending,
