@@ -21,6 +21,12 @@ class VectorDatabaseConnection:
         metadata: dict
         text: str
 
+    @dataclass
+    class Hit:
+        id: int
+        distance: float
+        entity: dict[str, Any]
+
     class Indexes(Enum):
         KNOWLEDGE = "knowledge"
         MEMORIES = "memories"

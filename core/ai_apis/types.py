@@ -10,7 +10,7 @@ class Prompt(BaseModel, frozen=True):
     messages: list[OpenAIMessage] = Field(...)
 
     @staticmethod
-    def system_msg(content: str) -> dict[str, str]:
+    def system_msg(content: str) -> OpenAIMessage:
         return {"role": "system", "content": content}
 
     def plus(self, message: OpenAIMessage):

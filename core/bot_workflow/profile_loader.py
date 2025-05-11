@@ -62,7 +62,10 @@ class Profile(BaseModel):
             return cls.model_validate(data)
         except ValidationError as ex:
             for error in ex.errors():
-                field = ".".join([str(field_repr) for field_repr in error['loc']])
+                error_loc = error['loc']
+                field = ".".join([str(field_repr) for field_repr in error_loc])
+                if len(error_loc) == 1:
+                    field += " (on the top level of the JSON)"
                 logging.error(
                     f"Failed to parse field {field}: {error['msg']}. (error code: {error['type']})"
                 )

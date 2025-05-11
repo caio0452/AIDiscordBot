@@ -31,8 +31,19 @@ class LongTermMemoryIndex:
             )
         )
 
-    async def get_closest_messages(self, reference: str, *, n=5) -> list:
-        return await self._db_conn.search(VectorDatabaseConnection.Indexes.MEMORIES, reference, n)
+    async def get_closest_messages(self, query: str, *, n=5) -> list[VectorDatabaseConnection.Hit]:
+        hits_for_query_list = await self._db_conn.search(
+            VectorDatabaseConnection.Indexes.MEMORIES, query, n)
+        hits_for_query = hits_for_query_list[0]
+
+        ret: list[VectorDatabaseConnection.Hit] = []
+        for hit in hits_for_query:
+            ret.append(VectorDatabaseConnection.Hit(
+                id=hit["id"],
+                distance=hit["distance"],
+                entity=hit["entity"]
+            ))
+        return ret
 
 class KnowledgeIndex:
     def __init__(self, _db_conn: VectorDatabaseConnection): 

@@ -1,14 +1,12 @@
-import os
 import io
 import discord
 import traceback
 
-from typing import Tuple
 from discord.ext import commands
 from core.util.rate_limits import RateLimiter, RateLimit
 from core.bot_workflow.response_logs import ResponseLogsManager
 from core.bot_workflow.message_snapshot import MessageSnapshot
-from core.bot_workflow.ai_bot import CustomBotData, DiscordBotResponse
+from core.bot_workflow.ai_bot import CustomBotData, AIDiscordBotResponder
 from core.bot_workflow.discord_message_parser import DiscordMessageParser, DenialReason, SpecialFunctionFlags
 
 MSG_LOG_FILE_REPLY = "Verbose logs for message ID {} attached (only last 10 are stored)"
@@ -70,14 +68,14 @@ class DiscordChatHandler(commands.Cog):
         reply = await message.reply(self.ai_bot.profile.lang["bot_typing"])
         
         try:
-            resp_str, verbose_log = await self.generate_response(message, verbose)
+            resp = await self.generate_response(message, verbose)
             # TODO: superfluous edits
             if verbose:
-                reply = await self.attach_log(reply, resp_str, verbose_log)
-            resp_msg: discord.Message = await self.send_discord_response(reply, resp_str)
+                reply = await self.attach_log(reply, resp.text, resp.verbose_log_output)
+            resp_msg: discord.Message = await self.send_discord_response(reply, resp.text)
             await self.memorize_message(
                 MessageSnapshot(
-                    text=resp_str,  
+                    text=resp.text,  
                     nick=resp_msg.author.name,
                     sent=resp_msg.created_at,
                     is_bot=True,
@@ -87,14 +85,13 @@ class DiscordChatHandler(commands.Cog):
                 add_after_id=message.id
             )
             await self.ai_bot.recent_history.mark_finalized(message.id)
-            ResponseLogsManager.instance().store_log(reply.id, verbose_log)
+            ResponseLogsManager.instance().store_log(reply.id, resp.verbose_log_output)
         except Exception as e:
             await self.handle_error(message, reply, e)
 
-    async def generate_response(self, message: discord.Message, verbose: bool) -> Tuple[str, str]:
-        resp = DiscordBotResponse(self.ai_bot, verbose)
-        resp_str = await resp.create(message)
-        return resp_str, resp.logger.text
+    async def generate_response(self, message: discord.Message, verbose: bool) -> AIDiscordBotResponder.Response:
+        resp = AIDiscordBotResponder(self.ai_bot, message, verbose)
+        return await resp.create_response()
 
     async def attach_log(self, reply: discord.Message, resp_str: str, verbose_log: str) -> discord.Message:
         if verbose_log:
