@@ -97,8 +97,10 @@ class DiscordBotResponse:
                 raise RuntimeError("Knowledge retrieval step returned empty response")
             
             if self.bot_data.long_term_memory is not None:
-                for msg in await self.bot_data.long_term_memory.get_closest_messages(rephrase):
-                    old_memories += str(msg) # TODO: establish a type for this
+                for hits_list in await self.bot_data.long_term_memory.get_closest_messages(rephrase):
+                    for hits in hits_list:
+                        for hit in hits:
+                            old_memories += hit["text"] + "\n" 
 
             user_query = rephrase
             knowledge_str = f"\n[INFO FROM KNOWLEDGE DB]:\n{knowledge}\n"
