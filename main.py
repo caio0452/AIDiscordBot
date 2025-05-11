@@ -73,7 +73,7 @@ class DiscordBot:
         logging.info("Creating chatbot...")
         await self.setup_chatbot()
         logging.info("Indexing knowledge...")
-        await self.knowledge.index_from_folder("knowledge")
+        await self.knowledge.index_from_folder("brain_content/knowledge")
         logging.info(f'Logged in as {self.bot.user}')
 
 bot = DiscordBot()
