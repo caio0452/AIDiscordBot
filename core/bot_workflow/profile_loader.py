@@ -34,7 +34,7 @@ class Profile(BaseModel):
     request_params: Dict[str, LLMRequestParams]
     lang: Dict[str, str]
     providers: Dict[str, ProviderData]
-    regex_replacements: Dict[str, str]
+    regex_replacements: Dict[str, str | list[str]]
     fal_image_gen_config: FalImageGenModuleConfig
 
     def get_prompt(self, name: str) -> Prompt:

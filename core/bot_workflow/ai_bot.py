@@ -7,6 +7,7 @@ from core.bot_workflow.types import MessageSnapshot, MessageSnapshotHistory
 from core.bot_workflow.response_steps import PersonalityRewriteStep, RelevantInfoSelectStep, UserQueryRephraseStep
 
 import re
+import random
 import logging
 import discord
 import datetime
@@ -117,8 +118,6 @@ class AIDiscordBotResponder:
             old_memories = await self._get_old_memories_as_text(user_query)
 
         # Build full prompt from info
-        main_client_params = self.bot_data.profile.request_params[MAIN_CLIENT_NAME]
-        model_names_order = [main_client_params.model_name] + self.bot_data.profile.options.llm_fallbacks
         full_prompt = await self._build_full_prompt(
             memory_snapshot=memory_snapshot,
             user_nick=self.initial_message.author.display_name,
@@ -128,6 +127,8 @@ class AIDiscordBotResponder:
         )
 
         # Formulate responses w/ full prompt
+        main_client_params = self.bot_data.profile.request_params[MAIN_CLIENT_NAME]
+        model_names_order = [main_client_params.model_name] + self.bot_data.profile.options.llm_fallbacks
         llm_response = None
         for name in model_names_order:
             modified_params = main_client_params.model_copy(deep=True)
@@ -156,7 +157,11 @@ class AIDiscordBotResponder:
             llm_response = personality_rewrite.removeprefix("REWRITTEN: ")
         
         # Replace undesirable text
-        for target, replacement in self.bot_data.profile.regex_replacements.items():
+        for target, replacement_obj in self.bot_data.profile.regex_replacements.items():
+            if isinstance(replacement_obj, list):
+                replacement = random.choice(replacement_obj)
+            else:
+                replacement = replacement_obj
             llm_response = re.sub(target, replacement, llm_response)
 
         return AIDiscordBotResponder.Response(
