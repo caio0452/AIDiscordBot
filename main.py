@@ -78,7 +78,3 @@ class DiscordBot:
 
 bot = DiscordBot()
 bot.run()
-
-
-
-

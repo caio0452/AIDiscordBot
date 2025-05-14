@@ -31,6 +31,19 @@ class LongTermMemoryIndex:
             )
         )
 
+    async def mass_memorize(self, messages: list[MessageSnapshot]):
+        entries = []
+        for message in messages:
+            entries.append(VectorDatabaseConnection.DBEntry(
+                numpy.int64(message.message_id),
+                 {"type": "memory"},
+                message.text, 
+            ))
+        await self._db_conn.index(
+            VectorDatabaseConnection.Indexes.MEMORIES,
+            entries
+        )
+
     async def get_closest_messages(self, query: str, *, n=5) -> list[VectorDatabaseConnection.Hit]:
         hits_for_query_list = await self._db_conn.search(
             VectorDatabaseConnection.Indexes.MEMORIES, query, n)
