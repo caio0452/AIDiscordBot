@@ -2,14 +2,14 @@ import time
 
 from core.ai_apis import providers
 from abc import ABC, abstractmethod
+from core.bot_workflow.response_logs import SimpleDebugLogger
 from core.bot_workflow.ai_bot import Prompt, LLMClient, CustomBotData
-from core.bot_workflow.response_logs import ResponseLogger
 
 class ResponseStep(ABC):
-    def __init__(self):
+    def __init__(self, logger: SimpleDebugLogger):
         self.finished = False
         self.elapsed_ms: float | None = None
-        self.logger = ResponseLogger()
+        self.logger = logger
 
     async def _llm_request(self, *, name: str, prompt: Prompt):
         params = self.bot_data.profile.request_params[name]
@@ -25,11 +25,16 @@ class ResponseStep(ABC):
         end = time.perf_counter()
         self.elapsed_ms = 1000 * (end - start)
         self.finished = True
+        self.logger.verbose(f"Finished {self.get_name()} step in {self.elapsed_ms} ms", category="STEP FINISHED")
         return ret
 
     @abstractmethod
     async def _run(self) -> str | None:
         raise NotImplementedError("_run() for ResponseStep")
+    
+    @abstractmethod
+    def get_name(self) -> str | None:
+        raise NotImplementedError("get_name() for ResponseStep")
     
 class PersonalityRewriteStep(ResponseStep):
     async def _run(self):
@@ -44,6 +49,9 @@ class PersonalityRewriteStep(ResponseStep):
         ) 
         self.logger.verbose(f"PROMPT: {prompt}", category="PERSONALITY REWRITE") 
         return response.message.content
+    
+    def get_name(self) -> str | None:
+        return "personality rewriter"
     
 class UserQueryRephraseStep(ResponseStep):
     async def _run(self):
@@ -64,9 +72,12 @@ class UserQueryRephraseStep(ResponseStep):
         self.logger.verbose(f"Prompt: {prompt}\nResponse: {response}", category=NAME)
         return response.message.content
     
+    def get_name(self) -> str | None:
+        return "query rephraser"
+    
 class RelevantInfoSelectStep(ResponseStep):
-    def __init__(self, *, user_query: str):
-        super().__init__()
+    def __init__(self, *, logger: SimpleDebugLogger, user_query: str):
+        super().__init__(logger)
         self.user_query = user_query
 
     async def _run(self):
@@ -92,3 +103,6 @@ class RelevantInfoSelectStep(ResponseStep):
         )
         self.logger.verbose(f"Prompt: {prompt}\nResponse: {response}", category=NAME)
         return response.message.content
+    
+    def get_name(self) -> str | None:
+        return "info selector"

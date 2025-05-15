@@ -1,16 +1,39 @@
-import datetime
+from io import StringIO
+
 import logging
 
-class ResponseLogger:
-    def __init__(self):
-        self.text = ""
-
-    def verbose(self, text: str, *, category: str | None = None):
-        current_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        if category:
-            self.text += f"\n[{current_time}] --- {category} ---\n{text}\n"
+class SimpleDebugLogger:
+    def __init__(self, name: str):
+        self.log_stream = StringIO()
+        self.name = name
+        self._setup_logging()
+        
+    def _setup_logging(self):
+        self.logger = logging.getLogger(self.name)
+        self.logger.setLevel(logging.INFO)
+        self.logger.propagate = False 
+        self.handler = logging.StreamHandler(self.log_stream)
+        self.handler.setLevel(logging.INFO)
+        root_logger = logging.getLogger()
+        if root_logger.handlers:
+            self.handler.setFormatter(root_logger.handlers[0].formatter)
         else:
-            self.text += f"\n[{current_time}] {text}\n"
+            formatter = logging.Formatter('%(message)s')
+            self.handler.setFormatter(formatter)
+        self.logger.addHandler(self.handler)
+    
+    def verbose(self, message: str, *, category: str | None = None):
+        if category is None:
+            self.logger.debug(message)
+        else:
+            self.logger.debug(f"[{category}] {message}")
+        
+    @property
+    def text(self) -> str:
+        return self.log_stream.getvalue()
+    
+    def __del__(self):
+        self.logger.removeHandler(self.handler)
 
 class ResponseLogsManager:
     _instance = None

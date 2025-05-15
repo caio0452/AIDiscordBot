@@ -2,11 +2,12 @@ import io
 import discord
 import traceback
 
+from io import StringIO
 from discord.ext import commands
 from core.util.rate_limits import RateLimiter, RateLimit
-from core.bot_workflow.response_logs import ResponseLogsManager
 from core.bot_workflow.message_snapshot import MessageSnapshot
 from core.bot_workflow.ai_bot import CustomBotData, AIDiscordBotResponder
+from core.bot_workflow.response_logs import ResponseLogsManager, SimpleDebugLogger
 from core.bot_workflow.discord_message_parser import DiscordMessageParser, DenialReason, SpecialFunctionFlags
 
 MSG_LOG_FILE_REPLY = "Verbose logs for message ID {} attached (only last 10 are stored)"
@@ -24,6 +25,7 @@ class DiscordChatHandler(commands.Cog):
         )
         self.message_parser = DiscordMessageParser(self.bot)
         self.ai_bot = ai_bot_data
+        self.logger = SimpleDebugLogger("ChatHandlerLogger")
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message) -> None:
@@ -69,10 +71,11 @@ class DiscordChatHandler(commands.Cog):
         
         try:
             resp = await self.generate_response(message, verbose)
-            # TODO: superfluous edits
             resp_msg: discord.Message = await self.send_discord_response(reply, resp.text)
             if verbose:
-                reply = await self.attach_log(resp_msg, resp.text, resp.verbose_log_output)
+                log_file = StringIO(resp.verbose_log_output)
+                await resp_msg.edit(attachments=[discord.File(log_file, filename="log.txt")])
+  
             await self.memorize_message(
                 MessageSnapshot(
                     text=resp.text,  
@@ -92,16 +95,6 @@ class DiscordChatHandler(commands.Cog):
     async def generate_response(self, message: discord.Message, verbose: bool) -> AIDiscordBotResponder.Response:
         resp = AIDiscordBotResponder(self.ai_bot, message, verbose)
         return await resp.create_response()
-
-    async def attach_log(self, reply: discord.Message, resp_str: str, verbose_log: str) -> discord.Message:
-        if verbose_log:
-            log_file = io.BytesIO(verbose_log.encode('utf-8'))
-            return await reply.edit(
-                content=resp_str, 
-                attachments=[discord.File(log_file, filename="verbose_log.txt")]
-            )
-        else:
-            return await reply.edit(content=resp_str)
 
     async def send_discord_response(self, reply: discord.Message, resp_str: str) -> discord.Message:
         CHUNK_SIZE = 1800 

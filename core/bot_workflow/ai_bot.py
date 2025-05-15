@@ -1,8 +1,8 @@
 from dataclasses import dataclass
 from core.ai_apis.client import LLMClient
 from core.ai_apis.types import LLMRequestParams, Prompt
-from core.bot_workflow.response_logs import ResponseLogger
 from core.bot_workflow.custom_bot_data import CustomBotData
+from core.bot_workflow.response_logs import SimpleDebugLogger
 from core.bot_workflow.types import MessageSnapshot, MessageSnapshotHistory
 from core.bot_workflow.response_steps import PersonalityRewriteStep, RelevantInfoSelectStep, UserQueryRephraseStep
 
@@ -24,8 +24,8 @@ class AIDiscordBotResponder:
         self.verbose = verbose
         self.bot_data = bot_data
         self.initial_message = initial_message
-        self.verbose_logger: ResponseLogger = ResponseLogger()
         self.clients: dict[str, LLMClient] = {}
+        self.logger = SimpleDebugLogger("ResponseLogger")
 
         for provider_name, provider_data in bot_data.provider_store.providers.items():
             self.clients[provider_name] = LLMClient.from_provider(provider_data)
@@ -69,13 +69,13 @@ class AIDiscordBotResponder:
         return response.message.content
     
     async def _rephrase_user_query(self) -> str:
-        user_query = await UserQueryRephraseStep().execute(self.bot_data, self.initial_message.content)
+        user_query = await UserQueryRephraseStep(self.logger).execute(self.bot_data, self.initial_message.content)
         if user_query is None:
             raise RuntimeError("Rephraser step returned empty response")
         return user_query
     
     async def _select_relevant_info(self, user_query: str) -> str:
-        info_selector = RelevantInfoSelectStep(user_query=user_query)
+        info_selector = RelevantInfoSelectStep(logger=self.logger, user_query=user_query)
         knowledge = await info_selector.execute(self.bot_data, self.initial_message.content)
         if knowledge is None:
             raise RuntimeError("Knowledge retrieval step returned empty response")
@@ -89,7 +89,7 @@ class AIDiscordBotResponder:
         return old_memories
     
     async def _personality_rewrite(self, llm_response: str) -> str:
-        personality_rewriter = PersonalityRewriteStep()
+        personality_rewriter = PersonalityRewriteStep(self.logger)
         personality_rewrite = await personality_rewriter.execute(self.bot_data, llm_response) 
         if personality_rewrite is None:
             raise RuntimeError("Personality rewrite step returned empty response")
@@ -111,7 +111,7 @@ class AIDiscordBotResponder:
         if self.bot_data.profile.options.enable_knowledge_retrieval:
             user_query = await self._rephrase_user_query()
             knowledge = await self._select_relevant_info(user_query)
-            self.verbose_logger.verbose(knowledge, category="INFO FROM KNOWLEDGE DB")
+            self.logger.verbose(knowledge, category="INFO FROM KNOWLEDGE DB")
 
         # Retrieve memories
         if self.bot_data.profile.options.enable_long_term_memory:
@@ -146,7 +146,7 @@ class AIDiscordBotResponder:
                 llm_response = raw_response.message.content
                 break
             except Exception as e:
-                self.verbose_logger.verbose(f"Request to LLM '{name}' failed with error: {e}", category="MODEL FAILURE")
+                self.logger.verbose(f"Request to LLM '{name}' failed with error: {e}", category="MODEL FAILURE")
                 logging.exception(e)
         if llm_response is None:
             raise RuntimeError("Cannot generate response and all fallbacks failed")
@@ -168,7 +168,7 @@ class AIDiscordBotResponder:
             text=llm_response, 
             attachment_description=attachment_description,
             tool_call_result=None,
-            verbose_log_output=self.verbose_logger.text
+            verbose_log_output=self.logger.text
         )
 
     async def _build_full_prompt(
