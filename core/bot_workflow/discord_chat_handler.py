@@ -70,9 +70,9 @@ class DiscordChatHandler(commands.Cog):
         try:
             resp = await self.generate_response(message, verbose)
             # TODO: superfluous edits
-            if verbose:
-                reply = await self.attach_log(reply, resp.text, resp.verbose_log_output)
             resp_msg: discord.Message = await self.send_discord_response(reply, resp.text)
+            if verbose:
+                reply = await self.attach_log(resp_msg, resp.text, resp.verbose_log_output)
             await self.memorize_message(
                 MessageSnapshot(
                     text=resp.text,  
