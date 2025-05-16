@@ -7,6 +7,7 @@ from core.bot_workflow.types import MessageSnapshot, MessageSnapshotHistory
 from core.bot_workflow.response_steps import PersonalityRewriteStep, RelevantInfoSelectStep, UserQueryRephraseStep
 
 import re
+import json
 import random
 import logging
 import discord
@@ -106,6 +107,7 @@ class AIDiscordBotResponder:
         # View image
         if self.bot_data.profile.options.enable_image_viewing:
             attachment_description = await self._describe_image_if_present(self.initial_message, user_query)
+            self.logger.verbose(attachment_description or "None", category="ATTACHMENT DESCRIPTION")
 
         # Retrieve knowlege
         if self.bot_data.profile.options.enable_knowledge_retrieval:
@@ -116,6 +118,7 @@ class AIDiscordBotResponder:
         # Retrieve memories
         if self.bot_data.profile.options.enable_long_term_memory:
             old_memories = await self._get_old_memories_as_text(user_query)
+            self.logger.verbose(old_memories, category="RETRIEVED MEMORIES")
 
         # Build full prompt from info
         full_prompt = await self._build_full_prompt(
@@ -125,6 +128,7 @@ class AIDiscordBotResponder:
             relevant_info=knowledge,
             old_memories=old_memories
         )
+        self.logger.verbose(json.dumps(full_prompt.messages), category="FULL_PROMPT")
 
         # Formulate responses w/ full prompt
         main_client_params = self.bot_data.profile.request_params[MAIN_CLIENT_NAME]
@@ -138,12 +142,14 @@ class AIDiscordBotResponder:
                 max_tokens=main_client_params.max_tokens,
                 logit_bias=main_client_params.logit_bias
             )
+            self.logger.verbose(f"Sending request to model name '{name}' with parameters {modified_params.model_dump_json()}", category="REQUEST")
             try:
                 raw_response = await self.clients[MAIN_CLIENT_NAME].send_request(
                     prompt=full_prompt,
                     params=modified_params
                 )
                 llm_response = raw_response.message.content
+                self.logger.verbose(f"{raw_response}", category="FULL RESPONSE")
                 break
             except Exception as e:
                 self.logger.verbose(f"Request to LLM '{name}' failed with error: {e}", category="MODEL FAILURE")
@@ -153,8 +159,7 @@ class AIDiscordBotResponder:
         
         # Rewrite in-character
         if self.bot_data.profile.options.enable_personality_rewrite:
-            personality_rewrite = await self._personality_rewrite(llm_response)
-            llm_response = personality_rewrite.removeprefix("REWRITTEN: ")
+            llm_response = await self._personality_rewrite(llm_response)
         
         # Replace undesirable text
         for target, replacement_obj in self.bot_data.profile.regex_replacements.items():
@@ -163,6 +168,7 @@ class AIDiscordBotResponder:
             else:
                 replacement = replacement_obj
             llm_response = re.sub(target, replacement, llm_response)
+        self.logger.verbose(f"Sanitized text, result: {llm_response}", category="REGEX REPLACEMENT")
 
         return AIDiscordBotResponder.Response(
             text=llm_response, 

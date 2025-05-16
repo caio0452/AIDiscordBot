@@ -47,7 +47,7 @@ class PersonalityRewriteStep(ResponseStep):
             name=NAME,
             prompt=prompt
         ) 
-        self.logger.verbose(f"PROMPT: {prompt}", category="PERSONALITY REWRITE") 
+        self.logger.verbose(f"Prompt: {prompt}\nResposne: {response}", category=NAME) 
         return response.message.content
     
     def get_name(self) -> str | None:
