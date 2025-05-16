@@ -60,7 +60,7 @@ class AIDiscordBotResponder:
                     messages=[
                         Prompt.user_msg(
                             content=f"Describe the image in detail, including a sufficient answer to the following query: '{message.content}'" \
-                            "If the query is empty, just describe the image. ",
+                            "If the query is empty, just describe the image and append \". Comment on the image\" to your description. ",
                             image_url=attachment.url
                         )
                     ]
