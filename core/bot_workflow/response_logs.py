@@ -10,10 +10,10 @@ class SimpleDebugLogger:
         
     def _setup_logging(self):
         self.logger = logging.getLogger(self.name)
-        self.logger.setLevel(logging.INFO)
+        self.logger.setLevel(logging.DEBUG)
         self.logger.propagate = False 
         self.handler = logging.StreamHandler(self.log_stream)
-        self.handler.setLevel(logging.INFO)
+        self.handler.setLevel(logging.DEBUG)
         root_logger = logging.getLogger()
         if root_logger.handlers:
             self.handler.setFormatter(root_logger.handlers[0].formatter)
