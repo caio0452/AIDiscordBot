@@ -22,9 +22,11 @@ class FalImageGenModuleConfig(BaseModel):
 class Parameters(BaseModel):
     botname: str
     recent_message_history_length: int
+    only_ping_on_response_finish: bool
     enable_personality_rewrite: bool
     enable_knowledge_retrieval: bool
     enable_long_term_memory: bool
+    remove_trailing_newline: bool
     enable_image_viewing: bool
     llm_fallbacks: List[str] = Field(default_factory=list, examples=["test", "aaa"])
 

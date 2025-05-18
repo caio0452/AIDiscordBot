@@ -1,4 +1,5 @@
 import io
+import re
 import discord
 import traceback
 
@@ -67,11 +68,16 @@ class DiscordChatHandler(commands.Cog):
 
     async def respond_with_llm(self, message: discord.Message, *, verbose: bool=False):
         await self.memorize_discord_message(message, pending=True, add_after_id=None)
-        reply = await message.reply(self.ai_bot.profile.lang["bot_typing"])
+
+        reply = await message.reply(
+            self.ai_bot.profile.lang["bot_typing"], 
+            silent=self.ai_bot.profile.options.only_ping_on_response_finish
+        )
         
         try:
             resp = await self.generate_response(message, verbose)
-            resp_msg: discord.Message = await self.send_discord_response(reply, resp.text)
+            resp_msg: discord.Message = await self.reply_chunked_with_disclaimers(reply, resp.text, ping=True)
+
             if verbose:
                 log_file = StringIO(resp.verbose_log_output)
                 await resp_msg.edit(attachments=[discord.File(log_file, filename="log.txt")])
@@ -96,24 +102,81 @@ class DiscordChatHandler(commands.Cog):
         resp = AIDiscordBotResponder(self.ai_bot, message, verbose)
         return await resp.create_response()
 
-    async def send_discord_response(self, reply: discord.Message, resp_str: str) -> discord.Message:
-        CHUNK_SIZE = 1800 
-        chunks = []
-        for i in range(0, len(resp_str), CHUNK_SIZE):
-            chunks.append(resp_str[i:i + CHUNK_SIZE])
+    def _chunk_by_length_and_spaces(self, full_text: str, max_chunk_length: int) -> list[str]:
+        chunks: list[str] = []
+        cursor = 0
+        text_length = len(full_text)
 
-        if len(chunks) == 0:
-            raise RuntimeError(f"Ended up with 0 chunks while trying to chunk message with content '{resp_str}'")
-        
-        last_message = chunks[0]
-        disclaimer = self.ai_bot.profile.lang["disclaimer"]
-        previous_message = await reply.edit(content=f"{last_message}{disclaimer}")  
-        if len(chunks) >= 2:
-            for chunk in chunks[1:]:
-                previous_message = await reply.reply(content=chunk)
+        while cursor < text_length:
+            segment_end = min(cursor + max_chunk_length, text_length)
+            segment = full_text[cursor:segment_end]
 
-        return previous_message
+            if segment_end < text_length:
+                last_space = segment.rfind(' ')
+                # If there are no spaces in the last half, maybe the string isn't meant to be split on spaces
+                min_space_pos_to_split = max_chunk_length // 2
+                if last_space > min_space_pos_to_split:
+                    end = cursor + last_space
+                    segment = full_text[cursor:end]
 
+            chunks.append(segment)
+            cursor = segment_end
+
+        return chunks
+    
+    def _balance_code_block_fences(self, *, original_text: str, chunked_text: list[str]) -> list[str]:
+        fence_pattern = re.compile(r"```(\w+)?")
+        balanced: list[str] = []
+        inside_code = False
+
+        def last_fence_language(text: str, *, before_pos: int) -> str:
+            matches = list(fence_pattern.finditer(text, 0, before_pos))
+            if not matches:
+                return ""
+            lang = matches[-1].group(1)
+            return lang or ""
+
+        cursor = 0
+        for chunk in chunked_text:
+            fence_count = len(fence_pattern.findall(chunk))
+            
+            if fence_count % 2 == 1:
+                inside_code = not inside_code
+                chunk += "\n```"
+
+            # If inside a code block after closing, next chunk must reopen
+            if inside_code:
+                lang = last_fence_language(original_text, before_pos=cursor)
+                chunk = f"```{lang}\n" + chunk
+
+            balanced.append(chunk)
+            cursor += len(chunk)
+
+        return balanced
+
+    async def reply_chunked_with_disclaimers(self, reply: discord.Message, resp_str: str, *, ping: bool) -> discord.Message:
+        disclaimer = self.ai_bot.profile.lang.get("disclaimer", "")
+        max_chunk_length = 1800 - len(disclaimer)
+
+        def strip_newline(chunk):
+            return chunk.strip('\r\n') if self.ai_bot.profile.options.remove_trailing_newline else chunk
+
+        raw_chunks = self._chunk_by_length_and_spaces(resp_str, max_chunk_length)
+        code_balanced_chunks = [
+            f"{strip_newline(chunk)}{disclaimer}" 
+            for chunk in self._balance_code_block_fences(original_text=resp_str, chunked_text=raw_chunks)
+        ]
+
+        if self.ai_bot.profile.options.only_ping_on_response_finish:
+            last_msg = await reply.reply(content=code_balanced_chunks[0], silent=False)
+            await reply.delete()
+        else:
+            last_msg = await reply.edit(content=code_balanced_chunks[0])
+
+        for chunk in code_balanced_chunks[1:]:
+            last_msg = await reply.reply(content=chunk, silent=not ping)
+        return last_msg
+    
     async def memorize_message(self, message: MessageSnapshot, *, pending: bool, add_after_id: None | int) -> None:
         if add_after_id is None:
             await self.ai_bot.recent_history.add(

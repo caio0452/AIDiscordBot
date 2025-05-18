@@ -5,8 +5,10 @@
     "has_long_term_memory": true,
     "max_input_chars": 1000,
     "llm_fallbacks": [],
+    "only_ping_on_response_finish": false,
     "enable_personality_rewrite": false,
     "enable_knowledge_retrieval": false,
+    "remove_trailing_newline": true,
     "enable_long_term_memory": true,
     "enable_image_viewing": true
   },
