@@ -36,7 +36,7 @@ class SimpleDebugLogger:
         self.logger.removeHandler(self.handler)
 
 class ResponseLogsManager:
-    _instance = None
+    _instance: "ResponseLogsManager | None" = None
 
     def __init__(self):
         raise RuntimeError('Call instance() instead')

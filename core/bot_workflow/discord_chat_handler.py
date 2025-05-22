@@ -12,7 +12,6 @@ from core.bot_workflow.response_logs import ResponseLogsManager, SimpleDebugLogg
 from core.bot_workflow.discord_message_parser import DiscordMessageParser, DenialReason, SpecialFunctionFlags
 
 MSG_LOG_FILE_REPLY = "Verbose logs for message ID {} attached (only last 10 are stored)"
-MSG_INVALID_LOG_REQUEST = ":x: Expected a message ID before --l, not '{}'"
 
 class DiscordChatHandler(commands.Cog):
     def __init__(self, discord_bot: commands.Bot, ai_bot_data: CustomBotData):
@@ -51,20 +50,30 @@ class DiscordChatHandler(commands.Cog):
         await self.respond_with_llm(message, verbose=verbose)
 
     async def handle_log_request(self, message: discord.Message):
-        sanitized_msg = message.content.strip().replace("--l", "")
+        ctx = self.message_parser.parse_message(message)
         try:
-            message_id = int(sanitized_msg)
-            log_data = ResponseLogsManager.instance().get_log_by_id(message_id)
+            num = None
+            for num_str in ctx.sanitized_content.split(" "):
+                if num_str.isdigit():
+                    num = int(num_str)
+                    break
+
+            if num is None:
+                await message.reply("❌ No numerical message ID found")
+                return
+            
+            log_data = ResponseLogsManager.instance().get_log_by_id(num)
             if log_data is None:
-                await message.reply("No log with that ID found")
+                await message.reply(f"❌ No log with ID {num} found")
                 return
             log_file = io.BytesIO(log_data.encode('utf-8'))
             await message.reply(
-                content=MSG_LOG_FILE_REPLY.format(message_id),
+                content=MSG_LOG_FILE_REPLY.format(num),
                 files=[discord.File(log_file, filename="verbose_log.txt")]
             )
         except ValueError:
-            await message.reply(MSG_INVALID_LOG_REQUEST.format(sanitized_msg))
+            invalid_log_msg = self.ai_bot.profile.lang["invalid_log_request"]
+            await message.reply(invalid_log_msg.format(sanitized_msg))
 
     async def respond_with_llm(self, message: discord.Message, *, verbose: bool=False):
         await self.memorize_discord_message(message, pending=True, add_after_id=None)

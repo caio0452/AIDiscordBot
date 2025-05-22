@@ -56,9 +56,9 @@ class DiscordMessageParser:
              denial_reason = DenialReason.TOO_LONG
 
         if not denied:
-            if raw_content.endswith("--l"):
+            if "--l" in raw_content: # TODO: inconsistent with --v
                 called_functions.append(SpecialFunctionFlags.VIEW_MESSAGE_LOGS)
-                sanitized_content = sanitized_content.removesuffix("--l")
+                sanitized_content = sanitized_content.replace("--l", "")
 
             if raw_content.endswith("--v"):
                 called_functions.append(SpecialFunctionFlags.REQUEST_VERBOSE_REPLY)
