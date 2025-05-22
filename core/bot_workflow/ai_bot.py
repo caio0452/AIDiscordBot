@@ -4,7 +4,7 @@ from core.ai_apis.api_types import LLMRequestParams, Prompt
 from core.bot_workflow.custom_bot_data import CustomBotData
 from core.bot_workflow.response_logs import SimpleDebugLogger
 from core.bot_workflow.bot_types import MessageSnapshot, MessageSnapshotHistory
-from bot_workflow.response_steps import PersonalityRewriteStep, RelevantInfoSelectStep, UserQueryRephraseStep
+from core.bot_workflow.response_steps import PersonalityRewriteStep, RelevantInfoSelectStep, UserQueryRephraseStep
 
 import re
 import json
