@@ -192,22 +192,24 @@ class DiscordChatHandler(commands.Cog):
             return chunk.strip('\r\n') if self.ai_bot.profile.options.remove_trailing_newline else chunk
 
         raw_chunks = self._chunk_by_length_and_spaces(resp_str, max_chunk_length)
+        '''
         code_balanced_chunks = [
             f"{strip_newline(chunk)}{disclaimer}" 
             for chunk in self._balance_code_block_fences(original_text=resp_str, chunked_text=raw_chunks)
         ]
+        ''' # TODO: readd
 
         last_msg = None
         if edit_msg is not None:
-            last_msg = await edit_msg.edit(content=code_balanced_chunks[0])
-            remaining_chunks = code_balanced_chunks[1:]
+            last_msg = await edit_msg.edit(content= raw_chunks[0])
+            remaining_chunks = raw_chunks[1:]
         elif reply_to is not None:
             if self.ai_bot.profile.options.only_ping_on_response_finish:
-                last_msg = await reply_to.reply(content=code_balanced_chunks[0], silent=True)
+                last_msg = await reply_to.reply(content= raw_chunks[0], silent=True)
                 await reply_to.delete()
             else:
-                last_msg = await reply_to.reply(content=code_balanced_chunks[0], silent=not ping)
-            remaining_chunks = code_balanced_chunks[1:]
+                last_msg = await reply_to.reply(content= raw_chunks[0], silent=not ping)
+            remaining_chunks = raw_chunks[1:]
         else:
             raise ValueError("Must specify at least one of: reply_to or edit_msg")
         
