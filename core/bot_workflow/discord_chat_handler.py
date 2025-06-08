@@ -113,23 +113,27 @@ class DiscordChatHandler(commands.Cog):
 
     def _chunk_by_length_and_spaces(self, full_text: str, max_chunk_length: int) -> list[str]:
         chunks: list[str] = []
-        cursor = 0
-        text_length = len(full_text)
+        current_chunk = ""
+        partial_leftover_word = ""
+        words = full_text.split(" ") 
 
-        while cursor < text_length:
-            segment_end = min(cursor + max_chunk_length, text_length)
-            segment = full_text[cursor:segment_end]
+        for word in words:
+            if len(partial_leftover_word) > 0:
+                current_chunk += partial_leftover_word + " "
+                partial_leftover_word = ""
 
-            if segment_end < text_length:
-                last_space = segment.rfind(' ')
-                # If there are no spaces in the last half, maybe the string isn't meant to be split on spaces
-                min_space_pos_to_split = max_chunk_length // 2
-                if last_space > min_space_pos_to_split:
-                    end = cursor + last_space
-                    segment = full_text[cursor:end]
-
-            chunks.append(segment)
-            cursor = segment_end
+            if len(current_chunk) + len(word) <= max_chunk_length:
+                current_chunk += " " + word
+            else:
+                # If the word is very large, maybe this is not regular text that's meant to be split in spaces
+                if len(word) < max_chunk_length // 2:
+                    len_until_max = max_chunk_length - len(word)
+                    partial_word = word[0:len_until_max]
+                    current_chunk += partial_word
+                    partial_leftover_word = word.replace(partial_word, "")
+                else:
+                    chunks.append(current_chunk)
+                    current_chunk = ""
 
         return chunks
     
