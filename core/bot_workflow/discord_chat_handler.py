@@ -120,7 +120,7 @@ class DiscordChatHandler(commands.Cog):
             await self.ai_bot.recent_history.mark_finalized(user_message.id)
             ResponseLogsManager.instance().store_log(base_resp_msg.id, resp.verbose_log_output)
         except Exception as e:
-            await self.handle_error(user_message, user_message, e)
+            await self.handle_error(user_message, e)
 
     async def generate_response(self, to_respond: discord.Message, verbose: bool) -> AIDiscordBotResponder.Response:
         resp = AIDiscordBotResponder(self.ai_bot, to_respond, verbose)
