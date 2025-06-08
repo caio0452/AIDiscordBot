@@ -150,6 +150,9 @@ class DiscordChatHandler(commands.Cog):
                     chunks.append(current_chunk)
                     current_chunk = ""
 
+        if current_chunk != "":
+            chunks.append(current_chunk)
+            
         return chunks
     
     def _balance_code_block_fences(self, *, original_text: str, chunked_text: list[str]) -> list[str]:
