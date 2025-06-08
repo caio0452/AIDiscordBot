@@ -241,9 +241,9 @@ class DiscordChatHandler(commands.Cog):
         if self.ai_bot.long_term_memory is not None:
             await self.ai_bot.long_term_memory.memorize(to_memorize)
 
-    async def handle_error(self, message: discord.Message, reply: discord.Message, error: Exception):
+    async def handle_error(self, reply_to: discord.Message, error: Exception):
         # TODO: implement message forgetting
         # await self.forget_message(message)
         # await self.forget_message(reply)
         traceback.print_exc()
-        await reply.edit(content=f"There was an error: ```{str(error)[:1000]}```") # TODO: send lang message if possible
+        await reply_to.reply(content=f"There was an error: ```{str(error)[:1000]}```") # TODO: send lang message if possible
