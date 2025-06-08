@@ -75,40 +75,55 @@ class DiscordChatHandler(commands.Cog):
             invalid_log_msg = self.ai_bot.profile.lang["invalid_log_request"]
             await message.reply(invalid_log_msg.format(ctx.sanitized_content))
 
-    async def respond_with_llm(self, message: discord.Message, *, verbose: bool=False):
-        await self.memorize_discord_message(message, pending=True, add_after_id=None)
+    async def respond_with_llm(self, user_message: discord.Message, *, verbose: bool=False):
+        await self.memorize_discord_message(user_message, pending=True, add_after_id=None)
 
-        typing_msg = await message.reply(
+        typing_msg = await user_message.reply(
             self.ai_bot.profile.lang["bot_typing"], 
-            silent=self.ai_bot.profile.options.only_ping_on_response_finish
+            mention_author=False,
         )
         
         try:
-            resp = await self.generate_response(message, verbose)
-            resp_msg: discord.Message = await self.reply_chunked_with_disclaimers(message, resp.text, ping=True)
+            resp = await self.generate_response(user_message, verbose)
+
+            if self.ai_bot.profile.options.only_ping_on_response_finish:
+                base_resp_msg: discord.Message = await self.send_chunked_with_disclaimers(
+                    resp.text,
+                    reply_to=user_message,
+                    edit_msg=None,
+                    ping=self.ai_bot.profile.options.only_ping_on_response_finish
+                )
+            else:
+                base_resp_msg: discord.Message = await self.send_chunked_with_disclaimers(
+                    resp.text,
+                    reply_to=None,
+                    edit_msg=typing_msg,
+                    ping=self.ai_bot.profile.options.only_ping_on_response_finish
+                )
 
             if verbose:
+                # TODO: this edit is potentially superfluous
                 log_file = StringIO(resp.verbose_log_output)
-                await resp_msg.edit(attachments=[discord.File(log_file, filename="log.txt")])
+                await base_resp_msg.edit(attachments=[discord.File(log_file, filename="log.txt")])
   
             await self.memorize_message(
                 MessageSnapshot(
                     text=resp.text,  
-                    nick=resp_msg.author.name,
-                    sent=resp_msg.created_at,
+                    nick=base_resp_msg.author.name,
+                    sent=base_resp_msg.created_at,
                     is_bot=True,
-                    message_id=resp_msg.id 
+                    message_id=base_resp_msg.id 
                 ),
                 pending=False,
-                add_after_id=message.id
+                add_after_id=user_message.id
             )
-            await self.ai_bot.recent_history.mark_finalized(message.id)
-            ResponseLogsManager.instance().store_log(resp_msg.id, resp.verbose_log_output)
+            await self.ai_bot.recent_history.mark_finalized(user_message.id)
+            ResponseLogsManager.instance().store_log(base_resp_msg.id, resp.verbose_log_output)
         except Exception as e:
-            await self.handle_error(message, message, e)
+            await self.handle_error(user_message, user_message, e)
 
-    async def generate_response(self, message: discord.Message, verbose: bool) -> AIDiscordBotResponder.Response:
-        resp = AIDiscordBotResponder(self.ai_bot, message, verbose)
+    async def generate_response(self, to_respond: discord.Message, verbose: bool) -> AIDiscordBotResponder.Response:
+        resp = AIDiscordBotResponder(self.ai_bot, to_respond, verbose)
         return await resp.create_response()
 
     def _chunk_by_length_and_spaces(self, full_text: str, max_chunk_length: int) -> list[str]:
@@ -173,7 +188,6 @@ class DiscordChatHandler(commands.Cog):
 
         if reply_to is not None and edit_msg is not None:
             raise ValueError("Must specify one of reply_to or edit_msg, not both")
-
         def strip_newline(chunk):
             return chunk.strip('\r\n') if self.ai_bot.profile.options.remove_trailing_newline else chunk
 
@@ -195,7 +209,7 @@ class DiscordChatHandler(commands.Cog):
                 last_msg = await reply_to.reply(content=code_balanced_chunks[0], silent=not ping)
             remaining_chunks = code_balanced_chunks[1:]
         else:
-            raise ValueError("Must specify one of reply_to or edit_msg, not zero")
+            raise ValueError("Must specify at least one of: reply_to or edit_msg")
         
         for chunk in remaining_chunks:
             last_msg = await last_msg.reply(content=chunk, silent=not ping)
