@@ -93,6 +93,7 @@ class DiscordChatHandler(commands.Cog):
                     edit_msg=None,
                     ping=self.ai_bot.profile.options.only_ping_on_response_finish
                 )
+                await typing_msg.delete()
             else:
                 base_resp_msg: discord.Message = await self.send_chunked_with_disclaimers(
                     resp.text,
@@ -209,7 +210,6 @@ class DiscordChatHandler(commands.Cog):
         elif reply_to is not None:
             if self.ai_bot.profile.options.only_ping_on_response_finish:
                 last_msg = await reply_to.reply(content= raw_chunks[0], silent=True)
-                await reply_to.delete()
             else:
                 last_msg = await reply_to.reply(content= raw_chunks[0], silent=not ping)
             remaining_chunks = raw_chunks[1:]
